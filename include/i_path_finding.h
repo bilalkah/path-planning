@@ -12,20 +12,27 @@
 #ifndef INCLUDE_I_PATH_FINDING_H_
 #define INCLUDE_I_PATH_FINDING_H_
 
+#include <list>
 #include <memory>
 
 class Map;
 class Node;
-
+using Path = std::list<std::shared_ptr<Node>>;
+namespace planning
+{
 class IPathFinding
 {
 public:
-  IPathFinding();
-
-  virtual ~IPathFinding();
-
-  virtual void FindPath(Node &start_node, Node &goal_node,
+  /**
+   * @brief Find path between start and goal nodes.
+   *
+   * @param start_node Start node.
+   * @param goal_node Goal node.
+   * @param map Map to find path on.
+   */
+  virtual Path FindPath(const Node &start_node, const Node &goal_node,
                         std::shared_ptr<Map> map) = 0;
-};
+}; // class IPathFinding
+} // namespace planning
 
 #endif /* INCLUDE_I_PATH_FINDING_H_ */

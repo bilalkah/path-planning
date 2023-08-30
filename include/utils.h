@@ -12,6 +12,7 @@
 #ifndef INCLUDE_UTILS_H_
 #define INCLUDE_UTILS_H_
 
+#include <algorithm>
 #include <cstdint>
 #include <memory>
 #include <vector>
@@ -19,8 +20,9 @@
 class Node
 {
 public:
-  Node();
-  ~Node();
+  Node() : x_(0), y_(0) {}
+  Node(int x, int y) : x_(x), y_(y) {}
+  ~Node() {}
 
   int X() const { return x_; }
   int Y() const { return y_; }
@@ -42,8 +44,17 @@ enum class NodeState : uint8_t
 class Map
 {
 public:
-  Map();
-  ~Map();
+  Map() : width_(0), height_(0){};
+  Map(int width, int height) : width_(width), height_(height)
+  {
+    map_.resize(height_);
+    for (auto &row : map_)
+      {
+        row.resize(width_);
+        std::fill(row.begin(), row.end(), NodeState::kFree);
+      }
+  }
+  ~Map() {}
   int Width() const { return width_; }
   int Height() const { return height_; }
 
