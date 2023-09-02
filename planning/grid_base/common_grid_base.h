@@ -13,7 +13,7 @@
 #define PLANNING_GRID_BASE_COMMON_H_
 
 
-#include "../common.h"
+#include "planning/common_planning.h"
 
 namespace planning
 {

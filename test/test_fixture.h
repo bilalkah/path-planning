@@ -12,7 +12,7 @@
 #ifndef TESTS_HELPER_H_
 #define TESTS_HELPER_H_
 
-#include "../planning/grid_base/a_star/a_star.h"
+#include "planning/grid_base/a_star/a_star.h"
 #include <cstddef>
 #include <gtest/gtest.h>
 #include <memory>
