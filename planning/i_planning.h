@@ -1,26 +1,26 @@
 /**
- * @file i_path_finding.h
+ * @file i_planning.h
  * @author Bilal Kahraman (kahramannbilal@gmail.com)
- * @brief Interface for path finding algorithms.
+ * @brief Path planning interface.
  * @version 0.1
- * @date 2023-08-29
+ * @date 2023-09-02
  *
  * @copyright Copyright (c) 2023
  *
  */
 
-#ifndef INCLUDE_I_PATH_FINDING_H_
-#define INCLUDE_I_PATH_FINDING_H_
+#ifndef PLANNING_I_PLANNING_H_
+#define PLANNING_I_PLANNING_H_
 
-#include <list>
 #include <memory>
+#include <vector>
 
 namespace planning
 {
 class Map;
 class Node;
 
-class IPathFinding
+class IPlanning
 {
 public:
   /**
@@ -30,9 +30,10 @@ public:
    * @param goal_node Goal node.
    * @param map Map to find path on.
    */
-  virtual Path FindPath(const Node &start_node, const Node &goal_node,
-                        const std::shared_ptr<Map> map) = 0;
+  virtual std::vector<std::shared_ptr<Node>>
+  FindPath(const Node &start_node, const Node &goal_node,
+           const std::shared_ptr<Map> map) = 0;
 }; // class IPathFinding
 } // namespace planning
 
-#endif /* INCLUDE_I_PATH_FINDING_H_ */
+#endif /* PLANNING_I_PLANNING_H_ */

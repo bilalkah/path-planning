@@ -72,8 +72,11 @@ AStar::AStar(std::string direction)
 AStar::~AStar(){};
 
 Path AStar::FindPath(const Node &start_node, const Node &goal_node,
-                     std::shared_ptr<Map> map)
+                     const std::shared_ptr<Map> map)
 {
+  // Copy map to avoid changing it.
+  auto map_copy = std::make_shared<Map>(*map);
+
   std::priority_queue<std::shared_ptr<NodeInfo>,
                       std::vector<std::shared_ptr<NodeInfo>>, decltype(Compare)>
       open(Compare);
@@ -82,6 +85,7 @@ Path AStar::FindPath(const Node &start_node, const Node &goal_node,
       std::make_shared<Node>(start_node), nullptr, Cost(0, 0));
 
   open.push(start_node_info);
+  map_copy->SetNodeState(start_node, NodeState::kVisited);
 
   while (!open.empty() && !IsGoal(*open.top()->node, goal_node))
     {
@@ -93,12 +97,12 @@ Path AStar::FindPath(const Node &start_node, const Node &goal_node,
           int x = current_node_info->node->X() + direction.first;
           int y = current_node_info->node->Y() + direction.second;
 
-          if (!InBounds(Node(x, y), map))
+          if (!InBounds(Node(x, y), map_copy))
             {
               continue;
             }
 
-          if (!IsFree(Node(x, y), map))
+          if (!IsFree(Node(x, y), map_copy))
             {
               continue;
             }
@@ -109,6 +113,7 @@ Path AStar::FindPath(const Node &start_node, const Node &goal_node,
                    heuristic(Node(x, y), goal_node)));
 
           open.push(neighbor_node_info);
+          map_copy->SetNodeState(Node(x, y), NodeState::kVisited);
         }
     }
 

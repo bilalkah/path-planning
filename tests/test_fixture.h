@@ -12,12 +12,13 @@
 #ifndef TESTS_HELPER_H_
 #define TESTS_HELPER_H_
 
-#include "include/a_star.h"
-#include "include/utils.h"
+#include "../planning/grid_base/a_star/a_star.h"
 #include <cstddef>
 #include <gtest/gtest.h>
 #include <memory>
 
+using namespace planning::grid_base;
+using namespace planning;
 class TestFixture : public ::testing::Test
 {
 protected:
@@ -25,6 +26,7 @@ protected:
   {
     srand(time(NULL));
     Createmap(10, 10, 5);
+    path_finder = std::make_shared<AStar>("four");
   }
 
   virtual void TearDown() {}
@@ -38,11 +40,12 @@ protected:
       {
         size_t x = rand() % width;
         size_t y = rand() % height;
-        (*map_)[y][x] = NodeState::kOccupied;
+        map_->SetNodeState(Node(x, y), NodeState::kOccupied);
       }
   }
 
   std::shared_ptr<Map> map_;
+  std::shared_ptr<IPlanning> path_finder;
 };
 
 #endif /* TESTS_HELPER_H_ */

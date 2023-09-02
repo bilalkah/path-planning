@@ -12,40 +12,41 @@
 #ifndef INCLUDE_UTILS_H_
 #define INCLUDE_UTILS_H_
 
+#include "data_types.h"
+
 #include <algorithm>
 #include <cstdint>
 #include <memory>
 #include <vector>
 
-class Node
+namespace planning
 {
-public:
-  Node() : x_(0), y_(0) {}
-  Node(int x, int y) : x_(x), y_(y) {}
-  ~Node() {}
 
-  int X() const { return x_; }
-  int Y() const { return y_; }
+using SearchSpace = std::vector<std::pair<uint8_t, uint8_t>>;
 
-private:
-  int x_, y_;
-}; // class Node
+SearchSpace four_directions = {
+    std::make_pair(0, 1),  // right
+    std::make_pair(1, 0),  // down
+    std::make_pair(0, -1), // left
+    std::make_pair(-1, 0)  // up
+};
 
-enum class NodeState : uint8_t
-{
-  kFree,
-  kVisited,
-  kOccupied,
-  kStart,
-  kGoal,
-  kPath
-}; // enum class NodeState
+SearchSpace eight_directions = {
+    std::make_pair(0, 1),   // right
+    std::make_pair(1, 0),   // down
+    std::make_pair(0, -1),  // left
+    std::make_pair(-1, 0),  // up
+    std::make_pair(1, 1),   // down right
+    std::make_pair(1, -1),  // down left
+    std::make_pair(-1, -1), // up left
+    std::make_pair(-1, 1)   // up right
+};
 
 class Map
 {
 public:
-  Map() : width_(0), height_(0){};
-  Map(int width, int height) : width_(width), height_(height)
+  Map() : height_(0), width_(0){};
+  Map(int height, int width) : height_(height), width_(width)
   {
     map_.resize(height_);
     for (auto &row : map_)
@@ -55,14 +56,21 @@ public:
       }
   }
   ~Map() {}
+
   int Width() const { return width_; }
   int Height() const { return height_; }
 
   std::vector<NodeState> &operator[](int index) { return map_[index]; }
 
+  void SetNodeState(const Node &node, NodeState node_state)
+  {
+    map_[node.X()][node.Y()] = node_state;
+  }
+
 private:
-  int width_, height_;
+  int height_, width_;
   std::vector<std::vector<NodeState>> map_;
 }; // class Map
+} // namespace planning
 
 #endif /* INCLUDE_UTILS_H_ */
