@@ -1,12 +1,12 @@
 {
     "env": {
-      "myDefaultIncludePath": ["${workspaceFolder}", "${workspaceFolder}/include"]
+      "myDefaultIncludePath": ["${workspaceFolder}/*"]
     },
     "configurations": [
       {
         "name": "Linux",
         "intelliSenseMode": "clang-x64",
-        "includePath": ["${myDefaultIncludePath}", "/another/path"],
+        "includePath": ["${myDefaultIncludePath}"],
         "compilerPath": "/usr/bin/g++",
         "cStandard": "c11",
         "cppStandard": "c++17",

@@ -12,8 +12,8 @@
 #ifndef PLANNING_GRID_BASE_COMMON_H_
 #define PLANNING_GRID_BASE_COMMON_H_
 
-
 #include "planning/common_planning.h"
+#include <cstddef>
 
 namespace planning
 {
@@ -25,7 +25,7 @@ namespace grid_base
  * @brief Search space for path finding algorithms.
  *
  */
-using SearchSpace = std::vector<std::pair<uint8_t, uint8_t>>;
+using SearchSpace = std::vector<std::pair<int8_t, int8_t>>;
 
 /**
  * @brief Struct that generates both 4 and 8 directions search spaces.

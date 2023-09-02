@@ -1,28 +1,27 @@
 /**
- * @file test_a_star.cpp
+ * @file test_bfs.cpp
  * @author Bilal Kahraman (kahramannbilal@gmail.com)
  * @brief
  * @version 0.1
- * @date 2023-08-30
+ * @date 2023-09-02
  *
  * @copyright Copyright (c) 2023
  *
  */
 
-#include "planning/grid_base/a_star/a_star.h"
+#include "planning/grid_base/bfs/bfs.h"
 #include "test_fixture.h"
-#include <gtest/gtest.h>
 
 namespace planning
 {
 
 using namespace planning::grid_base;
 
-TEST_F(TestFixture, DISABLED_PathPlanning_WithAStar)
+TEST_F(TestFixture, PathPlanning_WithBFS)
 {
-  std::shared_ptr<IPlanning> path_finder = std::make_shared<AStar>("four");
-  const auto start_node = Node(0, 0);
-  const auto goal_node = Node(9, 9);
+  auto path_finder = std::make_shared<BFS>("four");
+  const auto start_node = Node(1, 5);
+  const auto goal_node = Node(7, 8);
   Path path = path_finder->FindPath(start_node, goal_node, map_);
 
   auto expected_path_size = 18u;

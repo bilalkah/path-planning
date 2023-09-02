@@ -12,40 +12,70 @@
 #ifndef TESTS_HELPER_H_
 #define TESTS_HELPER_H_
 
-#include "planning/grid_base/a_star/a_star.h"
+#include "planning/common_planning.h"
 #include <cstddef>
+#include <fstream>
 #include <gtest/gtest.h>
+#include <iostream>
 #include <memory>
 
-using namespace planning::grid_base;
 using namespace planning;
 class TestFixture : public ::testing::Test
 {
 protected:
   virtual void SetUp()
   {
+    map_data_ =
+        "1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 1 1 1 1 1 1 1 1 1 0 1 1 1 1 1 1 1 1 1 0 "
+        "1 1 1 1 1 1 1 1 1 0 0 0 0 1 1 1 1 1 1 1 1 1 0 1 1 1 1 0 1 1 1 1 0 0 0 "
+        "1 1 0 1 1 1 1 1 1 1 1 1 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 ";
     srand(time(NULL));
-    Createmap(10, 10, 5);
-    path_finder = std::make_shared<AStar>("four");
+    Createmap(10, 10);
   }
 
   virtual void TearDown() {}
 
-  void Createmap(size_t width, size_t height, size_t occupied_nodes)
+  void Createmap(size_t width, size_t height)
   {
     map_ = std::make_shared<Map>(width, height);
 
-    // Fill map with random occupied nodes.
-    for (size_t i = 0; i < occupied_nodes; i++)
+    // fill the map according to the map data
+    std::istringstream iss(map_data_);
+    std::vector<int> map_data((std::istream_iterator<int>(iss)),
+                              std::istream_iterator<int>());
+    for (size_t i = 0; i < map_data.size(); i++)
       {
-        size_t x = rand() % width;
-        size_t y = rand() % height;
-        map_->SetNodeState(Node(x, y), NodeState::kOccupied);
+        if (map_data[i] == 0)
+          {
+            map_->SetNodeState(Node(i % width, i / width),
+                               NodeState::kOccupied);
+          }
       }
   }
 
+  void PrintMap()
+  {
+    std::cout << "\n\n" << std::endl;
+    for (auto i = 0; i < map_->GetHeight(); i++)
+      {
+        for (auto j = 0; j < map_->GetWidth(); j++)
+          {
+            if (map_->GetNodeState(Node(j, i)) == NodeState::kOccupied)
+              {
+                std::cout << "0 ";
+              }
+            else if (map_->GetNodeState(Node(j, i)) == NodeState::kFree)
+              {
+                std::cout << "1 ";
+              }
+          }
+        std::cout << std::endl;
+      }
+    std::cout << "\n\n" << std::endl;
+  }
+
   std::shared_ptr<Map> map_;
-  std::shared_ptr<IPlanning> path_finder;
+  std::string map_data_;
 };
 
 #endif /* TESTS_HELPER_H_ */
