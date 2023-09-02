@@ -12,6 +12,8 @@
 #ifndef PLANNING_COMMON_H_
 #define PLANNING_COMMON_H_
 
+#include <iostream>
+#include <iterator>
 #include <memory>
 #include <vector>
 
@@ -32,9 +34,21 @@ public:
   int X() const { return x_; }
   int Y() const { return y_; }
 
+  friend std::ostream &operator<<(std::ostream &os, const Node &node)
+  {
+    os << "Node: " << node.x_ << " " << node.y_;
+    return os;
+  }
+
 private:
   int x_, y_;
 }; // class Node
+
+/**
+ * @brief Path type.
+ *
+ */
+using Path = std::vector<std::shared_ptr<Node>>;
 
 /**
  * @brief Node with parent and cost.
@@ -117,16 +131,39 @@ public:
     map_[node.X()][node.Y()] = node_state;
   }
 
+  /**
+   * @brief Visualize map.
+   *
+   */
+  void Visualize() const
+  {
+    for (auto i = 0; i < height_; i++)
+      {
+        for (auto j = 0; j < width_; j++)
+          {
+            std::cout << static_cast<int>(map_[i][j]) << " ";
+          }
+        std::cout << std::endl;
+      }
+    std::cout << "\n" << std::endl;
+  }
+
+  /**
+   * @brief Visualize map with path.
+   *
+   */
+  void UpdateMapWithPath(const Path &path)
+  {
+    for (const auto &node : path)
+      {
+        map_[node->X()][node->Y()] = NodeState::kPath;
+      }
+  }
+
 private:
   int height_, width_;
   std::vector<std::vector<NodeState>> map_;
 }; // class Map
-
-/**
- * @brief Path type.
- *
- */
-using Path = std::vector<std::shared_ptr<Node>>;
 
 /**
  * @brief Inbound check for map.
@@ -146,7 +183,9 @@ inline bool IsInbound(const Node &node, const std::shared_ptr<Map> map)
 
 inline bool IsFree(const Node &node, const std::shared_ptr<Map> map)
 {
-  return IsInbound(node, map) && map->GetNodeState(node) == NodeState::kFree;
+  return IsInbound(node, map) && (map->GetNodeState(node) == NodeState::kFree ||
+                                  map->GetNodeState(node) == NodeState::kGoal ||
+                                  map->GetNodeState(node) == NodeState::kStart);
 }
 
 /**

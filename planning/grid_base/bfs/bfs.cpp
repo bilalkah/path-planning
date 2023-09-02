@@ -42,7 +42,7 @@ Path BFS::FindPath(const Node &start_node, const Node &goal_node,
 {
   // Copy map to avoid changing it.
   std::shared_ptr<Map> map_copy = std::make_shared<Map>(*map);
-
+  map_copy->SetNodeState(goal_node, NodeState::kGoal);
   // Create queue for search list.
   std::queue<std::shared_ptr<NodeParent<CostBFS>>> search_list;
 
@@ -64,9 +64,10 @@ Path BFS::FindPath(const Node &start_node, const Node &goal_node,
         {
           continue;
         }
-        
+
       // Update map.
       map_copy->SetNodeState(*current_node_parent->node, NodeState::kVisited);
+      map_copy->Visualize();
 
       for (const auto &direction : search_space_)
         {
@@ -93,7 +94,11 @@ Path BFS::FindPath(const Node &start_node, const Node &goal_node,
     }
 
   auto current_node = search_list.front();
-  return ReconstructPath(current_node);
+  auto path = ReconstructPath(current_node);
+  map_copy->UpdateMapWithPath(path);
+  map_copy->Visualize();
+
+  return path;
 }
 
 } // namespace grid_base

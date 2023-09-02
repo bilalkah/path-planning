@@ -25,10 +25,9 @@ class TestFixture : public ::testing::Test
 protected:
   virtual void SetUp()
   {
-    map_data_ =
-        "1 1 1 1 1 1 1 1 1 1 1 0 0 0 0 1 1 1 1 1 1 1 1 1 0 1 1 1 1 1 1 1 1 1 0 "
-        "1 1 1 1 1 1 1 1 1 0 0 0 0 1 1 1 1 1 1 1 1 1 0 1 1 1 1 0 1 1 1 1 0 0 0 "
-        "1 1 0 1 1 1 1 1 1 1 1 1 0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 ";
+    map_data_ = "11111111111000011111111101111111110"
+                "11111111100001111111110111101111000"
+                "110111111111011111111111111111";
     srand(time(NULL));
     Createmap(10, 10);
   }
@@ -40,14 +39,11 @@ protected:
     map_ = std::make_shared<Map>(width, height);
 
     // fill the map according to the map data
-    std::istringstream iss(map_data_);
-    std::vector<int> map_data((std::istream_iterator<int>(iss)),
-                              std::istream_iterator<int>());
-    for (size_t i = 0; i < map_data.size(); i++)
+    for (size_t i = 0; i < map_data_.size(); i++)
       {
-        if (map_data[i] == 0)
+        if (map_data_[i] == '0')
           {
-            map_->SetNodeState(Node(i % width, i / width),
+            map_->SetNodeState(Node(i / width, i % width),
                                NodeState::kOccupied);
           }
       }

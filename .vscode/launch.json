@@ -10,7 +10,7 @@
             "name": "Run gtest",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/test/test_bfs",
+            "program": "${workspaceFolder}/build/test/test_dfs",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

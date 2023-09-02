@@ -35,6 +35,12 @@ add_executable(
     test_fixture.h
 )
 
+add_executable(
+    test_dfs
+    test_dfs.cpp
+    test_fixture.h
+)
+
 target_link_libraries(
     test_map
     GTest::gtest_main
@@ -52,7 +58,14 @@ target_link_libraries(
     GTest::gtest_main
 )
 
+target_link_libraries(
+    test_dfs
+    dfs
+    GTest::gtest_main
+)
+
 include(GoogleTest)
 gtest_discover_tests(test_map)
 gtest_discover_tests(test_a_star)
 gtest_discover_tests(test_bfs)
+gtest_discover_tests(test_dfs)

@@ -10,6 +10,10 @@ link_directories(
     ${PROJECT_SOURCE_DIR}
 )
 
-add_subdirectory(a_star)
-add_subdirectory(bfs)
-add_subdirectory(dfs)
+add_library(
+    dfs SHARED
+    dfs.cpp
+    dfs.h
+    ${PROJECT_SOURCE_DIR}/planning/i_planning.h
+    ${PROJECT_SOURCE_DIR}/planning/grid_base/common_grid_base.h
+)

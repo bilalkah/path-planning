@@ -1,20 +1,17 @@
 /**
- * @file a_star.cpp
+ * @file dfs.cpp
  * @author Bilal Kahraman (kahramannbilal@gmail.com)
  * @brief
  * @version 0.1
- * @date 2023-09-02
+ * @date 2023-09-03
  *
  * @copyright Copyright (c) 2023
  *
  */
 
-#include "a_star.h"
-
-#include <cmath>
+#include "dfs.h"
+#include "common_planning.h"
 #include <iostream>
-#include <memory>
-#include <queue>
 #include <stdexcept>
 
 namespace planning
@@ -22,18 +19,7 @@ namespace planning
 namespace grid_base
 {
 
-auto Compare = [](const std::shared_ptr<NodeParent<Cost>> &lhs,
-                  const std::shared_ptr<NodeParent<Cost>> &rhs) {
-  return lhs->cost.f > rhs->cost.f;
-};
-
-// Euclidean distance.
-auto heuristic = [](const Node &lhs, const Node &rhs) {
-  return std::sqrt(std::pow(lhs.X() - rhs.X(), 2) +
-                   std::pow(lhs.Y() - rhs.Y(), 2));
-};
-
-AStar::AStar(std::string search_space)
+DFS::DFS(std::string search_space)
 {
   if (search_space == "four")
     {
@@ -49,45 +35,39 @@ AStar::AStar(std::string search_space)
     }
 }
 
-Path AStar::FindPath(const Node &start_node, const Node &goal_node,
-                     const std::shared_ptr<Map> map)
+Path DFS::FindPath(const Node &start_node, const Node &goal_node,
+                   const std::shared_ptr<Map> map)
 {
   // Copy map to avoid changing it.
   std::shared_ptr<Map> map_copy = std::make_shared<Map>(*map);
   map_copy->SetNodeState(goal_node, NodeState::kGoal);
 
-  // Create priority queue for search list.
-  std::priority_queue<std::shared_ptr<NodeParent<Cost>>,
-                      std::vector<std::shared_ptr<NodeParent<Cost>>>,
-                      decltype(Compare)>
-      search_list(Compare);
+  // Create stack for search list.
+  std::stack<std::shared_ptr<NodeParent<CostDFS>>> search_list;
 
   // Create start node.
-  auto start_node_info = std::make_shared<NodeParent<Cost>>(
-      std::make_shared<Node>(start_node), nullptr,
-      Cost(0, heuristic(start_node, goal_node)));
-
-  // Add start node to search list.
-  search_list.push(start_node_info);
+  std::shared_ptr<NodeParent<CostDFS>> start_node_parent =
+      std::make_shared<NodeParent<CostDFS>>(std::make_shared<Node>(start_node),
+                                            nullptr, CostDFS{0});
+  search_list.push(start_node_parent);
 
   while (!search_list.empty() && !IsGoal(*search_list.top()->node, goal_node))
     {
-      // Get the node with the lowest cost.
       auto current_node = search_list.top();
       search_list.pop();
 
-      if (!IsFree(*current_node->node, map_copy))
+      // Check if node is already visited.
+      if (map_copy->GetNodeState(*current_node->node) == NodeState::kVisited)
         {
           continue;
         }
 
-      // Update map.
+      // Set node state to visited.
       map_copy->SetNodeState(*current_node->node, NodeState::kVisited);
       std::cout << *current_node->node << std::endl;
       map_copy->Visualize();
 
-      // Check neighbors.
-      for (auto &direction : search_space_)
+      for (const auto &direction : search_space_)
         {
           int x = current_node->node->X() + direction.first;
           int y = current_node->node->Y() + direction.second;
@@ -97,11 +77,14 @@ Path AStar::FindPath(const Node &start_node, const Node &goal_node,
               continue;
             }
 
-          auto neighbor_node = std::make_shared<NodeParent<Cost>>(
-              std::make_shared<Node>(Node(x, y)), current_node,
-              Cost(current_node->cost.g + 1, heuristic(Node(x, y), goal_node)));
+          // Create new node.
+          std::shared_ptr<NodeParent<CostDFS>> new_node_parent =
+              std::make_shared<NodeParent<CostDFS>>(
+                  std::make_shared<Node>(Node(x, y)), current_node,
+                  CostDFS{current_node->cost + 1});
 
-          search_list.push(neighbor_node);
+          // Add new node to search list.
+          search_list.push(new_node_parent);
         }
     }
 

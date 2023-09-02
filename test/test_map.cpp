@@ -20,24 +20,14 @@ TEST_F(TestFixture, MapCreation)
 
   std::cout << "\n\n" << std::endl;
 
+  auto map_copy = std::make_shared<Map>(*map_);
   auto occupied_count = 0u;
-  for (auto i = 0; i < map_->GetHeight(); i++)
-    {
-      for (auto j = 0; j < map_->GetWidth(); j++)
-        {
-          if (map_->GetNodeState(Node(j, i)) == NodeState::kOccupied)
-            {
-              occupied_count++;
-              std::cout << "0 ";
-            }
-          else
-            {
-              std::cout << "1 ";
-            }
-        }
-      std::cout << std::endl;
-    }
-  std::cout << "\n\n" << std::endl;
+
+  std::cout << "Map copy: " << std::endl;
+  map_copy->Visualize();
+
+  std::cout << "Original map: " << std::endl;
+  map_->Visualize();
 
   EXPECT_EQ(occupied_count, 17u)
       << "Occupied node count is not correct. Count result: " << occupied_count
