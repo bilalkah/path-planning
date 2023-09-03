@@ -61,7 +61,7 @@ int main(int argc, char **argv)
   // --output <output_path (gif file)>
 
   std::shared_ptr<planning::IPlanning> planner =
-      std::make_shared<planning::grid_base::AStar<planning::grid_base::Directions4>>();
+      std::make_shared<planning::grid_base::AStar<planning::grid_base::Directions4>>(planning::grid_base::four_directions);
 
   std::string dataDirectory = DATA_DIR;
   std::string dataFilePath = dataDirectory + "/bg2/AR0072SR.map";
