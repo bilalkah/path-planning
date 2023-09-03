@@ -98,7 +98,7 @@ public:
         std::fill(row.begin(), row.end(), NodeState::kFree);
       }
   }
-  Map(std::string file_path)
+  Map(std::string &file_path)
   {
     // Read file
     std::ifstream file(file_path);

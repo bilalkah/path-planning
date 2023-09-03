@@ -8,9 +8,6 @@ link_directories(
     ${PROJECT_SOURCE_DIR}
 )
 
-set(DATA_DIR ${PROJECT_SOURCE_DIR}/maps)
-add_definitions(-DDATA_DIR="${DATA_DIR}")
-
 include(FetchContent)
 FetchContent_Declare(
   googletest

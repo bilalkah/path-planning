@@ -3,6 +3,10 @@ project(PathFind)
 set(CMAKE_CXX_STANDARD 17)            
 add_definitions("-Wall" "-g")
 
+find_package(SFML COMPONENTS window graphics system)
+
+set(DATA_DIR ${PROJECT_SOURCE_DIR}/maps)
+add_definitions(-DDATA_DIR="${DATA_DIR}")
 
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
@@ -21,4 +25,5 @@ enable_testing()
 add_subdirectory(${PROJECT_SOURCE_DIR}/test)
 
 add_executable(main main.cpp)
-target_link_libraries(main a_star bfs dfs)
+target_link_libraries(main a_star bfs dfs sfml-system sfml-graphics sfml-window )
+target_compile_features(main PRIVATE cxx_std_17)
