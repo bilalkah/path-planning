@@ -48,6 +48,7 @@ add_executable(
 
 target_link_libraries(
     test_map
+    common_grid_base
     GTest::gtest_main
 )
 
@@ -71,6 +72,7 @@ target_link_libraries(
 
 target_link_libraries(
     test_access_data
+    common_grid_base
     GTest::gtest_main
 )
 

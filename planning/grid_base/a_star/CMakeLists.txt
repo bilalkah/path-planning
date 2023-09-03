@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.22)
 
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
@@ -10,11 +10,20 @@ link_directories(
     ${PROJECT_SOURCE_DIR}
 )
 
-add_library(
-    a_star SHARED
-    a_star.cpp
-    a_star.h
-    ${PROJECT_SOURCE_DIR}/planning/i_planning.h
-    ${PROJECT_SOURCE_DIR}/planning/grid_base/common_grid_base.h
+set(
+    A_STAR_FILES
+    ${CMAKE_CURRENT_SOURCE_DIR}/a_star.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/a_star.h
 )
 
+add_library(
+    a_star 
+    SHARED
+    ${A_STAR_FILES}
+)
+
+target_link_libraries(
+    a_star
+    PUBLIC
+    common_grid_base
+)

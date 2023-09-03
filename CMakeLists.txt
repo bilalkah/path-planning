@@ -24,6 +24,11 @@ add_subdirectory(${PROJECT_SOURCE_DIR}/planning)
 enable_testing()
 add_subdirectory(${PROJECT_SOURCE_DIR}/test)
 
-add_executable(main main.cpp)
-target_link_libraries(main a_star bfs dfs sfml-system sfml-graphics sfml-window )
+add_executable(
+    main 
+    main.cpp
+    ${COMMON_PLANNING_FILES}
+    ${COMMON_GRID_BASE_FILES}
+)
+target_link_libraries(main a_star bfs dfs common_grid_base sfml-system sfml-graphics sfml-window )
 target_compile_features(main PRIVATE cxx_std_17)

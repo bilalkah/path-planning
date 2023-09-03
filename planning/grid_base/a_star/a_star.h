@@ -12,8 +12,8 @@
 #ifndef PLANNING_GRID_BASE_A_STAR_A_STAR_H_
 #define PLANNING_GRID_BASE_A_STAR_A_STAR_H_
 
-#include "planning/grid_base/common_grid_base.h"
-#include "planning/i_planning.h"
+#include "planning/grid_base/include/common_grid_base.h"
+#include "planning/include/i_planning.h"
 
 #include <memory>
 #include <string>

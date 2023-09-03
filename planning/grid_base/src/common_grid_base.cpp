@@ -1,37 +1,22 @@
 /**
- * @file common.h
+ * @file common_grid_base.cpp
  * @author Bilal Kahraman (kahramannbilal@gmail.com)
- * @brief Common definitions for grid base planning module.
+ * @brief
  * @version 0.1
- * @date 2023-09-02
+ * @date 2023-09-03
  *
  * @copyright Copyright (c) 2023
  *
  */
 
-#ifndef PLANNING_GRID_BASE_COMMON_GRID_BASE_H_
-#define PLANNING_GRID_BASE_COMMON_GRID_BASE_H_
-
-#include "planning/common_planning.h"
-#include <cstddef>
+#include "planning/grid_base/include/common_grid_base.h"
 
 namespace planning
 {
-
 namespace grid_base
 {
 
-/**
- * @brief Search space for path finding algorithms.
- *
- */
-using SearchSpace = std::vector<std::pair<int8_t, int8_t>>;
-
-/**
- * @brief Struct that generates both 4 and 8 directions search spaces.
- *
- */
-struct SearchSpaceGenerator
+SearchSpaceGenerator::SearchSpaceGenerator()
 {
   SearchSpace four_directions = {
       std::make_pair(0, 1),  // right
@@ -39,7 +24,7 @@ struct SearchSpaceGenerator
       std::make_pair(0, -1), // left
       std::make_pair(-1, 0)  // up
   };
-
+  
   SearchSpace eight_directions = {
       std::make_pair(0, 1),   // right
       std::make_pair(1, 0),   // down
@@ -50,9 +35,7 @@ struct SearchSpaceGenerator
       std::make_pair(-1, -1), // up left
       std::make_pair(-1, 1)   // up right
   };
-};
+}
 
 } // namespace grid_base
 } // namespace planning
-
-#endif /* PLANNING_GRID_BASE_COMMON_GRID_BASE_H_ */

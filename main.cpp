@@ -9,12 +9,12 @@
  *
  */
 
-#include "planning/common_planning.h"
 #include "planning/grid_base/a_star/a_star.h"
 #include "planning/grid_base/bfs/bfs.h"
-#include "planning/grid_base/common_grid_base.h"
 #include "planning/grid_base/dfs/dfs.h"
-#include "planning/i_planning.h"
+#include "planning/grid_base/include/common_grid_base.h"
+#include "planning/include/common_planning.h"
+#include "planning/include/i_planning.h"
 
 #include <iostream>
 #include <memory>
