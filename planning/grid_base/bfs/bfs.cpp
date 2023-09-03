@@ -21,7 +21,8 @@ namespace planning
 namespace grid_base
 {
 
-Path BFS::FindPath(const Node &start_node, const Node &goal_node,
+template<typename SearchSpace>
+Path BFS<SearchSpace>::FindPath(const Node &start_node, const Node &goal_node,
                    const std::shared_ptr<Map> map)
 {
   // Copy map to avoid changing it.

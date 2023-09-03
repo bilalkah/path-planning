@@ -29,12 +29,10 @@ using CostDFS = int;
  * @brief Depth First Search algorithm.
  *
  */
+template<typename SearchSpace>
 class DFS : public IPlanning
 {
 public:
-  DFS() : search_space_(SearchSpaceGenerator().eight_directions) {}
-  DFS(std::string search_space);
-
   Path FindPath(const Node &start_node, const Node &goal_node,
                 const std::shared_ptr<Map> map) override;
 
