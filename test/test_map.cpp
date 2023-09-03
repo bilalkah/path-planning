@@ -9,6 +9,7 @@
  *
  */
 
+#include "planning/common_planning.h"
 #include "test_fixture.h"
 #include <gtest/gtest.h>
 
@@ -23,11 +24,16 @@ TEST_F(TestFixture, MapCreation)
   auto map_copy = std::make_shared<Map>(*map_);
   auto occupied_count = 0u;
 
-  std::cout << "Map copy: " << std::endl;
-  map_copy->Visualize();
-
-  std::cout << "Original map: " << std::endl;
-  map_->Visualize();
+  for (auto i = 0; i < map_copy->GetHeight(); i++)
+    {
+      for (auto j = 0; j < map_copy->GetWidth(); j++)
+        {
+          if (map_copy->GetNodeState(Node(i, j)) == NodeState::kOccupied)
+            {
+              occupied_count++;
+            }
+        }
+    }
 
   EXPECT_EQ(occupied_count, 17u)
       << "Occupied node count is not correct. Count result: " << occupied_count

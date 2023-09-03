@@ -12,9 +12,11 @@
 #ifndef PLANNING_COMMON_PLANNING_H_
 #define PLANNING_COMMON_PLANNING_H_
 
+#include <fstream>
 #include <iostream>
 #include <iterator>
 #include <memory>
+#include <string>
 #include <vector>
 
 namespace planning
@@ -101,6 +103,45 @@ public:
       {
         row.resize(width_);
         std::fill(row.begin(), row.end(), NodeState::kFree);
+      }
+  }
+  Map(std::string file_path)
+  {
+    // Read file
+    std::ifstream file(file_path);
+
+    std::string line;
+    // Skip first line
+    std::getline(file, line);
+
+    // Get height
+    std::getline(file, line);
+    height_ = std::stoi(line.substr(line.find(" ") + 1));
+
+    // Get width
+    std::getline(file, line);
+    width_ = std::stoi(line.substr(line.find(" ") + 1));
+
+    // Skip next line
+    std::getline(file, line);
+
+    // Get map
+    map_.resize(height_);
+    for (auto &row : map_)
+      {
+        row.resize(width_);
+        std::getline(file, line);
+        for (auto i = 0; i < width_; i++)
+          {
+            if (line[i] == '.' || line[i] == 'G')
+              {
+                row[i] = NodeState::kFree;
+              }
+            else
+              {
+                row[i] = NodeState::kOccupied;
+              }
+          }
       }
   }
   ~Map() {}

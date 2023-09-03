@@ -83,8 +83,6 @@ Path AStar::FindPath(const Node &start_node, const Node &goal_node,
 
       // Update map.
       map_copy->SetNodeState(*current_node->node, NodeState::kVisited);
-      std::cout << *current_node->node << std::endl;
-      map_copy->Visualize();
 
       // Check neighbors.
       for (auto &direction : search_space_)
@@ -114,7 +112,6 @@ Path AStar::FindPath(const Node &start_node, const Node &goal_node,
   auto current_node = search_list.top();
   auto path = ReconstructPath(current_node);
   map_copy->UpdateMapWithPath(path);
-  map_copy->Visualize();
   return path;
 }
 

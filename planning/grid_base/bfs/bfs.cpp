@@ -67,7 +67,6 @@ Path BFS::FindPath(const Node &start_node, const Node &goal_node,
 
       // Update map.
       map_copy->SetNodeState(*current_node_parent->node, NodeState::kVisited);
-      map_copy->Visualize();
 
       for (const auto &direction : search_space_)
         {
@@ -96,7 +95,6 @@ Path BFS::FindPath(const Node &start_node, const Node &goal_node,
   auto current_node = search_list.front();
   auto path = ReconstructPath(current_node);
   map_copy->UpdateMapWithPath(path);
-  map_copy->Visualize();
 
   return path;
 }

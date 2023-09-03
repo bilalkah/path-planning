@@ -64,8 +64,6 @@ Path DFS::FindPath(const Node &start_node, const Node &goal_node,
 
       // Set node state to visited.
       map_copy->SetNodeState(*current_node->node, NodeState::kVisited);
-      std::cout << *current_node->node << std::endl;
-      map_copy->Visualize();
 
       for (const auto &direction : search_space_)
         {
@@ -97,7 +95,6 @@ Path DFS::FindPath(const Node &start_node, const Node &goal_node,
   auto current_node = search_list.top();
   auto path = ReconstructPath(current_node);
   map_copy->UpdateMapWithPath(path);
-  map_copy->Visualize();
   return path;
 }
 

@@ -20,6 +20,21 @@
 #include <memory>
 
 using namespace planning;
+
+class RealMapTestFixture : public ::testing::Test
+{
+protected:
+  virtual void SetUp() {
+    std::string dataDirectory = DATA_DIR;
+    std::string dataFilePath = dataDirectory + "/bg2/AR0072SR.map";
+
+    map_ = std::make_shared<Map>(dataFilePath);
+  }
+  virtual void TearDown() {}
+
+  std::shared_ptr<Map> map_;
+};
+
 class TestFixture : public ::testing::Test
 {
 protected:

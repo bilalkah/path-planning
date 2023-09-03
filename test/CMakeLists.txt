@@ -8,6 +8,9 @@ link_directories(
     ${PROJECT_SOURCE_DIR}
 )
 
+set(DATA_DIR ${PROJECT_SOURCE_DIR}/maps)
+add_definitions(-DDATA_DIR="${DATA_DIR}")
+
 include(FetchContent)
 FetchContent_Declare(
   googletest
@@ -41,6 +44,11 @@ add_executable(
     test_fixture.h
 )
 
+add_executable(
+    test_access_data
+    test_access_data.cpp
+)
+
 target_link_libraries(
     test_map
     GTest::gtest_main
@@ -64,8 +72,14 @@ target_link_libraries(
     GTest::gtest_main
 )
 
+target_link_libraries(
+    test_access_data
+    GTest::gtest_main
+)
+
 include(GoogleTest)
 gtest_discover_tests(test_map)
 gtest_discover_tests(test_a_star)
 gtest_discover_tests(test_bfs)
 gtest_discover_tests(test_dfs)
+gtest_discover_tests(test_access_data)
