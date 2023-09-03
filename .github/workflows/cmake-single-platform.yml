@@ -34,7 +34,32 @@ jobs:
           OWNER: ${{ github.repository_owner }}
           REPO_NAME: ${{ github.event.repository.name }}
           PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
-    
+  format:
+    needs: check_ci_label
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          # check out HEAD on the branch
+          ref: ${{ github.head_ref }}
+          # make sure the parent commit is grabbed as well, because
+          # that's what will get formatted (i.e. the most recent commit)
+          fetch-depth: 2
+      - name: Install clang-format
+        run: |
+          sudo apt-get install -y clang-format
+      - name: Run clang-format
+        run: |
+          # run clang-format on all files in the repo
+          # (except for the .git and .vscode directory) and use .clang-format
+          # as the style guide
+          find . -not -path "./.git/*" -not -path "./.vscode/*" -name "*.cpp" -o -name "*.h" | xargs clang-format -i -style=file
+      # commit the changes (if there are any)
+      - name: Commit changes
+        uses: stefanzweifel/git-auto-commit-action@v4.1.2
+        with:
+          commit_message: 🎨 apply clang-format changes
+          branch: ${{ github.head_ref }}
   build:
     needs: check_ci_label
     # The CMake configure and build commands are platform agnostic and should work equally well on Windows or Mac.
