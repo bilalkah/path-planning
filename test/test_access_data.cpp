@@ -16,21 +16,10 @@
 #include <iostream>
 #include <string>
 
-TEST(test, AccessData)
-{
-  std::string dataDirectory = DATA_DIR;
-  std::string dataFilePath = dataDirectory + "/README.md";
-
-  EXPECT_EQ("/home/bilal/mint_training/maps/README.md", dataFilePath);
-}
-
 TEST(test, AccessData_ReadMap)
 {
   std::string dataDirectory = DATA_DIR;
   std::string dataFilePath = dataDirectory + "/bg2/AR0072SR.map";
-
-  EXPECT_EQ("/home/bilal/mint_training/maps/bg2/AR0072SR.map", dataFilePath);
-
   planning::Map map(dataFilePath);
 
   EXPECT_EQ(map.GetHeight(), 512);
