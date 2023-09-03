@@ -38,8 +38,7 @@ struct Cost
  * @brief A* path finding algorithm.
  *
  */
-template<typename SearchSpace>
-class AStar : public IPlanning
+template <typename SearchSpace> class AStar : public IPlanning
 {
 public:
   AStar(const SearchSpace &search_space) : search_space_{search_space} {}
@@ -49,7 +48,6 @@ public:
 private:
   SearchSpace search_space_;
 }; // class AStar
-
 
 template class AStar<Directions4>;
 template class AStar<Directions8>;

@@ -19,9 +19,9 @@ namespace planning
 namespace grid_base
 {
 
-template<typename SearchSpace>
+template <typename SearchSpace>
 Path DFS<SearchSpace>::FindPath(const Node &start_node, const Node &goal_node,
-                   const std::shared_ptr<Map> map)
+                                const std::shared_ptr<Map> map)
 {
   // Copy map to avoid changing it.
   std::shared_ptr<Map> map_copy = std::make_shared<Map>(*map);

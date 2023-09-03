@@ -32,9 +32,9 @@ auto heuristic = [](const Node &lhs, const Node &rhs) {
   return std::hypot(lhs.x_ - rhs.x_, lhs.y_ - rhs.y_);
 };
 
-template<typename SearchSpace>
+template <typename SearchSpace>
 Path AStar<SearchSpace>::FindPath(const Node &start_node, const Node &goal_node,
-                     const std::shared_ptr<Map> map)
+                                  const std::shared_ptr<Map> map)
 {
   // Copy map to avoid changing it.
   std::shared_ptr<Map> map_copy = std::make_shared<Map>(*map);
