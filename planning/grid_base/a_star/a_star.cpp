@@ -29,8 +29,7 @@ auto Compare = [](const std::shared_ptr<NodeParent<Cost>> &lhs,
 
 // Euclidean distance.
 auto heuristic = [](const Node &lhs, const Node &rhs) {
-  return std::sqrt(std::pow(lhs.X() - rhs.X(), 2) +
-                   std::pow(lhs.Y() - rhs.Y(), 2));
+  return std::hypot(lhs.x_ - rhs.x_, lhs.y_ - rhs.y_);
 };
 
 AStar::AStar(std::string search_space)
@@ -87,8 +86,8 @@ Path AStar::FindPath(const Node &start_node, const Node &goal_node,
       // Check neighbors.
       for (auto &direction : search_space_)
         {
-          int x = current_node->node->X() + direction.first;
-          int y = current_node->node->Y() + direction.second;
+          int x = current_node->node->x_ + direction.first;
+          int y = current_node->node->y_ + direction.second;
 
           if (!IsFree(Node(x, y), map_copy))
             {

@@ -26,23 +26,16 @@ namespace planning
  * @brief Simple Node class.
  *
  */
-class Node
+struct Node
 {
-public:
-  Node() : x_(0), y_(0) {}
-  Node(int x, int y) : x_(x), y_(y) {}
-  ~Node() {}
-
-  int X() const { return x_; }
-  int Y() const { return y_; }
+  Node() : x_{0}, y_{0} {}
+  Node(int x, int y) : x_{x}, y_{y} {}
 
   friend std::ostream &operator<<(std::ostream &os, const Node &node)
   {
-    os << "Node: " << node.x_ << " " << node.y_;
+    os << "Node: " << node.x__ << " " << node.y__;
     return os;
   }
-
-private:
   int x_, y_;
 }; // class Node
 
@@ -157,7 +150,7 @@ public:
    */
   NodeState GetNodeState(const Node &node) const
   {
-    return map_[node.X()][node.Y()];
+    return map_[node.x_][node.y_];
   }
 
   /**
@@ -169,7 +162,7 @@ public:
    */
   void SetNodeState(const Node &node, NodeState node_state)
   {
-    map_[node.X()][node.Y()] = node_state;
+    map_[node.x_][node.y_] = node_state;
   }
 
   /**
@@ -197,7 +190,7 @@ public:
   {
     for (const auto &node : path)
       {
-        map_[node->X()][node->Y()] = NodeState::kPath;
+        map_[node->x_][node->y_] = NodeState::kPath;
       }
   }
 
@@ -213,8 +206,8 @@ private:
 
 inline bool IsInbound(const Node &node, const std::shared_ptr<Map> map)
 {
-  return node.X() >= 0 && node.X() < map->GetHeight() && node.Y() >= 0 &&
-         node.Y() < map->GetWidth();
+  return node.x_ >= 0 && node.x_ < map->GetHeight() && node.y_ >= 0 &&
+         node.y_ < map->GetWidth();
 }
 
 /**
@@ -235,7 +228,7 @@ inline bool IsFree(const Node &node, const std::shared_ptr<Map> map)
  */
 inline bool IsGoal(const Node &node, const Node &goal_node)
 {
-  return node.X() == goal_node.X() && node.Y() == goal_node.Y();
+  return node.x_ == goal_node.x_ && node.y_ == goal_node.y_;
 }
 
 /**
