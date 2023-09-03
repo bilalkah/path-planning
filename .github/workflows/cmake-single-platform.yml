@@ -20,6 +20,14 @@ jobs:
         run: |
           labels="$(gh api repos/$OWNER/$REPO_NAME/pulls/$PULL_REQUEST_NUMBER --jq '.labels.[].name')"
           echo "$labels"
+          for label in $labels; do
+            if [ "$label" == "ci" ]; then
+            echo "Label contains 'ci'"
+            # Add your CI/CD tasks here
+            exit 0
+            fi
+          done
+          exit 1
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
