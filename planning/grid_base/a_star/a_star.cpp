@@ -15,7 +15,6 @@
 #include <iostream>
 #include <memory>
 #include <queue>
-#include <stdexcept>
 
 namespace planning
 {
