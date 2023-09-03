@@ -33,7 +33,7 @@ struct Node
 
   friend std::ostream &operator<<(std::ostream &os, const Node &node)
   {
-    os << "Node: " << node.x__ << " " << node.y__;
+    os << "Node: " << node.x_ << " " << node.y_;
     return os;
   }
   int x_, y_;
