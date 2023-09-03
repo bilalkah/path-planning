@@ -21,7 +21,7 @@ jobs:
           labels="${{ github.event.pull_request.labels.*.name }}"
           for label in $labels; do
             echo "$label"
-            if [ "$label" == "ci" ]; then
+            if [ "$label" == 'ci' ]; then
               echo "Label contains 'ci'"
               # Add your CI/CD tasks here
               exit 0
