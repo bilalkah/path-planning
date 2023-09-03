@@ -24,14 +24,11 @@ namespace grid_base
 
 using CostBFS = int;
 
+template<typename SearchSpace>
 class BFS : public IPlanning
 {
 
 public:
-  BFS() : search_space_(SearchSpaceGenerator().eight_directions) {}
-  BFS(std::string search_space);
-  ~BFS() {}
-
   Path FindPath(const Node &start_node, const Node &goal_node,
                 const std::shared_ptr<Map> map) override;
 

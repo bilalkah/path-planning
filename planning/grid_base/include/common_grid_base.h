@@ -13,6 +13,7 @@
 #define PLANNING_GRID_BASE_INCLUDE_COMMON_GRID_BASE_H_
 
 #include "planning/include/common_planning.h"
+#include <array>
 #include <cstddef>
 
 namespace planning
@@ -21,23 +22,28 @@ namespace planning
 namespace grid_base
 {
 
-/**
- * @brief Search space for path finding algorithms.
- *
- */
-using SearchSpace = std::vector<std::pair<int8_t, int8_t>>;
+using Direction = std::array<int8_t, 2>;
+using Directions4 = std::array<Direction, 4>;
+using Directions8 = std::array<Direction, 8>;
 
-/**
- * @brief Struct that generates both 4 and 8 directions search spaces.
- *
- */
-struct SearchSpaceGenerator
-{
-  SearchSpaceGenerator();
+constexpr Directions4 four_directions{{
+    Direction{0, 1},  // right
+    Direction{1, 0},  // down
+    Direction{0, -1}, // left
+    Direction{-1, 0}  // up
+}};
 
-  SearchSpace four_directions;
-  SearchSpace eight_directions;
-};
+// eight directions
+constexpr Directions8 eight_directions{{
+    Direction{0, 1},   // right
+    Direction{1, 0},   // down
+    Direction{0, -1},  // left
+    Direction{-1, 0},  // up
+    Direction{1, 1},   // down right
+    Direction{1, -1},  // down left
+    Direction{-1, -1}, // up left
+    Direction{-1, 1}   // up right
+}};
 
 } // namespace grid_base
 } // namespace planning

@@ -32,23 +32,8 @@ auto heuristic = [](const Node &lhs, const Node &rhs) {
   return std::hypot(lhs.x_ - rhs.x_, lhs.y_ - rhs.y_);
 };
 
-AStar::AStar(std::string search_space)
-{
-  if (search_space == "four")
-    {
-      search_space_ = std::move(SearchSpaceGenerator().four_directions);
-    }
-  else if (search_space == "eight")
-    {
-      search_space_ = std::move(SearchSpaceGenerator().eight_directions);
-    }
-  else
-    {
-      throw std::invalid_argument("Invalid search space.");
-    }
-}
-
-Path AStar::FindPath(const Node &start_node, const Node &goal_node,
+template<typename SearchSpace>
+Path AStar<SearchSpace>::FindPath(const Node &start_node, const Node &goal_node,
                      const std::shared_ptr<Map> map)
 {
   // Copy map to avoid changing it.
@@ -105,7 +90,7 @@ Path AStar::FindPath(const Node &start_node, const Node &goal_node,
   if (search_list.empty())
     {
       std::cout << "No path found." << std::endl;
-      return Path();
+      return Path{};
     }
 
   auto current_node = search_list.top();

@@ -38,12 +38,10 @@ struct Cost
  * @brief A* path finding algorithm.
  *
  */
+template<typename SearchSpace>
 class AStar : public IPlanning
 {
 public:
-  AStar() : search_space_(SearchSpaceGenerator().eight_directions) {}
-  AStar(std::string search_space);
-  ~AStar() {}
 
   Path FindPath(const Node &start_node, const Node &goal_node,
                 const std::shared_ptr<Map> map) override;

@@ -19,22 +19,6 @@ namespace planning
 namespace grid_base
 {
 
-DFS::DFS(std::string search_space)
-{
-  if (search_space == "four")
-    {
-      search_space_ = std::move(SearchSpaceGenerator().four_directions);
-    }
-  else if (search_space == "eight")
-    {
-      search_space_ = std::move(SearchSpaceGenerator().eight_directions);
-    }
-  else
-    {
-      throw std::invalid_argument("Invalid search space.");
-    }
-}
-
 Path DFS::FindPath(const Node &start_node, const Node &goal_node,
                    const std::shared_ptr<Map> map)
 {
@@ -89,7 +73,7 @@ Path DFS::FindPath(const Node &start_node, const Node &goal_node,
   if (search_list.empty())
     {
       std::cout << "No path found." << std::endl;
-      return Path();
+      return Path{};
     }
 
   auto current_node = search_list.top();
