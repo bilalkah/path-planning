@@ -40,6 +40,9 @@ private:
   SearchSpace search_space_;
 };
 
+template class DFS<Directions4>;
+template class DFS<Directions8>;
+
 } // namespace grid_base
 } // namespace planning
 

@@ -71,8 +71,8 @@ Path AStar<SearchSpace>::FindPath(const Node &start_node, const Node &goal_node,
       // Check neighbors.
       for (auto &direction : search_space_)
         {
-          int x = current_node->node->x_ + direction.first;
-          int y = current_node->node->y_ + direction.second;
+          int x = current_node->node->x_ + direction[0];
+          int y = current_node->node->y_ + direction[1];
 
           if (!IsFree(Node(x, y), map_copy))
             {

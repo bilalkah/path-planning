@@ -50,6 +50,10 @@ private:
   SearchSpace search_space_;
 }; // class AStar
 
+
+template class AStar<Directions4>;
+template class AStar<Directions8>;
+
 } // namespace grid_base
 
 } // namespace planning

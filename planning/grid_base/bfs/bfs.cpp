@@ -55,8 +55,8 @@ Path BFS<SearchSpace>::FindPath(const Node &start_node, const Node &goal_node,
 
       for (const auto &direction : search_space_)
         {
-          int x = current_node_parent->node->x_ + direction.first;
-          int y = current_node_parent->node->y_ + direction.second;
+          int x = current_node_parent->node->x_ + direction[0];
+          int y = current_node_parent->node->y_ + direction[1];
 
           if (!IsFree(Node(x, y), map_copy))
             {

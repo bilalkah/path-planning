@@ -36,6 +36,9 @@ private:
   SearchSpace search_space_;
 };
 
+template class BFS<Directions4>;
+template class BFS<Directions8>;
+
 } // namespace grid_base
 } // namespace planning
 
