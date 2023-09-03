@@ -15,26 +15,25 @@
 #include <iostream>
 #include <memory>
 #include <queue>
-#include <stdexcept>
 
 namespace planning
 {
 namespace grid_base
 {
 
-auto Compare = [](const std::shared_ptr<NodeParent<Cost>> &lhs,
-                  const std::shared_ptr<NodeParent<Cost>> &rhs) {
+constexpr inline auto Compare{[](std::shared_ptr<NodeParent<Cost>> lhs,
+                                 std::shared_ptr<NodeParent<Cost>> rhs) {
   return lhs->cost.f > rhs->cost.f;
-};
+}};
 
 // Euclidean distance.
-auto heuristic = [](const Node &lhs, const Node &rhs) {
+constexpr inline auto heuristic{[](const Node &lhs, const Node &rhs) {
   return std::hypot(lhs.x_ - rhs.x_, lhs.y_ - rhs.y_);
-};
+}};
 
-template<typename SearchSpace>
+template <typename SearchSpace>
 Path AStar<SearchSpace>::FindPath(const Node &start_node, const Node &goal_node,
-                     const std::shared_ptr<Map> map)
+                                  const std::shared_ptr<Map> map)
 {
   // Copy map to avoid changing it.
   std::shared_ptr<Map> map_copy = std::make_shared<Map>(*map);
