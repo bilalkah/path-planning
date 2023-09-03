@@ -22,8 +22,8 @@ namespace planning
 namespace grid_base
 {
 
-constexpr inline auto Compare{[](const std::shared_ptr<NodeParent<Cost>> &lhs,
-                                 const std::shared_ptr<NodeParent<Cost>> &rhs) {
+constexpr inline auto Compare{[](std::shared_ptr<NodeParent<Cost>> lhs,
+                                 std::shared_ptr<NodeParent<Cost>> rhs) {
   return lhs->cost.f > rhs->cost.f;
 }};
 
