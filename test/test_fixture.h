@@ -1,7 +1,7 @@
 /**
- * @file helper.h
+ * @file test_fixture.h
  * @author Bilal Kahraman (kahramannbilal@gmail.com)
- * @brief Helper functions for tests.
+ * @brief Fixture for tests.
  * @version 0.1
  * @date 2023-08-30
  *
@@ -9,8 +9,8 @@
  *
  */
 
-#ifndef TESTS_HELPER_H_
-#define TESTS_HELPER_H_
+#ifndef TEST_TEST_FIXTURE_H_
+#define TEST_TEST_FIXTURE_H_
 
 #include "planning/common_planning.h"
 #include <cstddef>
@@ -74,4 +74,4 @@ protected:
   std::string map_data_;
 };
 
-#endif /* TESTS_HELPER_H_ */
+#endif /* TEST_TEST_FIXTURE_H_ */

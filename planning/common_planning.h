@@ -9,8 +9,8 @@
  *
  */
 
-#ifndef PLANNING_COMMON_H_
-#define PLANNING_COMMON_H_
+#ifndef PLANNING_COMMON_PLANNING_H_
+#define PLANNING_COMMON_PLANNING_H_
 
 #include <iostream>
 #include <iterator>
@@ -215,4 +215,4 @@ static Path ReconstructPath(std::shared_ptr<NodeParent<T>> current_node)
 }
 
 } // namespace planning
-#endif /* PLANNING_COMMON_H_ */
+#endif /* PLANNING_COMMON_PLANNING_H_ */

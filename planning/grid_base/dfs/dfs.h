@@ -9,8 +9,8 @@
  *
  */
 
-#ifndef PLANNING_GRID_BASE_DFS_H_
-#define PLANNING_GRID_BASE_DFS_H_
+#ifndef PLANNING_GRID_BASE_DFS_DFS_H_
+#define PLANNING_GRID_BASE_DFS_DFS_H_
 
 #include "planning/grid_base/common_grid_base.h"
 #include "planning/i_planning.h"
@@ -45,4 +45,4 @@ private:
 } // namespace grid_base
 } // namespace planning
 
-#endif // PLANNING_GRID_BASE_DFS_H_
+#endif // PLANNING_GRID_BASE_DFS_DFS_H_

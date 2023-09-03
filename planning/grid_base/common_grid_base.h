@@ -9,8 +9,8 @@
  *
  */
 
-#ifndef PLANNING_GRID_BASE_COMMON_H_
-#define PLANNING_GRID_BASE_COMMON_H_
+#ifndef PLANNING_GRID_BASE_COMMON_GRID_BASE_H_
+#define PLANNING_GRID_BASE_COMMON_GRID_BASE_H_
 
 #include "planning/common_planning.h"
 #include <cstddef>
@@ -55,4 +55,4 @@ struct SearchSpaceGenerator
 } // namespace grid_base
 } // namespace planning
 
-#endif /* PLANNING_GRID_BASE_COMMON_H_ */
+#endif /* PLANNING_GRID_BASE_COMMON_GRID_BASE_H_ */
