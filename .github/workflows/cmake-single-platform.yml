@@ -18,8 +18,14 @@ jobs:
     steps:
       - name: Check for 'ci' label
         run: |
-          PR_LABEL_LIST: ${{gh api -H "Accept: application/vnd.github+json" /repos/ORG/REPO/issues/${{ github.event.pull_request.number }}/labels | jq '[.[].name]'}}
-          printf '${{ env.PR_LABEL_LIST }}'
+          labels="$(gh api repos/$OWNER/$REPO_NAME/pulls/$PULL_REQUEST_NUMBER --jq '.labels.[].name')"
+          echo "$labels"
+        shell: bash
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OWNER: ${{ github.repository_owner }}
+          REPO_NAME: ${{ github.event.repository.name }}
+          PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
     
   build:
     needs: check_ci_label
