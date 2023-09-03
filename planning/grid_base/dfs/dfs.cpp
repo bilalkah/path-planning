@@ -67,8 +67,8 @@ Path DFS::FindPath(const Node &start_node, const Node &goal_node,
 
       for (const auto &direction : search_space_)
         {
-          int x = current_node->node->X() + direction.first;
-          int y = current_node->node->Y() + direction.second;
+          int x = current_node->node->x_ + direction.first;
+          int y = current_node->node->y_ + direction.second;
 
           if (!IsFree(Node(x, y), map_copy))
             {

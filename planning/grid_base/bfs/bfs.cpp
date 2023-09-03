@@ -70,8 +70,8 @@ Path BFS::FindPath(const Node &start_node, const Node &goal_node,
 
       for (const auto &direction : search_space_)
         {
-          int x = current_node_parent->node->X() + direction.first;
-          int y = current_node_parent->node->Y() + direction.second;
+          int x = current_node_parent->node->x_ + direction.first;
+          int y = current_node_parent->node->y_ + direction.second;
 
           if (!IsFree(Node(x, y), map_copy))
             {
