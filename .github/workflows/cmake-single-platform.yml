@@ -5,6 +5,7 @@ name: Check Tests
 on:
   pull_request:
     branches: [ "main" ]
+    types: [opened, labeled, unlabeled, synchronize]
 
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
