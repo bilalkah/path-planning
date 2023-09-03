@@ -20,7 +20,7 @@ using namespace planning::grid_base;
 
 TEST_F(TestFixture, PathPlanning_WithAStar)
 {
-  std::shared_ptr<IPlanning> path_finder = std::make_shared<AStar>("four");
+  std::shared_ptr<IPlanning> path_finder = std::make_shared<AStar<Directions4>>(four_directions);
   const auto start_node = Node(0, 9);
   const auto goal_node = Node(9, 0);
   Path path = path_finder->FindPath(start_node, goal_node, map_);
@@ -30,7 +30,7 @@ TEST_F(TestFixture, PathPlanning_WithAStar)
 
 TEST_F(RealMapTestFixture, PathPlanningOnRealMap_WithAStar)
 {
-  std::shared_ptr<IPlanning> path_finder = std::make_shared<AStar>("four");
+  std::shared_ptr<IPlanning> path_finder = std::make_shared<AStar<Directions4>>(four_directions);
   const auto start_node = Node(90, 185);
   const auto goal_node = Node(445, 336);
   Path path = path_finder->FindPath(start_node, goal_node, map_);

@@ -12,8 +12,8 @@
 #ifndef PLANNING_GRID_BASE_A_STAR_A_STAR_H_
 #define PLANNING_GRID_BASE_A_STAR_A_STAR_H_
 
-#include "planning/grid_base/common_grid_base.h"
-#include "planning/i_planning.h"
+#include "planning/grid_base/include/common_grid_base.h"
+#include "planning/include/i_planning.h"
 
 #include <memory>
 #include <string>
@@ -38,19 +38,21 @@ struct Cost
  * @brief A* path finding algorithm.
  *
  */
+template<typename SearchSpace>
 class AStar : public IPlanning
 {
 public:
-  AStar() : search_space_(SearchSpaceGenerator().eight_directions) {}
-  AStar(std::string search_space);
-  ~AStar() {}
-
+  AStar(const SearchSpace &search_space) : search_space_{search_space} {}
   Path FindPath(const Node &start_node, const Node &goal_node,
                 const std::shared_ptr<Map> map) override;
 
 private:
   SearchSpace search_space_;
 }; // class AStar
+
+
+template class AStar<Directions4>;
+template class AStar<Directions8>;
 
 } // namespace grid_base
 

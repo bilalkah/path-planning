@@ -12,8 +12,8 @@
 #ifndef PLANNING_GRID_BASE_BFS_BFS_H_
 #define PLANNING_GRID_BASE_BFS_BFS_H_
 
-#include "planning/grid_base/common_grid_base.h"
-#include "planning/i_planning.h"
+#include "planning/grid_base/include/common_grid_base.h"
+#include "planning/include/i_planning.h"
 #include <cstdint>
 #include <string>
 
@@ -24,20 +24,21 @@ namespace grid_base
 
 using CostBFS = int;
 
+template<typename SearchSpace>
 class BFS : public IPlanning
 {
 
 public:
-  BFS() : search_space_(SearchSpaceGenerator().eight_directions) {}
-  BFS(std::string search_space);
-  ~BFS() {}
-
+BFS(const SearchSpace &search_space) : search_space_{search_space} {}
   Path FindPath(const Node &start_node, const Node &goal_node,
                 const std::shared_ptr<Map> map) override;
 
 private:
   SearchSpace search_space_;
 };
+
+template class BFS<Directions4>;
+template class BFS<Directions8>;
 
 } // namespace grid_base
 } // namespace planning

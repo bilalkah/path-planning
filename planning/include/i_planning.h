@@ -9,8 +9,8 @@
  *
  */
 
-#ifndef PLANNING_I_PLANNING_H_
-#define PLANNING_I_PLANNING_H_
+#ifndef PLANNING_INCLUDE_I_PLANNING_H_
+#define PLANNING_INCLUDE_I_PLANNING_H_
 
 #include <memory>
 #include <vector>
@@ -36,4 +36,4 @@ public:
 }; // class IPathFinding
 } // namespace planning
 
-#endif /* PLANNING_I_PLANNING_H_ */
+#endif /* PLANNING_INCLUDE_I_PLANNING_H_ */

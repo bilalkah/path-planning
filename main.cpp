@@ -9,12 +9,12 @@
  *
  */
 
-#include "planning/common_planning.h"
 #include "planning/grid_base/a_star/a_star.h"
 #include "planning/grid_base/bfs/bfs.h"
-#include "planning/grid_base/common_grid_base.h"
 #include "planning/grid_base/dfs/dfs.h"
-#include "planning/i_planning.h"
+#include "planning/grid_base/include/common_grid_base.h"
+#include "planning/include/common_planning.h"
+#include "planning/include/i_planning.h"
 
 #include <iostream>
 #include <memory>
@@ -61,7 +61,7 @@ int main(int argc, char **argv)
   // --output <output_path (gif file)>
 
   std::shared_ptr<planning::IPlanning> planner =
-      std::make_shared<planning::grid_base::AStar>();
+      std::make_shared<planning::grid_base::AStar<planning::grid_base::Directions4>>(planning::grid_base::four_directions);
 
   std::string dataDirectory = DATA_DIR;
   std::string dataFilePath = dataDirectory + "/bg2/AR0072SR.map";

@@ -12,7 +12,7 @@
 #ifndef TEST_TEST_FIXTURE_H_
 #define TEST_TEST_FIXTURE_H_
 
-#include "planning/common_planning.h"
+#include "planning/grid_base/include/common_grid_base.h"
 #include <cstddef>
 #include <fstream>
 #include <gtest/gtest.h>
@@ -56,10 +56,10 @@ protected:
     // fill the map according to the map data
     for (size_t i = 0; i < map_data_.size(); i++)
       {
-        if (map_data_[i] == '0')
+        if (map_data_[i] == '1')
           {
             map_->SetNodeState(Node(i / width, i % width),
-                               NodeState::kOccupied);
+                               NodeState::kFree);
           }
       }
   }

@@ -20,25 +20,21 @@ FetchContent_MakeAvailable(googletest)
 add_executable(
     test_map
     test_map.cpp
-    test_fixture.h
 )
 
 add_executable(
     test_a_star
     test_a_star.cpp
-    test_fixture.h
 )
 
 add_executable(
     test_bfs
     test_bfs.cpp
-    test_fixture.h
 )
 
 add_executable(
     test_dfs
     test_dfs.cpp
-    test_fixture.h
 )
 
 add_executable(
@@ -48,6 +44,7 @@ add_executable(
 
 target_link_libraries(
     test_map
+    common_grid_base
     GTest::gtest_main
 )
 
@@ -71,6 +68,7 @@ target_link_libraries(
 
 target_link_libraries(
     test_access_data
+    common_grid_base
     GTest::gtest_main
 )
 

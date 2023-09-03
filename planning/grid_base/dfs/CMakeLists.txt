@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.15)
+cmake_minimum_required(VERSION 3.22)
 
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
@@ -10,10 +10,18 @@ link_directories(
     ${PROJECT_SOURCE_DIR}
 )
 
+set(
+    DFS_FILES
+    ${CMAKE_CURRENT_SOURCE_DIR}/dfs.cpp
+)
+
 add_library(
     dfs SHARED
-    dfs.cpp
-    dfs.h
-    ${PROJECT_SOURCE_DIR}/planning/i_planning.h
-    ${PROJECT_SOURCE_DIR}/planning/grid_base/common_grid_base.h
+    ${DFS_FILES}
+)
+
+target_link_libraries(
+    dfs
+    PUBLIC
+    common_grid_base
 )
