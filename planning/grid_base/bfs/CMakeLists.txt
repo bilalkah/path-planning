@@ -13,7 +13,6 @@ link_directories(
 set(
     BFS_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/bfs.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/bfs.h
 )
 
 add_library(

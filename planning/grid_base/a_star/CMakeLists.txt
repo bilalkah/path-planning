@@ -13,7 +13,6 @@ link_directories(
 set(
     A_STAR_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/a_star.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/a_star.h
 )
 
 add_library(

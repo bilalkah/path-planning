@@ -13,7 +13,6 @@ link_directories(
 set(
     DFS_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/dfs.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/dfs.h
 )
 
 add_library(

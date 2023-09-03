@@ -56,10 +56,10 @@ protected:
     // fill the map according to the map data
     for (size_t i = 0; i < map_data_.size(); i++)
       {
-        if (map_data_[i] == '0')
+        if (map_data_[i] == '1')
           {
             map_->SetNodeState(Node(i / width, i % width),
-                               NodeState::kOccupied);
+                               NodeState::kFree);
           }
       }
   }

@@ -12,11 +12,14 @@ link_directories(
     ${PROJECT_SOURCE_DIR}
 )
 
+set(
+    COMMON_GRID_BASE
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/common_grid_base.cpp
+)
 
 add_library(
     common_grid_base SHARED
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/common_grid_base.cpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/include/common_grid_base.h
+    ${COMMON_GRID_BASE}
     ${COMMON_PLANNING_FILES}
 )
 
