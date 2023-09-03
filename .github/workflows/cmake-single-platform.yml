@@ -12,7 +12,22 @@ env:
   BUILD_TYPE: Release
 
 jobs:
+  check_ci_label:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check for 'ci' label
+        run: |
+          labels=$(curl -s "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/labels" -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" | jq -r '.[].name')
+          if [[ "$labels" == *"ci"* ]]; then
+            echo "The 'ci' label is present. Proceeding to the next job."
+          else
+            echo "The 'ci' label is not present. Exiting with failure."
+            exit 1
+          fi
+    
   build:
+    needs: check_ci_label
     # The CMake configure and build commands are platform agnostic and should work equally well on Windows or Mac.
     # You can convert this to a matrix build if you need cross-platform coverage.
     # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
@@ -21,14 +36,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: Check "ci" label
-      run: |
-          labels=$(curl -s "https://api.github.com/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/labels" -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" | jq -r '.[].name')
-          echo "$labels" | grep -q 'ci' || exit 1
-      continue-on-error: true
-
     - name: Install dependencies
-      if: success()
       run: |
         sudo apt-get update
         sudo apt-get install -y libsfml-dev
