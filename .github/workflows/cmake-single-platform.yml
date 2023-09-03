@@ -18,7 +18,7 @@ jobs:
     steps:
       - name: Check for 'ci' label
         run: |
-          labels="${{ github.event.pull_request.labels.*.name }}"
+          labels="{{ github.event.pull_request.labels.*.name }}"
           for label in $labels; do
             echo "$label"
             if [ "$label" == 'ci' ]; then
