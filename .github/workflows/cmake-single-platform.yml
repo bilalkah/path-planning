@@ -18,7 +18,8 @@ jobs:
     steps:
       - name: Check for 'ci' label
         run: |
-          if [[ contains(github.event.pull_request.labels.*.name, 'ci') ]]; then
+          label = contains(github.event.pull_request.labels.*.name, 'ci') 
+          if [[ ${label} ]]; then
             echo "The 'ci' label is present. Proceeding to the next job."
           else
             echo "The 'ci' label is not present. Exiting with failure."
