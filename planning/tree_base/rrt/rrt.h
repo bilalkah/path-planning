@@ -12,4 +12,19 @@
 #ifndef PLANNING_TREE_BASE_RRT_RRT_H_
 #define PLANNING_TREE_BASE_RRT_RRT_H_
 
+
+
+namespace planning
+{
+namespace tree_base
+{
+
+/**
+ * @brief Rapidly-exploring Random Tree (RRT) algorithm.
+ *
+ */
+
+} // namespace tree_base
+} // namespace planning
+
 #endif /* PLANNING_TREE_BASE_RRT_RRT_H_ */
