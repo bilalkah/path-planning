@@ -18,16 +18,8 @@ jobs:
     steps:
       - name: Check for 'ci' label
         run: |
-          labels="{{ github.event.pull_request.labels.*.name }}"
-          for label in $labels; do
-            echo "$label"
-            if [ "$label" == 'ci' ]; then
-              echo "Label contains 'ci'"
-              # Add your CI/CD tasks here
-              exit 0
-            fi
-          done
-          exit 1
+          PR_LABEL_LIST: ${{gh api -H "Accept: application/vnd.github+json" /repos/ORG/REPO/issues/${{ github.event.pull_request.number }}/labels | jq '[.[].name]'}}
+          printf '${{ env.PR_LABEL_LIST }}'
     
   build:
     needs: check_ci_label
