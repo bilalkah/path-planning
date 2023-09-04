@@ -1,8 +1,10 @@
-name: Linting
+name: Linter
 
 on:
+  push:
+    branches: [ "main" ]
   pull_request:
-    branches: [main]
+    branches: [ "main" ]
 
 jobs:
   format:
@@ -10,6 +12,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
+          token: ${{ secrets.BOT_TOKEN }}
           # check out HEAD on the branch
           ref: ${{ github.head_ref }}
           # make sure the parent commit is grabbed as well, because
@@ -26,8 +29,9 @@ jobs:
           find . -not -path "./.git/*" -not -path "./.vscode/*" -name "*.cpp" -o -name "*.h" | xargs clang-format -i -style=file
       # commit the changes (if there are any)
       - name: Commit changes
-        uses: stefanzweifel/git-auto-commit-action@v4.1.2
+        uses: stefanzweifel/git-auto-commit-action@v4.16.0
         with:
           commit_message: 🎨 apply clang-format changes
           branch: ${{ github.head_ref }}
-          
+
+

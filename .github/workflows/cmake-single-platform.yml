@@ -3,13 +3,12 @@
 name: Check Tests
 
 on:
+  push:
+    branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
     types: [opened, labeled, unlabeled, synchronize]
-  
-  workflow_run:
-      workflows: ["Linting"]
-      types: completed
+
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Release
