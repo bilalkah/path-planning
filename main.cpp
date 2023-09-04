@@ -10,11 +10,11 @@
  */
 
 #include "planning/grid_base/a_star/a_star.h"
-#include "planning/include/common_planning.h"
-#include "planning/include/i_planning.h"
 #include "planning/grid_base/bfs/bfs.h"
 #include "planning/grid_base/dfs/dfs.h"
 #include "planning/grid_base/include/common_grid_base.h"
+#include "planning/include/common_planning.h"
+#include "planning/include/i_planning.h"
 
 #include <iostream>
 #include <memory>
@@ -25,7 +25,7 @@ void drawMatrix(sf::RenderWindow &window,
                 const std::shared_ptr<planning::Map> &map, int kFactor)
 {
   const int numRows = map->GetHeight();
-  const int numCols =   map->GetWidth();
+  const int numCols = map->GetWidth();
   const float cellWidth = 1.0f * kFactor;
   const float cellHeight = 1.0f * kFactor;
 
