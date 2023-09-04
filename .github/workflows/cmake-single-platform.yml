@@ -34,32 +34,6 @@ jobs:
           OWNER: ${{ github.repository_owner }}
           REPO_NAME: ${{ github.event.repository.name }}
           PULL_REQUEST_NUMBER: ${{ github.event.pull_request.number }}
-  format:
-    needs: check_ci_label
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-        with:
-          # check out HEAD on the branch
-          ref: ${{ github.head_ref }}
-          # make sure the parent commit is grabbed as well, because
-          # that's what will get formatted (i.e. the most recent commit)
-          fetch-depth: 2
-      - name: Install clang-format
-        run: |
-          sudo apt-get install -y clang-format
-      - name: Run clang-format
-        run: |
-          # run clang-format on all files in the repo
-          # (except for the .git and .vscode directory) and use .clang-format
-          # as the style guide
-          find . -not -path "./.git/*" -not -path "./.vscode/*" -name "*.cpp" -o -name "*.h" | xargs clang-format -i -style=file
-      # commit the changes (if there are any)
-      - name: Commit changes
-        uses: stefanzweifel/git-auto-commit-action@v4.1.2
-        with:
-          commit_message: 🎨 apply clang-format changes
-          branch: ${{ github.head_ref }}
   build:
     needs: check_ci_label
     # The CMake configure and build commands are platform agnostic and should work equally well on Windows or Mac.
@@ -74,18 +48,6 @@ jobs:
       run: |
         sudo apt-get update
         sudo apt-get install -y libsfml-dev
-
-    - name: Set up Cache
-      uses: actions/cache@v3
-      with:
-        path: |
-          # Add paths to directories you want to cache here
-          /usr/include/SFML
-          /usr/lib/x86_64-linux-gnu/cmake/SFML
-        key: sfml-cache-${{ runner.os }}-${{ hashFiles('**/*.yml') }}
-        restore-keys: |
-          sfml-cache-${{ runner.os }}-
-          sfml-cache-
 
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
