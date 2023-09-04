@@ -22,12 +22,12 @@
 #include <SFML/Graphics.hpp>
 
 void drawMatrix(sf::RenderWindow &window,
-                const std::shared_ptr<planning::Map> &map)
+                const std::shared_ptr<planning::Map> &map, int kFactor)
 {
   const int numRows = map->GetHeight();
   const int numCols = map->GetWidth();
-  const float cellWidth = 1.0f;
-  const float cellHeight = 1.0f;
+  const float cellWidth = 1.0f * kFactor;
+  const float cellHeight = 1.0f * kFactor;
 
   for (int i = 0; i < numRows; ++i)
     {
@@ -60,17 +60,20 @@ int main(int argc, char **argv)
   // --goal <goal_x> <goal_y>
   // --output <output_path (gif file)>
 
-  std::shared_ptr<planning::IPlanning> planner =
-      std::make_shared<planning::grid_base::AStar<planning::grid_base::Directions4>>(planning::grid_base::four_directions);
+  std::shared_ptr<planning::IPlanning> planner = std::make_shared<
+      planning::grid_base::AStar<planning::grid_base::Directions4>>(
+      planning::grid_base::four_directions);
 
   std::string dataDirectory = DATA_DIR;
   std::string dataFilePath = dataDirectory + "/bg2/AR0072SR.map";
+  int kFactor = 2;
 
   auto map = std::make_shared<planning::Map>(dataFilePath);
 
-  auto window = sf::RenderWindow{{static_cast<unsigned int>(map->GetWidth()),
-                                  static_cast<unsigned int>(map->GetHeight())},
-                                 "CMake SFML Project"};
+  auto window =
+      sf::RenderWindow{{static_cast<unsigned int>(map->GetWidth()) * kFactor,
+                        static_cast<unsigned int>(map->GetHeight()) * kFactor},
+                       "CMake SFML Project"};
   window.setFramerateLimit(144);
 
   while (window.isOpen())
@@ -86,7 +89,7 @@ int main(int argc, char **argv)
       window.clear();
 
       // Draw your matrix
-      drawMatrix(window, map);
+      drawMatrix(window, map, kFactor);
 
       window.display();
     }

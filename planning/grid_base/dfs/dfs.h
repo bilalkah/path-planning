@@ -29,8 +29,7 @@ using CostDFS = int;
  * @brief Depth First Search algorithm.
  *
  */
-template<typename SearchSpace>
-class DFS : public IPlanning
+template <typename SearchSpace> class DFS : public IPlanning
 {
 public:
   DFS(const SearchSpace &search_space) : search_space_{search_space} {}

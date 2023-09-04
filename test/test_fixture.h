@@ -24,7 +24,8 @@ using namespace planning;
 class RealMapTestFixture : public ::testing::Test
 {
 protected:
-  virtual void SetUp() {
+  virtual void SetUp()
+  {
     std::string dataDirectory = DATA_DIR;
     std::string dataFilePath = dataDirectory + "/bg2/AR0072SR.map";
 
@@ -58,8 +59,7 @@ protected:
       {
         if (map_data_[i] == '1')
           {
-            map_->SetNodeState(Node(i / width, i % width),
-                               NodeState::kFree);
+            map_->SetNodeState(Node(i / width, i % width), NodeState::kFree);
           }
       }
   }

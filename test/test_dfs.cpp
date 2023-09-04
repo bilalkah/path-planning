@@ -29,11 +29,12 @@ TEST_F(TestFixture, PathPlanning_WithDFS)
 
 /**
  * @brief Disabled because it causes segmentation fault.
- * 
+ *
  */
 TEST_F(RealMapTestFixture, DISABLED_PathPlanningOnRealMap_WithDFS)
 {
-  std::shared_ptr<IPlanning> path_finder = std::make_shared<DFS<Directions4>>(four_directions);
+  std::shared_ptr<IPlanning> path_finder =
+      std::make_shared<DFS<Directions4>>(four_directions);
   const auto start_node = Node(90, 185);
   const auto goal_node = Node(445, 336);
   Path path = path_finder->FindPath(start_node, goal_node, map_);

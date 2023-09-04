@@ -15,4 +15,3 @@ add_library(
     rrt.cpp
     rrt.h   
 )
-
