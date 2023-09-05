@@ -20,16 +20,22 @@ jobs:
     steps:
       - name: Check for 'ci' label
         run: |
-          labels="$(gh api repos/$OWNER/$REPO_NAME/pulls/$PULL_REQUEST_NUMBER --jq '.labels.[].name')"
-          echo "$labels"
-          for label in $labels; do
-            if [ "$label" == "ci" ]; then
-            echo "Label contains 'ci'"
-            # Add your CI/CD tasks here
+          # Check if it on a pull request
+          if [ -z "${{ github.event.pull_request.number }}" ]; then
+            echo "Not a pull request. Skipping."
             exit 0
-            fi
-          done
-          exit 1
+          else
+            echo "A pull request."
+          fi 
+          labels="$(gh api repos/$OWNER/$REPO_NAME/pulls/$PULL_REQUEST_NUMBER --jq '.labels.[].name')"
+          if [[ ${labels[@]} =~ "ci" ]]
+          then 
+            echo "Label contains 'ci'"
+            exit 0
+          else
+            echo "Label does not contain 'ci'"
+            exit 1
+          fi
         shell: bash
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
