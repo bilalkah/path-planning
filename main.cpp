@@ -13,43 +13,10 @@
 #include "planning/grid_base/bfs/bfs.h"
 #include "planning/grid_base/dfs/dfs.h"
 #include "planning/grid_base/include/common_grid_base.h"
-#include "planning/include/common_planning.h"
-#include "planning/include/i_planning.h"
+#include "tools/include/visualizer.h"
 
 #include <iostream>
 #include <memory>
-
-#include <SFML/Graphics.hpp>
-
-void drawMatrix(sf::RenderWindow &window,
-                const std::shared_ptr<planning::Map> &map, int kFactor)
-{
-  const int numRows = map->GetHeight();
-  const int numCols = map->GetWidth();
-  const float cellWidth = 1.0f * kFactor;
-  const float cellHeight = 1.0f * kFactor;
-
-  for (int i = 0; i < numRows; ++i)
-    {
-      for (int j = 0; j < numCols; ++j)
-        {
-          sf::RectangleShape cell(sf::Vector2f(cellWidth, cellHeight));
-          cell.setPosition(
-              j * cellWidth,
-              i * cellHeight); // Adjust position based on row and column
-          if (map->GetNodeState(planning::Node(i, j)) ==
-              planning::NodeState::kFree)
-            {
-              cell.setFillColor(sf::Color::White); // Modify color as needed
-            }
-          else
-            {
-              cell.setFillColor(sf::Color::Black); // Modify color as needed
-            }
-          window.draw(cell);
-        }
-    }
-}
 
 int main(int argc, char **argv)
 {
@@ -67,31 +34,40 @@ int main(int argc, char **argv)
   std::string dataDirectory = DATA_DIR;
   std::string dataFilePath = dataDirectory + "/bg2/AR0072SR.map";
   int kFactor = 2;
+  const auto start_node = planning::Node(90, 185);
+  const auto goal_node = planning::Node(445, 336);
 
   auto map = std::make_shared<planning::Map>(dataFilePath);
+  tools::Visualizer visualizer(*map, kFactor, kFactor, 1, true);
 
-  auto window =
-      sf::RenderWindow{{static_cast<unsigned int>(map->GetWidth()) * kFactor,
-                        static_cast<unsigned int>(map->GetHeight()) * kFactor},
-                       "CMake SFML Project"};
-  window.setFramerateLimit(144);
+  planning::Path path = planner->FindPath(start_node, goal_node, map);
 
-  while (window.isOpen())
+  auto log = planner->GetLog();
+
+  while (true)
     {
-      for (auto event = sf::Event{}; window.pollEvent(event);)
+      for (const auto &node : log)
         {
-          if (event.type == sf::Event::Closed)
-            {
-              window.close();
-            }
+          visualizer.UpdateNode(node.first, node.second);
         }
 
-      window.clear();
+      // sleep for 1 second
+      std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
-      // Draw your matrix
-      drawMatrix(window, map, kFactor);
+      for (const auto &node : path)
+        {
+          visualizer.UpdateNode(*node, planning::NodeState::kPath);
+          // sleep for 1 second
+          std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
 
-      window.display();
+      // sleep for 1 second
+      std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+
+      visualizer.UpdateMap(*map);
+
+      // sleep for 1 second
+      std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     }
 
   return 0;
