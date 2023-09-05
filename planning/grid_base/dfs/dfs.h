@@ -35,9 +35,10 @@ public:
   DFS(const SearchSpace &search_space) : search_space_{search_space} {}
   Path FindPath(const Node &start_node, const Node &goal_node,
                 const std::shared_ptr<Map> map) override;
-
+  Log GetLog() override;
 private:
   SearchSpace search_space_;
+  Log log_;
 };
 
 template class DFS<Directions4>;
