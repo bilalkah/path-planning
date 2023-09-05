@@ -28,7 +28,7 @@ constexpr inline auto Compare{[](std::shared_ptr<NodeParent<Cost>> lhs,
 
 // Euclidean distance.
 constexpr inline auto heuristic{[](const Node &lhs, const Node &rhs) {
-  return std::hypot(lhs.x_ - rhs.x_, lhs.y_ - rhs.y_);
+  return std::hypot(lhs.x_ - rhs.x_, lhs.y_ - rhs.y_) * 1.8;
 }};
 
 template <typename SearchSpace>
