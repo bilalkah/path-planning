@@ -15,10 +15,10 @@
  * @brief Random number generator class for the integer values.
  *
  */
-template <int min, int max> class RandomIntGenerator final
+class RandomIntGenerator final
 {
 public:
-  RandomIntGenerator() : gen_{std::random_device{}()}, dis_{min, max} {}
+  RandomIntGenerator(int const min, int const max) : gen_{std::random_device{}()}, dis_{min, max} {}
   int operator()() { return dis_(gen_); }
 
 private:

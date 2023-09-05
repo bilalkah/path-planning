@@ -5,13 +5,14 @@ namespace planning
 {
 namespace tree_base
 {
-template <int min, int max> class RandomNodeGenerator final
+class RandomNodeGenerator final
 {
 public:
+  RandomNodeGenerator(int const min, int const max) : rig_{min, max} {}
   Node operator()() { return Node{rig_(), rig_()}; }
 
 private:
-  RandomIntGenerator<min, max> rig_{};
+  RandomIntGenerator rig_{0, 1};
 };
 } // namespace tree_base
 } // namespace planning
