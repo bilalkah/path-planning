@@ -115,8 +115,8 @@ void Visualizer::MapColor()
   colors_.insert({planning::NodeState::kVisited, sf::Color::Blue});
   colors_.insert({planning::NodeState::kOccupied, sf::Color::Black});
   colors_.insert({planning::NodeState::kStart, sf::Color::Green});
-  colors_.insert({planning::NodeState::kGoal, sf::Color::Red});
-  colors_.insert({planning::NodeState::kPath, sf::Color::Yellow});
+  colors_.insert({planning::NodeState::kGoal, sf::Color::Yellow});
+  colors_.insert({planning::NodeState::kPath, sf::Color::Red});
 
   std::cout << "MapColor" << std::endl;
 }
