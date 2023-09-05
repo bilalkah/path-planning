@@ -14,20 +14,14 @@
 
 #include "planning/include/common_planning.h"
 #include "planning/include/data_types.h"
-#include <SFML/Graphics.hpp>
 
-#include <SFML/Graphics/Color.hpp>
-#include <SFML/Graphics/RectangleShape.hpp>
-#include <SFML/Graphics/RenderWindow.hpp>
+#include <SFML/Graphics.hpp>
 #include <chrono>
 #include <iostream>
 #include <memory>
 #include <mutex>
-#include <string>
 #include <thread>
 #include <unordered_map>
-#include <utility>
-#include <vector>
 
 using std::chrono::milliseconds;
 
@@ -47,59 +41,57 @@ public:
   ~Visualizer();
 
   /**
-   * @brief Update whole window
-   *
+   * @brief Writes map_ and updates window_. Thread safe.
    * @param map
    */
   void UpdateMap(const planning::Map &map);
 
   /**
-   * @brief Update cell with given position and state
-   *
+   * @brief Update window_ with given position and state of node. Thread safe.
+   * Calls SetColor()
    * @param node
    * @param state
    */
-  void UpdateCell(const planning::Node &node, const planning::NodeState state);
+  void UpdateNode(const planning::Node &node, const planning::NodeState state);
 
 private:
   /**
-   * @brief Initialize colors
-   *
+   * @brief Reads map_ and updates window_. NOT Thread safe.
+   *  Calls SetColor()
    */
-  void MapColor();
+  void SetWindow();
 
   /**
-   * @brief Thread function for drawing window
-   *
-   * @return int
-   */
-  int DrawWindow();
-
-  /**
-   * @brief Update window
-   *
-   */
-  void UpdateScreen();
-
-  /**
-   * @brief Change color of cell
+   * @brief  Writes to window_. NOT Thread safe.
    *
    * @param node
    * @param color
    */
   void SetColor(const planning::Node &node, const planning::NodeState color);
 
-  std::thread draw_thread_{};
-  std::mutex window_mutex_{};
+  /**
+   * @brief Reads from window_. Thread safe.
+   *
+   * @return int
+   */
+  int RenderWindow();
+
+  /**
+   * @brief Initialize colors
+   *
+   */
+  void MapColor();
 
   sf::RenderWindow window_{};
   sf::RectangleShape cell_{};
+  planning::Map map_;
 
+  std::pair<float, float> cell_size_{}; // width, height
   int delay_{};
-  std::pair<float, float> cell_size_{};
   bool show_{};
 
-  planning::Map map_;
+  std::thread draw_thread_{};
+  std::mutex window_mutex_{};
 
   std::unordered_map<planning::NodeState, sf::Color> colors_ = {};
 

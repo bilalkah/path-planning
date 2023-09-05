@@ -10,13 +10,6 @@
  */
 
 #include "tools/include/visualizer.h"
-#include "planning/include/common_planning.h"
-#include "planning/include/data_types.h"
-#include <iostream>
-#include <memory>
-#include <mutex>
-#include <sys/types.h>
-#include <utility>
 
 namespace tools
 {
@@ -27,15 +20,15 @@ Visualizer::Visualizer(planning::Map &map, float height_coeff = 1.0f,
     : window_(sf::VideoMode(map.GetWidth() * width_coeff,
                             map.GetHeight() * height_coeff),
               "Path Planning Visualizer"),
-      cell_(sf::Vector2f(1.0f * width_coeff, 1.0f * height_coeff)),
-      delay_(kDelay), cell_size_(std::make_pair(width_coeff, height_coeff)),
-      show_(kShow), map_(map)
+      cell_(sf::Vector2f(1.0f * width_coeff, 1.0f * height_coeff)), map_(map),
+      cell_size_(std::make_pair(width_coeff, height_coeff)), delay_(kDelay),
+      show_(kShow)
 {
   window_.setFramerateLimit(60);
   MapColor();
   UpdateMap(map);
 
-  draw_thread_ = std::thread(&Visualizer::DrawWindow, this);
+  draw_thread_ = std::thread(&Visualizer::RenderWindow, this);
   draw_thread_.detach();
 
   std::cout << "Visualizer" << std::endl;
@@ -50,19 +43,25 @@ Visualizer::~Visualizer()
   std::cout << "~Visualizer" << std::endl;
 }
 
-void Visualizer::MapColor()
+void Visualizer::UpdateMap(const planning::Map &map)
 {
-  colors_.insert({planning::NodeState::kFree, sf::Color::White});
-  colors_.insert({planning::NodeState::kVisited, sf::Color::Blue});
-  colors_.insert({planning::NodeState::kOccupied, sf::Color::Black});
-  colors_.insert({planning::NodeState::kStart, sf::Color::Green});
-  colors_.insert({planning::NodeState::kGoal, sf::Color::Red});
-  colors_.insert({planning::NodeState::kPath, sf::Color::Yellow});
+  std::lock_guard<std::mutex> lock_window(window_mutex_);
+  map_ = map;
+  SetWindow();
 
-  std::cout << "MapColor" << std::endl;
+  std::cout << "UpdateWindow Map" << std::endl;
 }
 
-void Visualizer::UpdateScreen()
+void Visualizer::UpdateNode(const planning::Node &node,
+                            const planning::NodeState state)
+{
+  std::lock_guard<std::mutex> lock(window_mutex_);
+  SetColor(node, state);
+
+  std::cout << "UpdateWindow Cell" << std::endl;
+}
+
+void Visualizer::SetWindow()
 {
   for (int i = 0; i < map_.GetWidth(); i++)
     {
@@ -75,27 +74,15 @@ void Visualizer::UpdateScreen()
   std::cout << "UpdateWindow" << std::endl;
 }
 
-void Visualizer::UpdateCell(const planning::Node &node,
-                            const planning::NodeState state)
+void Visualizer::SetColor(const planning::Node &node,
+                          const planning::NodeState color)
 {
-  {
-    std::lock_guard<std::mutex> lock(window_mutex_);
-    SetColor(node, state);
-  }
-  std::cout << "UpdateWindow Cell" << std::endl;
+  cell_.setPosition(node.x_ * cell_size_.first, node.y_ * cell_size_.second);
+  cell_.setFillColor(colors_[color]);
+  window_.draw(cell_);
 }
 
-void Visualizer::UpdateMap(const planning::Map &map)
-{
-  {
-    std::lock_guard<std::mutex> lock(window_mutex_);
-    map_ = map;
-    UpdateScreen();
-  }
-  std::cout << "UpdateWindow Map" << std::endl;
-}
-
-int Visualizer::DrawWindow()
+int Visualizer::RenderWindow()
 {
   while (window_.isOpen() && show_)
     {
@@ -122,12 +109,16 @@ int Visualizer::DrawWindow()
   return 0;
 }
 
-void Visualizer::SetColor(const planning::Node &node,
-                          const planning::NodeState color)
+void Visualizer::MapColor()
 {
-  cell_.setPosition(node.x_ * cell_size_.first, node.y_ * cell_size_.second);
-  cell_.setFillColor(colors_[color]);
-  window_.draw(cell_);
+  colors_.insert({planning::NodeState::kFree, sf::Color::White});
+  colors_.insert({planning::NodeState::kVisited, sf::Color::Blue});
+  colors_.insert({planning::NodeState::kOccupied, sf::Color::Black});
+  colors_.insert({planning::NodeState::kStart, sf::Color::Green});
+  colors_.insert({planning::NodeState::kGoal, sf::Color::Red});
+  colors_.insert({planning::NodeState::kPath, sf::Color::Yellow});
+
+  std::cout << "MapColor" << std::endl;
 }
 
 } // namespace tools
