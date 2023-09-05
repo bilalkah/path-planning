@@ -19,6 +19,7 @@ link_directories(
 )
 
 add_subdirectory(${PROJECT_SOURCE_DIR}/planning)
+add_subdirectory(${PROJECT_SOURCE_DIR}/tools)
 
 # enable test
 enable_testing()
@@ -29,5 +30,5 @@ add_executable(
     main.cpp
 )
 
-target_link_libraries(main a_star bfs dfs sfml-system sfml-graphics sfml-window )
+target_link_libraries(main a_star bfs dfs visualizer )
 target_compile_features(main PRIVATE cxx_std_17)

@@ -28,13 +28,17 @@ constexpr inline auto Compare{[](std::shared_ptr<NodeParent<Cost>> lhs,
 
 // Euclidean distance.
 constexpr inline auto heuristic{[](const Node &lhs, const Node &rhs) {
-  return std::hypot(lhs.x_ - rhs.x_, lhs.y_ - rhs.y_);
+  return std::hypot(lhs.x_ - rhs.x_, lhs.y_ - rhs.y_) * 1.8;
 }};
 
 template <typename SearchSpace>
 Path AStar<SearchSpace>::FindPath(const Node &start_node, const Node &goal_node,
                                   const std::shared_ptr<Map> map)
 {
+  // Clear log.
+  log_.clear();
+  log_.emplace_back(start_node, NodeState::kStart);
+  log_.emplace_back(goal_node, NodeState::kGoal);
   // Copy map to avoid changing it.
   std::shared_ptr<Map> map_copy = std::make_shared<Map>(*map);
   map_copy->SetNodeState(goal_node, NodeState::kGoal);
@@ -63,7 +67,7 @@ Path AStar<SearchSpace>::FindPath(const Node &start_node, const Node &goal_node,
         {
           continue;
         }
-
+      log_.emplace_back(*current_node->node, NodeState::kVisited);
       // Update map.
       map_copy->SetNodeState(*current_node->node, NodeState::kVisited);
 
@@ -96,6 +100,11 @@ Path AStar<SearchSpace>::FindPath(const Node &start_node, const Node &goal_node,
   auto path = ReconstructPath(current_node);
   map_copy->UpdateMapWithPath(path);
   return path;
+}
+
+template <typename SearchSpace> Log AStar<SearchSpace>::GetLog()
+{
+  return log_;
 }
 
 } // namespace grid_base

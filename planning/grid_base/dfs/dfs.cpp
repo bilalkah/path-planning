@@ -23,6 +23,10 @@ template <typename SearchSpace>
 Path DFS<SearchSpace>::FindPath(const Node &start_node, const Node &goal_node,
                                 const std::shared_ptr<Map> map)
 {
+  // Clear log.
+  log_.clear();
+  log_.emplace_back(start_node, NodeState::kStart);
+  log_.emplace_back(goal_node, NodeState::kGoal);
   // Copy map to avoid changing it.
   std::shared_ptr<Map> map_copy = std::make_shared<Map>(*map);
   map_copy->SetNodeState(goal_node, NodeState::kGoal);
@@ -31,10 +35,10 @@ Path DFS<SearchSpace>::FindPath(const Node &start_node, const Node &goal_node,
   std::stack<std::shared_ptr<NodeParent<CostDFS>>> search_list;
 
   // Create start node.
-  std::shared_ptr<NodeParent<CostDFS>> start_node_parent =
+  std::shared_ptr<NodeParent<CostDFS>> start_node_info =
       std::make_shared<NodeParent<CostDFS>>(std::make_shared<Node>(start_node),
                                             nullptr, CostDFS{0});
-  search_list.push(start_node_parent);
+  search_list.push(start_node_info);
 
   while (!search_list.empty() && !IsGoal(*search_list.top()->node, goal_node))
     {
@@ -46,7 +50,7 @@ Path DFS<SearchSpace>::FindPath(const Node &start_node, const Node &goal_node,
         {
           continue;
         }
-
+      log_.emplace_back(*current_node->node, NodeState::kVisited);
       // Set node state to visited.
       map_copy->SetNodeState(*current_node->node, NodeState::kVisited);
 
@@ -82,6 +86,8 @@ Path DFS<SearchSpace>::FindPath(const Node &start_node, const Node &goal_node,
   map_copy->UpdateMapWithPath(path);
   return path;
 }
+
+template <typename SearchSpace> Log DFS<SearchSpace>::GetLog() { return log_; }
 
 } // namespace grid_base
 } // namespace planning

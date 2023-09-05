@@ -12,6 +12,7 @@
 #ifndef PLANNING_INCLUDE_I_PLANNING_H_
 #define PLANNING_INCLUDE_I_PLANNING_H_
 
+#include "data_types.h"
 #include <memory>
 #include <vector>
 
@@ -33,6 +34,14 @@ public:
   virtual std::vector<std::shared_ptr<Node>>
   FindPath(const Node &start_node, const Node &goal_node,
            const std::shared_ptr<Map> map) = 0;
+
+  /**
+   * @brief Get history of search.
+   *
+   */
+  virtual Log GetLog() = 0;
+
+  virtual ~IPlanning() {}
 }; // class IPathFinding
 } // namespace planning
 

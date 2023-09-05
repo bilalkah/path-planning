@@ -17,6 +17,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace planning
 {
@@ -44,9 +45,11 @@ public:
   AStar(const SearchSpace &search_space) : search_space_{search_space} {}
   Path FindPath(const Node &start_node, const Node &goal_node,
                 const std::shared_ptr<Map> map) override;
+  Log GetLog() override;
 
 private:
   SearchSpace search_space_;
+  ::planning::Log log_;
 }; // class AStar
 
 template class AStar<Directions4>;
