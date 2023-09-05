@@ -20,8 +20,18 @@ jobs:
     steps:
       - name: Check for 'ci' label
         run: |
+          if: github.event_name != 'pull_request'
+            exit 0
           labels="$(gh api repos/$OWNER/$REPO_NAME/pulls/$PULL_REQUEST_NUMBER --jq '.labels.[].name')"
-          echo "$labels"
+          if [[ ${labels[@]} =~ "ci" ]]
+          then 
+            echo "Label contains 'ci'"
+            exit 0
+          else
+            echo "Label does not contain 'ci'"
+            exit 1
+          fi
+          echo "for loop"
           for label in $labels; do
             if [ "$label" == "ci" ]; then
             echo "Label contains 'ci'"
