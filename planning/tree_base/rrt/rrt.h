@@ -12,9 +12,11 @@
 #ifndef PLANNING_TREE_BASE_RRT_RRT_H_
 #define PLANNING_TREE_BASE_RRT_RRT_H_
 
-#include <planning/include/data_types.h>
-#include <planning/include/map.h>
-#include <planning/include/node_parent.h>
+#include "../../include/common_planning.h"
+#include "../../include/data_types.h"
+#include "../../include/node_parent.h"
+#include "../include/random_node_generator.h"
+#include <algorithm>
 
 namespace planning
 {
@@ -44,8 +46,7 @@ public:
    * @param map Map to search.
    * @return Path Path from start node to goal node.
    */
-  [[nodiscard]] auto FindPath(const Node &, const Node &, std::shared_ptr<Map>)
-      -> Path;
+  [[nodiscard]] auto FindPath(const Node &, const Node &, std::shared_ptr<Map>) -> Path;
 
   /**
    * @brief Get log of the algorithm.
@@ -60,16 +61,16 @@ public:
   [[nodiscard]] auto GetNewNode(const Node &, const Node &) -> Node;
   [[nodiscard]] auto IsNodeValid(const Node &, std::shared_ptr<Map>) -> bool;
   [[nodiscard]] auto IsGoal(const Node &, const Node &) -> bool;
-  [[nodiscard]] auto GetPath(const Node &) -> Path;
 
 private:
   // tree
-  std::vector<NodeParent<RRTSteps>> tree_{};
+  std::vector<Node> tree_{};
+  //   std::vector<NodeParent<RRTSteps>> tree_{};
 
   // log of the algorithm
   Log log_{};
   int max_iterations_{1};
-  int max_step_size_{1};
+  double max_step_size_{1.0};
   double goal_tolerance_{0.1};
   RandomNodeGenerator rng_{0, 1};
 };
