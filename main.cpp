@@ -32,10 +32,10 @@ int main(int argc, char **argv)
       planning::grid_base::four_directions);
 
   std::string dataDirectory = DATA_DIR;
-  std::string dataFilePath = dataDirectory + "/bg2/AR0072SR.map";
+  std::string dataFilePath = dataDirectory + "/bg2/AR0205SR.map";
   int kFactor = 2;
-  const auto start_node = planning::Node(90, 185);
-  const auto goal_node = planning::Node(445, 336);
+  const auto start_node = planning::Node(215, 25);
+  const auto goal_node = planning::Node(330, 475);
 
   auto map = std::make_shared<planning::Map>(dataFilePath);
   tools::Visualizer visualizer(*map, kFactor, kFactor, 1, true);
