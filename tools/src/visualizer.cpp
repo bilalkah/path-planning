@@ -30,8 +30,6 @@ Visualizer::Visualizer(planning::Map &map, float height_coeff = 1.0f,
 
   draw_thread_ = std::thread(&Visualizer::RenderWindow, this);
   draw_thread_.detach();
-
-  std::cout << "Visualizer" << std::endl;
 }
 
 Visualizer::~Visualizer()
@@ -39,8 +37,6 @@ Visualizer::~Visualizer()
   show_ = false;
   draw_thread_.join();
   window_.close();
-
-  std::cout << "~Visualizer" << std::endl;
 }
 
 void Visualizer::UpdateMap(const planning::Map &map)
@@ -48,8 +44,6 @@ void Visualizer::UpdateMap(const planning::Map &map)
   std::lock_guard<std::mutex> lock_window(window_mutex_);
   map_ = map;
   SetWindow();
-
-  std::cout << "UpdateWindow Map" << std::endl;
 }
 
 void Visualizer::UpdateNode(const planning::Node &node,
@@ -57,27 +51,24 @@ void Visualizer::UpdateNode(const planning::Node &node,
 {
   std::lock_guard<std::mutex> lock(window_mutex_);
   SetColor(node, state);
-
-  std::cout << "UpdateWindow Cell" << std::endl;
 }
 
 void Visualizer::SetWindow()
 {
-  for (int i = 0; i < map_.GetWidth(); i++)
+  for (auto i = 0u; i < map_.GetWidth(); i++)
     {
-      for (int j = 0; j < map_.GetHeight(); j++)
+      for (auto j = 0u; j < map_.GetHeight(); j++)
         {
           SetColor(planning::Node(i, j),
                    map_.GetNodeState(planning::Node(i, j)));
         }
     }
-  std::cout << "UpdateWindow" << std::endl;
 }
 
 void Visualizer::SetColor(const planning::Node &node,
                           const planning::NodeState color)
 {
-  cell_.setPosition(node.x_ * cell_size_.first, node.y_ * cell_size_.second);
+  cell_.setPosition(node.y_ * cell_size_.second, node.x_ * cell_size_.first);
   cell_.setFillColor(colors_[color]);
   window_.draw(cell_);
 }
@@ -102,10 +93,7 @@ int Visualizer::RenderWindow()
       }
       // Delay
       std::this_thread::sleep_for(std::chrono::milliseconds(delay_));
-
-      std::cout << "DrawWindow" << std::endl;
     }
-  std::cout << "DrawWindow exit" << std::endl;
   return 0;
 }
 
@@ -117,8 +105,6 @@ void Visualizer::MapColor()
   colors_.insert({planning::NodeState::kStart, sf::Color::Green});
   colors_.insert({planning::NodeState::kGoal, sf::Color::Yellow});
   colors_.insert({planning::NodeState::kPath, sf::Color::Red});
-
-  std::cout << "MapColor" << std::endl;
 }
 
 } // namespace tools
