@@ -59,11 +59,11 @@ int Map::GetWidth() const { return width_; }
 int Map::GetHeight() const { return height_; }
 NodeState Map::GetNodeState(const Node &node) const
 {
-  return map_[node.x_][node.y_];
+  return map_[node.x][node.y];
 }
 void Map::SetNodeState(const Node &node, NodeState node_state)
 {
-  map_[node.x_][node.y_] = node_state;
+  map_[node.x][node.y] = node_state;
 }
 void Map::Visualize() const
 {
@@ -81,14 +81,14 @@ void Map::UpdateMapWithPath(const Path &path)
 {
   for (const auto &node : path)
     {
-      map_[node->x_][node->y_] = NodeState::kPath;
+      map_[node->x][node->y] = NodeState::kPath;
     }
 }
 
 bool IsInbound(const Node &node, const std::shared_ptr<Map> map)
 {
-  return node.x_ >= 0 && node.x_ < map->GetHeight() && node.y_ >= 0 &&
-         node.y_ < map->GetWidth();
+  return node.x >= 0 && node.x < map->GetHeight() && node.y >= 0 &&
+         node.y < map->GetWidth();
 }
 
 bool IsFree(const Node &node, const std::shared_ptr<Map> map)
@@ -100,7 +100,7 @@ bool IsFree(const Node &node, const std::shared_ptr<Map> map)
 
 bool IsGoal(const Node &node, const Node &goal_node)
 {
-  return node.x_ == goal_node.x_ && node.y_ == goal_node.y_;
+  return node.x == goal_node.x && node.y == goal_node.y;
 }
 
 } // namespace planning

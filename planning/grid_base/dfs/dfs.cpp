@@ -56,8 +56,8 @@ Path DFS<SearchSpace>::FindPath(const Node &start_node, const Node &goal_node,
 
       for (const auto &direction : search_space_)
         {
-          int x = current_node->node->x_ + direction[0];
-          int y = current_node->node->y_ + direction[1];
+          int x = current_node->node->x + direction[0];
+          int y = current_node->node->y + direction[1];
 
           if (!IsFree(Node(x, y), map_copy))
             {

@@ -28,7 +28,7 @@ constexpr inline auto Compare{[](std::shared_ptr<NodeParent<Cost>> lhs,
 
 // Euclidean distance.
 constexpr inline auto heuristic{[](const Node &lhs, const Node &rhs) {
-  return std::hypot(lhs.x_ - rhs.x_, lhs.y_ - rhs.y_) * 1.8;
+  return std::hypot(lhs.x - rhs.x, lhs.y - rhs.y) * 1.8;
 }};
 
 template <typename SearchSpace>
@@ -74,8 +74,8 @@ Path AStar<SearchSpace>::FindPath(const Node &start_node, const Node &goal_node,
       // Check neighbors.
       for (auto &direction : search_space_)
         {
-          int x = current_node->node->x_ + direction[0];
-          int y = current_node->node->y_ + direction[1];
+          int x = current_node->node->x + direction[0];
+          int y = current_node->node->y + direction[1];
 
           if (!IsFree(Node(x, y), map_copy))
             {

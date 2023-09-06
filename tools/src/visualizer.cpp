@@ -77,7 +77,7 @@ void Visualizer::SetWindow()
 void Visualizer::SetColor(const planning::Node &node,
                           const planning::NodeState color)
 {
-  cell_.setPosition(node.x_ * cell_size_.first, node.y_ * cell_size_.second);
+  cell_.setPosition(node.x * cell_size_.first, node.y * cell_size_.second);
   cell_.setFillColor(colors_[color]);
   window_.draw(cell_);
 }

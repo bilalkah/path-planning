@@ -25,16 +25,16 @@ namespace planning
  */
 struct Node
 {
-  Node() : x_{0}, y_{0} {}
-  Node(int x, int y) : x_{x}, y_{y} {}
+  Node() : x{0}, y{0} {}
+  Node(int x, int y) : x{x}, y{y} {}
 
   friend std::ostream &operator<<(std::ostream &os, const Node &node)
   {
-    os << "Node: " << node.x_ << " " << node.y_;
+    os << "Node: " << node.x << " " << node.y;
     return os;
   }
 
-  int x_, y_;
+  int x, y;
 }; // class Node
 
 /**
