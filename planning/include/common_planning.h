@@ -20,6 +20,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <cmath>
 
 namespace planning
 {
@@ -31,8 +32,8 @@ namespace planning
 class Map
 {
 public:
-  Map(int height, int width);
-  Map(std::string &file_path);
+  Map(int, int);
+  Map(std::string &);
   ~Map() {}
 
   int GetWidth() const;
@@ -44,7 +45,7 @@ public:
    * @param node
    * @return NodeState
    */
-  NodeState GetNodeState(const Node &node) const;
+  NodeState GetNodeState(const Node &) const;
 
   /**
    * @brief Set the Node State object of cell. Does not check for out of
@@ -53,7 +54,7 @@ public:
    * @param node
    * @return NodeState
    */
-  void SetNodeState(const Node &node, NodeState node_state);
+  void SetNodeState(const Node &, NodeState);
 
   /**
    * @brief Visualize map.
@@ -65,7 +66,7 @@ public:
    * @brief Visualize map with path.
    *
    */
-  void UpdateMapWithPath(const Path &path);
+  void UpdateMapWithPath(const Path &);
 
 private:
   int height_, width_;
@@ -76,19 +77,25 @@ private:
  * @brief Inbound check for map.
  *
  */
-bool IsInbound(const Node &node, const std::shared_ptr<Map> map);
+bool IsInbound(const Node &, const std::shared_ptr<Map>);
 
 /**
  * @brief Check if node is free.
  *
  */
-bool IsFree(const Node &node, const std::shared_ptr<Map> map);
+bool IsFree(const Node &, const std::shared_ptr<Map>);
 
 /**
  * @brief Check if node is goal.
  *
  */
-bool IsGoal(const Node &node, const Node &goal_node);
+bool IsGoal(const Node &, const Node &);
+
+/**
+ * @brief Return distance between two nodes.
+ *
+ */
+double GetDistance(const Node &, const Node &);
 
 } // namespace planning
 #endif /* PLANNING_INCLUDE_COMMON_PLANNING_H_ */
