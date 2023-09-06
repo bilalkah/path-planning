@@ -80,7 +80,7 @@ RRT::RRT(int const min, int const max, int const max_iter_num, int const max_ste
 
 [[nodiscard]] auto RRT::IsGoal(const Node &node, const Node &goal_node) -> bool
 {
-  return std::hypot(node.x - goal_node.x, node.y - goal_node.y) < goal_tolerance_;
+  return GetDistance(node, goal_node) < goal_tolerance_;
 }
 
 [[nodiscard]] auto RRT::GetLog() const -> Log { return log_; }
