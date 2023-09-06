@@ -103,4 +103,9 @@ bool IsGoal(const Node &node, const Node &goal_node)
   return node.x == goal_node.x && node.y == goal_node.y;
 }
 
+
+[[nodiscard]] auto GetDistance(const Node &node1, const Node &node2) -> double
+{
+  return std::hypot(node1.x - node2.x, node1.y - node2.y);
+}
 } // namespace planning
