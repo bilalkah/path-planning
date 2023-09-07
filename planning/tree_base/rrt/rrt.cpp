@@ -23,41 +23,40 @@ RRT::RRT(int const min, int const max, int const max_iter_num, double const max_
 }
 
 // add node to tree
-[[nodiscard]] auto RRT::AddNode(const Node &node, const Node &nearestNode, Cost const cost) -> bool
+[[nodiscard]] auto RRT::AddNode(const Node &node, const Node &nearestNode) -> bool
 {
-  return tree_.insertNode(std::make_shared<Node>(node), std::make_shared<NodeParent<Cost>>(nearestNode), cost);
+  return tree_.insertNode(std::make_shared<Node>(node), std::make_shared<Node>(nearestNode));
 }
 
 [[nodiscard]] auto RRT::FindPath(const Node &start_node, const Node &goal_node, std::shared_ptr<Map> map) -> Path
 {
   tree_.setRoot(start_node);
-    int iter_num{0};
-    while (iter_num < max_iterations_ || !IsGoal(tree_.back(), goal_node))
+  int iter_num{0};
+  bool flag{false};
+  while (iter_num < max_iterations_ && !flag)
+  {
+    const auto random_node{rng_()};
+    const auto nearest_node{tree_.GetNearestNode(random_node)};
+    const auto new_node{GetNewNode(nearest_node, random_node)};
+    if (IsNodeValid(new_node, map))
     {
-        const auto random_node{rng_()};
-        const auto nearest_node{GetNearestNode(random_node)};
-        const auto new_node{GetNewNode(nearest_node, random_node)};
-        if (IsNodeValid(new_node, map))
+      auto const success{AddNode(new_node, nearest_node)};
+      if (success)
+      {
+        if (IsGoal(new_node, goal_node))
         {
-            auto const success{AddNode(new_node)};
-            if (success)
-            {
-                if (IsGoal(new_node, goal_node))
-                {
-                    //   return GetPath(new_node);
-                }
-            }
+          flag = true;
         }
-        iter_num++;
+      }
     }
-  return Path{};
-}
+    iter_num++;
+  }
 
-[[nodiscard]] auto RRT::GetNearestNode(const Node &node) -> Node
-{
-  return *std::min_element(std::cbegin(tree_), std::cend(tree_), [node](const Node &a, const Node &b) {
-    return GetDistance(node, a) < GetDistance(node, b);
-  });
+  if (flag)
+  {
+    return ReconstructPath(tree_.getNodes().back());
+  }
+  return Path{};
 }
 
 [[nodiscard]] auto RRT::GetNewNode(const Node &nearest_node, const Node &random_node) -> Node

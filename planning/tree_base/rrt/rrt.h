@@ -17,7 +17,6 @@
 #include "planning/include/node_parent.h"
 #include "planning/tree_base/include/random_node_generator.h"
 #include "planning/tree_base/rrt/rrt_tree/rrt_tree.h"
-#include <algorithm>
 
 namespace planning
 {
@@ -32,8 +31,7 @@ public:
   RRT(int const, int const, int const, double const, double const);
   [[nodiscard]] auto FindPath(const Node &, const Node &, std::shared_ptr<Map>) -> Path;
   [[nodiscard]] auto GetLog() const -> Log;
-  [[nodiscard]] auto AddNode(const Node &, const Node &, Cost const) -> bool;
-  [[nodiscard]] auto GetNearestNode(const Node &) -> Node;
+  [[nodiscard]] auto AddNode(const Node &, const Node &) -> bool;
   [[nodiscard]] auto GetNewNode(const Node &, const Node &) -> Node;
   [[nodiscard]] auto IsNodeValid(const Node &, std::shared_ptr<Map>) -> bool;
   [[nodiscard]] auto IsGoal(const Node &, const Node &) -> bool;

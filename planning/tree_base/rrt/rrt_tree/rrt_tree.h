@@ -16,6 +16,7 @@
 #include "planning/include/node_parent.h"
 #include "planning/tree_base/include/common_tree_base.h"
 #include "planning/tree_base/include/random_node_generator.h"
+#include <algorithm>
 
 namespace planning
 {
@@ -25,9 +26,10 @@ namespace tree_base
 class RRTTree
 {
 public:
-  [[nodiscard]] auto getRoot() const noexcept -> std::shared_ptr<NodeParent<Cost>>;
   auto setRoot(const Node &) noexcept -> void;
-  [[nodiscard]] auto insertNode(std::shared_ptr<Node>, std::shared_ptr<NodeParent<Cost>>, Cost const cost) -> bool;
+  [[nodiscard]] auto getRoot() const noexcept -> std::shared_ptr<NodeParent<Cost>>;
+  [[nodiscard]] auto GetNearestNode(const Node &) -> Node;
+  [[nodiscard]] auto insertNode(std::shared_ptr<Node>, std::shared_ptr<Node>) -> bool;
   [[nodiscard]] auto getNodes() const noexcept -> std::vector<std::shared_ptr<NodeParent<Cost>>>;
 
 private:

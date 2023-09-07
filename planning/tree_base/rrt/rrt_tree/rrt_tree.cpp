@@ -18,11 +18,10 @@ namespace tree_base
 
 [[nodiscard]] auto RRTTree::getRoot() const noexcept -> std::shared_ptr<NodeParent<Cost>> { return root_; }
 
-[[nodiscard]] auto RRTTree::insertNode(std::shared_ptr<Node> newNode, std::shared_ptr<NodeParent<Cost>> nearestNode,
-                                       Cost const cost) -> bool
+[[nodiscard]] auto RRTTree::insertNode(std::shared_ptr<Node> newNode, std::shared_ptr<Node> nearestNode)
+    -> bool
 {
-  auto const newNodeParent{std::make_shared<NodeParent<Cost>>(newNode, nearestNode, cost)};
-  nodes_.push_back(newNodeParent);
+  nodes_.emplace_back(std::make_shared<NodeParent<Cost>>(newNode, nearestNode));
   return true;
 }
 
@@ -31,7 +30,17 @@ namespace tree_base
   return nodes_;
 }
 
-auto RRTTree::setRoot(const Node &root) noexcept -> void { root_ = std::make_shared<NodeParent<Cost>>(root); }
+auto RRTTree::setRoot(const Node &root) noexcept -> void { root_ = std::make_shared<NodeParent<Cost>>(root, nullptr, Cost{}); }
+
+[[nodiscard]] auto RRTTree::GetNearestNode(const Node &node) -> Node
+{
+  const auto min{
+      *std::min_element(std::cbegin(nodes_), std::cend(nodes_),
+                        [node](const std::shared_ptr<NodeParent<Cost>> &a, const std::shared_ptr<NodeParent<Cost>> &b) {
+                          return GetDistance(node, *(a->node)) < GetDistance(node, *(b->node));
+                        })};
+  return *(min->node);
+}
 
 } // namespace tree_base
 } // namespace planning
