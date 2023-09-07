@@ -30,28 +30,25 @@ RRT::RRT(int const min, int const max, int const max_iter_num, double const max_
 
 [[nodiscard]] auto RRT::FindPath(const Node &start_node, const Node &goal_node, std::shared_ptr<Map> map) -> Path
 {
-  auto const adding_node_success{AddNode(start_node)};
-  if (adding_node_success)
+  tree_.setRoot(start_node);
+    int iter_num{0};
+    while (iter_num < max_iterations_ || !IsGoal(tree_.back(), goal_node))
     {
-      int iter_num{0};
-      while (iter_num < max_iterations_ || !IsGoal(tree_.back(), goal_node))
+        const auto random_node{rng_()};
+        const auto nearest_node{GetNearestNode(random_node)};
+        const auto new_node{GetNewNode(nearest_node, random_node)};
+        if (IsNodeValid(new_node, map))
         {
-          const auto random_node{rng_()};
-          const auto nearest_node{GetNearestNode(random_node)};
-          const auto new_node{GetNewNode(nearest_node, random_node)};
-          if (IsNodeValid(new_node, map))
+            auto const success{AddNode(new_node)};
+            if (success)
             {
-              auto const success{AddNode(new_node)};
-              if (success)
+                if (IsGoal(new_node, goal_node))
                 {
-                  if (IsGoal(new_node, goal_node))
-                    {
-                      //   return GetPath(new_node);
-                    }
+                    //   return GetPath(new_node);
                 }
             }
-          iter_num++;
         }
+        iter_num++;
     }
   return Path{};
 }

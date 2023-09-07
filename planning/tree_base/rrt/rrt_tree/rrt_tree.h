@@ -26,7 +26,7 @@ class RRTTree
 {
 public:
   [[nodiscard]] auto getRoot() const noexcept -> std::shared_ptr<NodeParent<Cost>>;
-  auto setRoot(std::shared_ptr<NodeParent<Cost>>) noexcept -> void;
+  auto setRoot(const Node &) noexcept -> void;
   [[nodiscard]] auto insertNode(std::shared_ptr<Node>, std::shared_ptr<NodeParent<Cost>>, Cost const cost) -> bool;
   [[nodiscard]] auto getNodes() const noexcept -> std::vector<std::shared_ptr<NodeParent<Cost>>>;
 

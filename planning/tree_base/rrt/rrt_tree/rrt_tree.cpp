@@ -31,7 +31,7 @@ namespace tree_base
   return nodes_;
 }
 
-auto RRTTree::setRoot(std::shared_ptr<NodeParent<Cost>> root) noexcept -> void { root_ = root; }
+auto RRTTree::setRoot(const Node &root) noexcept -> void { root_ = std::make_shared<NodeParent<Cost>>(root); }
 
 } // namespace tree_base
 } // namespace planning
