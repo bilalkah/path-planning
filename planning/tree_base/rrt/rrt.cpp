@@ -16,7 +16,7 @@ namespace planning
 namespace tree_base
 {
 
-RRT::RRT(int const min, int const max, int const max_iter_num, int const max_step_size, double const goal_tolerance)
+RRT::RRT(int const min, int const max, int const max_iter_num, double const max_step_size, double const goal_tolerance)
     : log_{}, max_iterations_{max_iter_num}, max_step_size_{max_step_size}, goal_tolerance_{goal_tolerance},
       rng_{min, max}
 {
@@ -69,7 +69,8 @@ RRT::RRT(int const min, int const max, int const max_iter_num, int const max_ste
   const auto distance{GetDistance(nearest_node, random_node)};
   const auto step_size{std::min(distance, max_step_size_)};
   const auto theta{std::atan2(random_node.y - nearest_node.y, random_node.x - nearest_node.x)};
-  return Node{nearest_node.x + step_size * std::cos(theta), nearest_node.y + step_size * std::sin(theta)};
+  return Node{static_cast<int>(nearest_node.x + step_size * std::cos(theta)),
+              static_cast<int>(nearest_node.y + step_size * std::sin(theta))};
 }
 
 [[nodiscard]] auto RRT::IsNodeValid(const Node &node, std::shared_ptr<Map> map) -> bool

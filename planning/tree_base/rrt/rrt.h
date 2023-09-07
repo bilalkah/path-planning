@@ -36,7 +36,7 @@ public:
    * @brief Construct a new RRT object.
    *
    */
-  RRT(int const, int const, int const, int const, double const);
+  RRT(int const, int const, int const, double const, double const);
 
   /**
    * @brief Find path from start node to goal node.
