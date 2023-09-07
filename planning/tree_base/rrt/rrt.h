@@ -12,10 +12,11 @@
 #ifndef PLANNING_TREE_BASE_RRT_RRT_H_
 #define PLANNING_TREE_BASE_RRT_RRT_H_
 
-#include "../../include/common_planning.h"
-#include "../../include/data_types.h"
-#include "../../include/node_parent.h"
-#include "../include/random_node_generator.h"
+#include "planning/include/common_planning.h"
+#include "planning/include/data_types.h"
+#include "planning/include/node_parent.h"
+#include "planning/tree_base/include/random_node_generator.h"
+#include "planning/tree_base/rrt/rrt_tree/rrt_tree.h"
 #include <algorithm>
 
 namespace planning
@@ -24,48 +25,21 @@ namespace tree_base
 {
 
 using RRTSteps = int;
-/**
- * @brief Rapidly-exploring Random Tree (RRT) algorithm.
- *
- */
 
 class RRT
 {
 public:
-  /**
-   * @brief Construct a new RRT object.
-   *
-   */
   RRT(int const, int const, int const, double const, double const);
-
-  /**
-   * @brief Find path from start node to goal node.
-   *
-   * @param start_node Start node.
-   * @param goal_node Goal node.
-   * @param map Map to search.
-   * @return Path Path from start node to goal node.
-   */
   [[nodiscard]] auto FindPath(const Node &, const Node &, std::shared_ptr<Map>) -> Path;
-
-  /**
-   * @brief Get log of the algorithm.
-   *
-   * @return Log of the algorithm.
-   */
   [[nodiscard]] auto GetLog() const -> Log;
-
-  // add node to tree
-  [[nodiscard]] auto AddNode(const Node &) -> bool;
+  [[nodiscard]] auto AddNode(const Node &, const Node &, Cost const) -> bool;
   [[nodiscard]] auto GetNearestNode(const Node &) -> Node;
   [[nodiscard]] auto GetNewNode(const Node &, const Node &) -> Node;
   [[nodiscard]] auto IsNodeValid(const Node &, std::shared_ptr<Map>) -> bool;
   [[nodiscard]] auto IsGoal(const Node &, const Node &) -> bool;
 
 private:
-  // tree
-  std::vector<Node> tree_{};
-  //   std::vector<NodeParent<RRTSteps>> tree_{};
+  RRTTree tree_;
 
   // log of the algorithm
   Log log_{};

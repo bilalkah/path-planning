@@ -25,13 +25,13 @@ namespace tree_base
 class RRTTree
 {
 public:
-  RRTTree(std::shared_ptr<Node>);
   [[nodiscard]] auto getRoot() const noexcept -> std::shared_ptr<NodeParent<Cost>>;
-  auto insertNode(std::shared_ptr<Node>, std::shared_ptr<NodeParent<Cost>>, Cost const cost) -> void;
+  auto setRoot(std::shared_ptr<NodeParent<Cost>>) noexcept -> void;
+  [[nodiscard]] auto insertNode(std::shared_ptr<Node>, std::shared_ptr<NodeParent<Cost>>, Cost const cost) -> bool;
   [[nodiscard]] auto getNodes() const noexcept -> std::vector<std::shared_ptr<NodeParent<Cost>>>;
 
 private:
-  std::shared_ptr<NodeParent<Cost>> root_;
+  std::shared_ptr<NodeParent<Cost>> root_{nullptr};
   std::vector<std::shared_ptr<NodeParent<Cost>>> nodes_;
 };
 

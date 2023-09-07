@@ -17,16 +17,15 @@ namespace tree_base
 {
 
 RRT::RRT(int const min, int const max, int const max_iter_num, double const max_step_size, double const goal_tolerance)
-    : log_{}, max_iterations_{max_iter_num}, max_step_size_{max_step_size}, goal_tolerance_{goal_tolerance},
+    : tree_{}, log_{}, max_iterations_{max_iter_num}, max_step_size_{max_step_size}, goal_tolerance_{goal_tolerance},
       rng_{min, max}
 {
 }
 
 // add node to tree
-[[nodiscard]] auto RRT::AddNode(const Node &node) -> bool
+[[nodiscard]] auto RRT::AddNode(const Node &node, const Node &nearestNode, Cost const cost) -> bool
 {
-  tree_.push_back(node);
-  return true;
+  return tree_.insertNode(std::make_shared<Node>(node), std::make_shared<NodeParent<Cost>>(nearestNode), cost);
 }
 
 [[nodiscard]] auto RRT::FindPath(const Node &start_node, const Node &goal_node, std::shared_ptr<Map> map) -> Path

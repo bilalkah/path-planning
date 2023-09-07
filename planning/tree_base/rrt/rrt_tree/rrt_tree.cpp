@@ -16,21 +16,22 @@ namespace planning
 namespace tree_base
 {
 
-RRTTree::RRTTree(std::shared_ptr<Node> root) { root_ = std::make_shared<NodeParent<Cost>>(root, nullptr, Cost{}); }
-
 [[nodiscard]] auto RRTTree::getRoot() const noexcept -> std::shared_ptr<NodeParent<Cost>> { return root_; }
 
-auto RRTTree::insertNode(std::shared_ptr<Node> newNode, std::shared_ptr<NodeParent<Cost>> nearestNode, Cost const cost)
-    -> void
+[[nodiscard]] auto RRTTree::insertNode(std::shared_ptr<Node> newNode, std::shared_ptr<NodeParent<Cost>> nearestNode,
+                                       Cost const cost) -> bool
 {
   auto const newNodeParent{std::make_shared<NodeParent<Cost>>(newNode, nearestNode, cost)};
   nodes_.push_back(newNodeParent);
+  return true;
 }
 
 [[nodiscard]] auto RRTTree::getNodes() const noexcept -> std::vector<std::shared_ptr<NodeParent<Cost>>>
 {
   return nodes_;
 }
+
+auto RRTTree::setRoot(std::shared_ptr<NodeParent<Cost>> root) noexcept -> void { root_ = root; }
 
 } // namespace tree_base
 } // namespace planning
