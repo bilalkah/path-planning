@@ -16,10 +16,20 @@
 
 namespace planning
 {
-namespace tree
+namespace tree_base
 {
 
-} // namespace tree
+struct Cost
+{
+  Cost() : g(0), h(0), f(0) {}
+  Cost(double g, double h) : g(g), h(h), f(g + h) {}
+
+  double g; // cost from start node
+  double h; // heuristic cost to goal node
+  double f; // total cost
+};
+
+} // namespace tree_base
 } // namespace planning
 
 #endif /* PLAN_TREE_BASE_INCLUDE_COMMON_TREE_BASE_H_ */
