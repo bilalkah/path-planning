@@ -24,9 +24,9 @@ TEST_F(TestFixture, MapCreation)
   auto map_copy = std::make_shared<Map>(*map_);
   auto occupied_count = 0u;
 
-  for (auto i = 0; i < map_copy->GetHeight(); i++)
+  for (auto i = 0u; i < map_copy->GetHeight(); i++)
     {
-      for (auto j = 0; j < map_copy->GetWidth(); j++)
+      for (auto j = 0u; j < map_copy->GetWidth(); j++)
         {
           if (map_copy->GetNodeState(Node(i, j)) == NodeState::kOccupied)
             {

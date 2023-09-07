@@ -14,6 +14,7 @@
 
 #include "planning/include/node_parent.h"
 
+#include <cstddef>
 #include <fstream>
 #include <iostream>
 #include <iterator>
@@ -31,12 +32,12 @@ namespace planning
 class Map
 {
 public:
-  Map(int height, int width);
+  Map(std::size_t height, std::size_t width);
   Map(std::string &file_path);
   ~Map() {}
 
-  int GetWidth() const;
-  int GetHeight() const;
+  std::size_t GetWidth() const;
+  std::size_t GetHeight() const;
 
   /**
    * @brief Get the Node State object of cell. Does not check for out of bounds.
@@ -68,7 +69,7 @@ public:
   void UpdateMapWithPath(const Path &path);
 
 private:
-  int height_, width_;
+  std::size_t height_, width_;
   std::vector<std::vector<NodeState>> map_;
 }; // class Map
 

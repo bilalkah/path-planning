@@ -67,9 +67,9 @@ protected:
   void PrintMap()
   {
     std::cout << "\n\n" << std::endl;
-    for (auto i = 0; i < map_->GetHeight(); i++)
+    for (auto i = 0u; i < map_->GetHeight(); i++)
       {
-        for (auto j = 0; j < map_->GetWidth(); j++)
+        for (auto j = 0u; j < map_->GetWidth(); j++)
           {
             if (map_->GetNodeState(Node(j, i)) == NodeState::kOccupied)
               {

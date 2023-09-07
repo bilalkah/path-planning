@@ -14,7 +14,7 @@
 namespace planning
 {
 // Map
-Map::Map(int height, int width) : height_(height), width_(width)
+Map::Map(std::size_t height, std::size_t width) : height_(height), width_(width)
 {
   map_.resize(height_);
   for (auto &row : map_)
@@ -42,7 +42,7 @@ Map::Map(std::string &file_path)
     {
       row.resize(width_);
       std::getline(file, line);
-      for (auto i = 0; i < width_; i++)
+      for (auto i = 0u; i < width_; i++)
         {
           if (line[i] == '.' || line[i] == 'G')
             {
@@ -55,8 +55,8 @@ Map::Map(std::string &file_path)
         }
     }
 }
-int Map::GetWidth() const { return width_; }
-int Map::GetHeight() const { return height_; }
+std::size_t Map::GetWidth() const { return width_; }
+std::size_t Map::GetHeight() const { return height_; }
 NodeState Map::GetNodeState(const Node &node) const
 {
   return map_[node.x_][node.y_];
@@ -67,9 +67,9 @@ void Map::SetNodeState(const Node &node, NodeState node_state)
 }
 void Map::Visualize() const
 {
-  for (auto i = 0; i < height_; i++)
+  for (auto i = 0u; i < height_; i++)
     {
-      for (auto j = 0; j < width_; j++)
+      for (auto j = 0u; j < width_; j++)
         {
           std::cout << static_cast<int>(map_[i][j]) << " ";
         }
@@ -87,8 +87,10 @@ void Map::UpdateMapWithPath(const Path &path)
 
 bool IsInbound(const Node &node, const std::shared_ptr<Map> map)
 {
-  return node.x_ >= 0 && node.x_ < map->GetHeight() && node.y_ >= 0 &&
-         node.y_ < map->GetWidth();
+  return static_cast<unsigned int>(node.x_) >= 0 &&
+         static_cast<unsigned int>(node.x_) < map->GetHeight() &&
+         static_cast<unsigned int>(node.y_) >= 0 &&
+         static_cast<unsigned int>(node.y_) < map->GetWidth();
 }
 
 bool IsFree(const Node &node, const std::shared_ptr<Map> map)
