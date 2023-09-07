@@ -9,6 +9,9 @@
  *
  */
 
+#ifndef PLANNING_TREE_BASE_RANDOM_NUMBER_GENERATOR_H_
+#define PLANNING_TREE_BASE_RANDOM_NUMBER_GENERATOR_H_
+
 #include <random>
 
 /**
@@ -25,3 +28,5 @@ private:
   std::mt19937 gen_;
   std::uniform_int_distribution<> dis_;
 };
+
+#endif /* PLANNING_TREE_BASE_RANDOM_NUMBER_GENERATOR_H_ */
