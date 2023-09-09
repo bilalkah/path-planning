@@ -58,5 +58,5 @@ add_executable(
     main.cpp
 )
 
-target_link_libraries(main a_star bfs dfs visualizer )
+target_link_libraries(main a_star bfs dfs visualizer yaml-cpp)
 target_compile_features(main PRIVATE cxx_std_17)

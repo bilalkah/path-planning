@@ -1,0 +1,16 @@
+map: "/bg2/AR0205SR.map"
+planner:
+  name: "astar"
+  search_space: 4
+  heuristic_weight: 0.7
+visualizer:
+  rescale: 1.0
+  delay: 1.0
+  show: true
+path:
+  start:
+    x: 215
+    y: 25
+  goal:
+    x: 330
+    y: 475
