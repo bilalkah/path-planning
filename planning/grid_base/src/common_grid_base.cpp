@@ -16,5 +16,12 @@ namespace planning
 namespace grid_base
 {
 
+SearchSpace GetFourDirection() { return {{0, 1}, {1, 0}, {0, -1}, {-1, 0}}; }
+
+SearchSpace GetEightDirection()
+{
+  return {{0, 1}, {1, 0}, {0, -1}, {-1, 0}, {1, 1}, {1, -1}, {-1, -1}, {-1, 1}};
+}
+
 } // namespace grid_base
 } // namespace planning
