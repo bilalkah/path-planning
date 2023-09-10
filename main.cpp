@@ -97,21 +97,16 @@ std::shared_ptr<planning::IPlanning> GetPlanner(YAML::Node node)
     {
       auto heuristic = node["heuristic_weight"].as<double>();
       std::cout << heuristic << std::endl;
-      return std::make_shared<
-          planning::grid_base::AStar<planning::grid_base::Directions4>>(
-          planning::grid_base::four_directions);
+      return std::make_shared<planning::grid_base::AStar>(heuristic,
+                                                          search_space);
     }
   else if (name == "bfs")
     {
-      return std::make_shared<
-          planning::grid_base::BFS<planning::grid_base::Directions4>>(
-          planning::grid_base::four_directions);
+      return std::make_shared<planning::grid_base::BFS>(search_space);
     }
   else if (name == "dfs")
     {
-      return std::make_shared<
-          planning::grid_base::DFS<planning::grid_base::Directions4>>(
-          planning::grid_base::four_directions);
+      return std::make_shared<planning::grid_base::DFS>(search_space);
     }
   else
     {
