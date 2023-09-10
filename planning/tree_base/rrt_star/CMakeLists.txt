@@ -10,5 +10,13 @@ link_directories(
     ${PROJECT_SOURCE_DIR}
 )
 
-add_subdirectory(rrt)
-add_subdirectory(rrt_star)
+set(
+    RRT_STAR_FILES
+    ${CMAKE_CURRENT_SOURCE_DIR}/rrt_star.cpp
+)
+
+add_library(
+    rrt_star 
+    SHARED
+    ${RRT_STAR_FILES}
+)
