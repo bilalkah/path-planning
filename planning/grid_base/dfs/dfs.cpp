@@ -19,9 +19,24 @@ namespace planning
 namespace grid_base
 {
 
-template <typename SearchSpace>
-Path DFS<SearchSpace>::FindPath(const Node &start_node, const Node &goal_node,
-                                const std::shared_ptr<Map> map)
+DFS::DFS(const int search_space)
+{
+  if (search_space == 4)
+    {
+      search_space_ = GetFourDirection();
+    }
+  else if (search_space == 8)
+    {
+      search_space_ = GetEightDirection();
+    }
+  else
+    {
+      std::cout << "Invalid search space." << std::endl;
+    }
+}
+
+Path DFS::FindPath(const Node &start_node, const Node &goal_node,
+                   const std::shared_ptr<Map> map)
 {
   // Clear log.
   log_.clear();
@@ -87,7 +102,7 @@ Path DFS<SearchSpace>::FindPath(const Node &start_node, const Node &goal_node,
   return path;
 }
 
-template <typename SearchSpace> Log DFS<SearchSpace>::GetLog() { return log_; }
+Log DFS::GetLog() { return log_; }
 
 } // namespace grid_base
 } // namespace planning

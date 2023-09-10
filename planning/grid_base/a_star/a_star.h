@@ -28,7 +28,7 @@ namespace grid_base
 struct Cost
 {
   Cost() : g(0), h(0), f(0) {}
-  Cost(double g, double h) : g(g), h(h), f(g + h) {}
+  Cost(double g, double h, double w) : g(g), h(h), f((1 - w) * g + w * h) {}
 
   double g; // cost from start node
   double h; // heuristic cost to goal node
@@ -39,21 +39,20 @@ struct Cost
  * @brief A* path finding algorithm.
  *
  */
-template <typename SearchSpace> class AStar : public IPlanning
+class AStar : public IPlanning
 {
 public:
-  AStar(const SearchSpace &search_space) : search_space_{search_space} {}
+  AStar(const double &heuristic_weight, const int search_space);
   Path FindPath(const Node &start_node, const Node &goal_node,
                 const std::shared_ptr<Map> map) override;
   Log GetLog() override;
 
 private:
-  SearchSpace search_space_;
   ::planning::Log log_;
-}; // class AStar
+  SearchSpace search_space_;
 
-template class AStar<Directions4>;
-template class AStar<Directions8>;
+  double heuristic_weight_;
+}; // class AStar
 
 } // namespace grid_base
 
