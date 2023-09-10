@@ -14,31 +14,44 @@
 #include "planning/grid_base/dfs/dfs.h"
 #include "planning/grid_base/include/common_grid_base.h"
 #include "tools/include/visualizer.h"
+#include "yaml-cpp/yaml.h"
 
+#include <cstdlib>
+#include <fstream>
 #include <iostream>
 #include <memory>
 
+std::shared_ptr<planning::IPlanning> GetPlanner(YAML::Node node);
+
 int main(int argc, char **argv)
 {
-  // Arguments parser
-  // --map_path <path_to_map>
-  // --algorithm <planner_name>
-  // --start <start_x> <start_y>
-  // --goal <goal_x> <goal_y>
-  // --output <output_path (gif file)>
-
-  std::shared_ptr<planning::IPlanning> planner = std::make_shared<
-      planning::grid_base::AStar<planning::grid_base::Directions4>>(
-      planning::grid_base::four_directions);
-
+  // Get config and data directories
+  std::string configDirectory = CONFIG_DIR;
   std::string dataDirectory = DATA_DIR;
-  std::string dataFilePath = dataDirectory + "/bg2/AR0205SR.map";
-  int kFactor = 2;
-  const auto start_node = planning::Node(215, 25);
-  const auto goal_node = planning::Node(330, 475);
 
-  auto map = std::make_shared<planning::Map>(dataFilePath);
-  tools::Visualizer visualizer(*map, kFactor, kFactor, 1, true);
+  std::string configFilePath = configDirectory + "/main.yaml";
+  std::ifstream config_file(configFilePath);
+  YAML::Node config = YAML::LoadFile(configFilePath);
+
+  // Map config
+  std::string mapFilePath = dataDirectory + config["map"].as<std::string>();
+  auto map = std::make_shared<planning::Map>(mapFilePath);
+
+  // Planner config
+  std::shared_ptr<planning::IPlanning> planner = GetPlanner(config["planner"]);
+
+  // Visualizer config
+  auto rescale = config["visualizer"]["rescale"].as<float>();
+  auto delay = config["visualizer"]["delay"].as<float>();
+  auto show = config["visualizer"]["show"].as<bool>();
+
+  tools::Visualizer visualizer(*map, rescale, rescale, delay, show);
+
+  // Path config
+  auto s = config["path"]["start"];
+  auto start_node = planning::Node(s["x"].as<int>(), s["y"].as<int>());
+  auto g = config["path"]["goal"];
+  auto goal_node = planning::Node(g["x"].as<int>(), g["y"].as<int>());
 
   planning::Path path = planner->FindPath(start_node, goal_node, map);
 
@@ -71,4 +84,38 @@ int main(int argc, char **argv)
     }
 
   return 0;
+}
+
+std::shared_ptr<planning::IPlanning> GetPlanner(YAML::Node node)
+{
+  auto name = node["name"].as<std::string>();
+  auto search_space = node["search_space"].as<int>();
+  std::cout << name << std::endl;
+  std::cout << search_space << std::endl;
+
+  if (name == "astar")
+    {
+      auto heuristic = node["heuristic_weight"].as<double>();
+      std::cout << heuristic << std::endl;
+      return std::make_shared<
+          planning::grid_base::AStar<planning::grid_base::Directions4>>(
+          planning::grid_base::four_directions);
+    }
+  else if (name == "bfs")
+    {
+      return std::make_shared<
+          planning::grid_base::BFS<planning::grid_base::Directions4>>(
+          planning::grid_base::four_directions);
+    }
+  else if (name == "dfs")
+    {
+      return std::make_shared<
+          planning::grid_base::DFS<planning::grid_base::Directions4>>(
+          planning::grid_base::four_directions);
+    }
+  else
+    {
+      std::cerr << "Invalid planner" << std::endl;
+      std::abort();
+    }
 }
