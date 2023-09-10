@@ -10,6 +10,7 @@
  */
 
 #include "a_star.h"
+#include "common_grid_base.h"
 
 #include <cmath>
 #include <iostream>
@@ -31,9 +32,26 @@ auto heuristic{[](const Node &lhs, const Node &rhs) {
   return std::hypot(lhs.x_ - rhs.x_, lhs.y_ - rhs.y_);
 }};
 
-template <typename SearchSpace>
-Path AStar<SearchSpace>::FindPath(const Node &start_node, const Node &goal_node,
-                                  const std::shared_ptr<Map> map)
+AStar::AStar(const double &heuristic_weight, const int search_space)
+    : heuristic_weight_(heuristic_weight)
+{
+
+  if (search_space == 4)
+    {
+      search_space_ = GetFourDirection();
+    }
+  else if (search_space == 8)
+    {
+      search_space_ = GetEightDirection();
+    }
+  else
+    {
+      std::cout << "Invalid search space." << std::endl;
+    }
+}
+
+Path AStar::FindPath(const Node &start_node, const Node &goal_node,
+                     const std::shared_ptr<Map> map)
 {
   // Clear log.
   log_.clear();
@@ -52,7 +70,7 @@ Path AStar<SearchSpace>::FindPath(const Node &start_node, const Node &goal_node,
   // Create start node.
   auto start_node_info = std::make_shared<NodeParent<Cost>>(
       std::make_shared<Node>(start_node), nullptr,
-      Cost(0, heuristic(start_node, goal_node)));
+      Cost(0, heuristic(start_node, goal_node), heuristic_weight_));
 
   // Add start node to search list.
   search_list.push(start_node_info);
@@ -84,7 +102,8 @@ Path AStar<SearchSpace>::FindPath(const Node &start_node, const Node &goal_node,
 
           auto neighbor_node = std::make_shared<NodeParent<Cost>>(
               std::make_shared<Node>(Node(x, y)), current_node,
-              Cost(current_node->cost.g + 1, heuristic(Node(x, y), goal_node)));
+              Cost(current_node->cost.g + 1, heuristic(Node(x, y), goal_node),
+                   heuristic_weight_));
 
           search_list.push(neighbor_node);
         }
@@ -102,10 +121,7 @@ Path AStar<SearchSpace>::FindPath(const Node &start_node, const Node &goal_node,
   return path;
 }
 
-template <typename SearchSpace> Log AStar<SearchSpace>::GetLog()
-{
-  return log_;
-}
+Log AStar::GetLog() { return log_; }
 
 } // namespace grid_base
 } // namespace planning

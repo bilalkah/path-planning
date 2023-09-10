@@ -19,7 +19,8 @@ using namespace planning::grid_base;
 
 TEST_F(TestFixture, PathPlanning_WithDFS)
 {
-  auto path_finder = std::make_shared<DFS<Directions4>>(four_directions);
+  constexpr int search_space{4};
+  auto path_finder = std::make_shared<DFS>(search_space);
   const auto start_node = Node(1, 5);
   const auto goal_node = Node(7, 8);
   Path path = path_finder->FindPath(start_node, goal_node, map_);
@@ -33,8 +34,8 @@ TEST_F(TestFixture, PathPlanning_WithDFS)
  */
 TEST_F(RealMapTestFixture, DISABLED_PathPlanningOnRealMap_WithDFS)
 {
-  std::shared_ptr<IPlanning> path_finder =
-      std::make_shared<DFS<Directions4>>(four_directions);
+  constexpr int search_space{4};
+  auto path_finder = std::make_shared<DFS>(search_space);
   const auto start_node = Node(90, 185);
   const auto goal_node = Node(445, 336);
   Path path = path_finder->FindPath(start_node, goal_node, map_);
