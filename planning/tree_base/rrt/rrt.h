@@ -47,7 +47,6 @@ public:
   Log GetLog() override;
 
 private:
-
   Log log_;
 
   std::vector<std::shared_ptr<NodeParent<RRTCost>>> visited_nodes_;
