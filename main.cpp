@@ -13,6 +13,10 @@
 #include "planning/grid_base/bfs/bfs.h"
 #include "planning/grid_base/dfs/dfs.h"
 #include "planning/grid_base/include/common_grid_base.h"
+
+#include "planning/include/i_planning.h"
+#include "planning/tree_base/rrt/rrt.h"
+#include "planning/tree_base/rrt_star/rrt_star.h"
 #include "tools/include/visualizer.h"
 #include "yaml-cpp/yaml.h"
 
@@ -21,7 +25,7 @@
 #include <iostream>
 #include <memory>
 
-std::shared_ptr<planning::IPlanning> GetPlanner(YAML::Node node);
+std::shared_ptr<planning::IPlanningWithLogging> GetPlanner(YAML::Node node);
 
 int main(int argc, char **argv)
 {
@@ -38,7 +42,9 @@ int main(int argc, char **argv)
   auto map = std::make_shared<planning::Map>(mapFilePath);
 
   // Planner config
-  std::shared_ptr<planning::IPlanning> planner = GetPlanner(config["planner"]);
+  auto planner_name = config["planner"]["name"].as<std::string>();
+  std::shared_ptr<planning::IPlanningWithLogging> planner =
+      GetPlanner(config["planner"]);
 
   // Visualizer config
   auto rescale = config["visualizer"]["rescale"].as<float>();
@@ -53,25 +59,38 @@ int main(int argc, char **argv)
   auto g = config["path"]["goal"];
   auto goal_node = planning::Node(g["x"].as<int>(), g["y"].as<int>());
 
-  planning::Path path = planner->FindPath(start_node, goal_node, map);
-
-  auto log = planner->GetLog();
-
   while (true)
     {
-      for (const auto &node : log)
-        {
-          visualizer.UpdateNode(node.first, node.second);
-        }
+      planning::Path path = planner->FindPath(start_node, goal_node, map);
 
-      // sleep for 1 second
-      std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+      // dynamic cast to get log
 
-      for (const auto &node : path)
+      auto log = planner->GetLog();
+
+      std::cout << "Log size: " << log.size() << std::endl;
+      if (planner_name == "astar" || planner_name == "bfs" ||
+          planner_name == "dfs")
         {
-          visualizer.UpdateNode(*node, planning::NodeState::kPath);
+          visualizer.VisualizeGridLog(log);
+
           // sleep for 1 second
-          std::this_thread::sleep_for(std::chrono::milliseconds(10));
+          std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+
+          if (!path.empty())
+            {
+              visualizer.VisualizeGridPath(path);
+            }
+        }
+      else if (planner_name == "rrt" || planner_name == "rrt_star")
+        {
+          visualizer.VisualizeTreeLog(log);
+
+          // sleep for 1 second
+          std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+          if (!path.empty())
+            {
+              visualizer.VisualizeTreePath(path);
+            }
         }
 
       // sleep for 1 second
@@ -81,22 +100,21 @@ int main(int argc, char **argv)
 
       // sleep for 1 second
       std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+      std::cout << "\n\n\n-----------\n\n\n" << std::endl;
     }
 
   return 0;
 }
 
-std::shared_ptr<planning::IPlanning> GetPlanner(YAML::Node node)
+std::shared_ptr<planning::IPlanningWithLogging> GetPlanner(YAML::Node node)
 {
   auto name = node["name"].as<std::string>();
   auto search_space = node["search_space"].as<int>();
   std::cout << name << std::endl;
-  std::cout << search_space << std::endl;
 
   if (name == "astar")
     {
       auto heuristic = node["heuristic_weight"].as<double>();
-      std::cout << heuristic << std::endl;
       return std::make_shared<planning::grid_base::AStar>(heuristic,
                                                           search_space);
     }
@@ -107,6 +125,14 @@ std::shared_ptr<planning::IPlanning> GetPlanner(YAML::Node node)
   else if (name == "dfs")
     {
       return std::make_shared<planning::grid_base::DFS>(search_space);
+    }
+  else if (name == "rrt")
+    {
+      return std::make_shared<planning::tree_base::RRT>();
+    }
+  else if (name == "rrt_star")
+    {
+      return std::make_shared<planning::tree_base::RRTStar>();
     }
   else
     {
