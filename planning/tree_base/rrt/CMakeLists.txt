@@ -10,8 +10,19 @@ link_directories(
     ${PROJECT_SOURCE_DIR}
 )
 
+set(
+    RRT_FILES
+    ${CMAKE_CURRENT_SOURCE_DIR}/rrt.cpp
+)
+
 add_library(
-    rrt SHARED
-    rrt.cpp
-    rrt.h   
+    rrt 
+    SHARED
+    ${RRT_FILES}
+)
+
+target_link_libraries(
+    rrt
+    PUBLIC
+    common_tree_base
 )
