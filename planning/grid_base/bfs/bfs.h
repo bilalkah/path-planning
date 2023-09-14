@@ -24,7 +24,7 @@ namespace grid_base
 
 using CostBFS = int;
 
-class BFS : public IPlanning
+class BFS : public IPlanningWithLogging
 {
 
 public:
@@ -34,7 +34,7 @@ public:
   Log GetLog() override;
 
 private:
-  ::planning::Log log_;
+  Log log_;
   SearchSpace search_space_;
 };
 
