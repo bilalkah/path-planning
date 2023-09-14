@@ -20,3 +20,9 @@ add_library(
     SHARED
     ${RRT_STAR_FILES}
 )
+
+target_link_libraries(
+    rrt_star
+    PUBLIC
+    common_tree_base
+)
