@@ -14,6 +14,7 @@
 
 #include "planning/include/common_planning.h"
 #include "planning/include/data_types.h"
+#include "planning/include/i_planning.h"
 
 #include <SFML/Graphics.hpp>
 #include <chrono>
@@ -45,6 +46,44 @@ public:
    * @param map
    */
   void UpdateMap(const planning::Map &map);
+
+  /**
+   * @brief Visualize path. Thread safe.
+   *
+   * @param path
+   */
+  void VisualizeGridLog(const planning::Log &log);
+
+  /**
+   * @brief Visualize path. Thread safe.
+   *
+   * @param path
+   */
+  void VisualizeTreeLog(const planning::Log &log);
+
+  /**
+   * @brief Visualize path. Thread safe.
+   *
+   * @param path
+   */
+  void VisualizeGridPath(const planning::Path &path);
+
+  /**
+   * @brief Visualize path. Thread safe.
+   *
+   * @param path
+   */
+  void VisualizeTreePath(const planning::Path &path);
+
+  /**
+   * @brief Writes to window_. Thread safe.
+   *
+   * @param node1
+   * @param node2
+   * @param state
+   */
+  void UpdateLine(const planning::Node &node1, const planning::Node &node2,
+                  const planning::NodeState state);
 
   /**
    * @brief Update window_ with given position and state of node. Thread safe.
