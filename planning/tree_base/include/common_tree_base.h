@@ -14,7 +14,9 @@
 
 #include "planning/include/common_planning.h"
 #include "planning/include/i_planning.h"
+#include <cstddef>
 #include <limits>
+#include <memory>
 
 namespace planning
 {
@@ -26,6 +28,14 @@ namespace tree_base
  *
  */
 std::pair<double, double> RandomSampling();
+
+/**
+ * @brief Random node from map
+ *
+ * @param map
+ * @return Node
+ */
+Node RandomNode(const std::shared_ptr<Map> map);
 
 /**
  * @brief // Get 2D ray between two nodes
@@ -45,9 +55,26 @@ std::vector<Node> Get2DRayBetweenNodes(const Node &node1, const Node &node2);
  */
 double EuclideanDistance(const Node &node1, const Node &node2);
 
+/**
+ * @brief Check if there is collision between two nodes
+ *
+ * @param node1
+ * @param node2
+ * @param map
+ * @return true if there is collision
+ * @return false if there is no collision
+ */
 bool CheckIfCollisionBetweenNodes(const Node &node1, const Node &node2,
                                   const std::shared_ptr<Map> map);
 
+/**
+ * @brief Get the Nearest Node Parent object
+ *
+ * @tparam T
+ * @param node
+ * @param nodes
+ * @return std::shared_ptr<NodeParent<T>>
+ */
 template <typename T>
 std::shared_ptr<NodeParent<T>>
 GetNearestNodeParent(const Node &node,
@@ -69,6 +96,15 @@ GetNearestNodeParent(const Node &node,
   return nearest_node;
 }
 
+/**
+ * @brief Get the Nearest Node Parent Vector object
+ *
+ * @tparam T
+ * @param neighbor_radius
+ * @param node
+ * @param nodes
+ * @return std::vector<std::shared_ptr<NodeParent<T>>>
+ */
 template <typename T>
 std::vector<std::shared_ptr<NodeParent<T>>> GetNearestNodeParentVector(
     const int neighbor_radius, const Node &node,
@@ -89,6 +125,17 @@ std::vector<std::shared_ptr<NodeParent<T>>> GetNearestNodeParentVector(
   return nearest_nodes;
 }
 
+/**
+ * @brief Wire new node to nearest node if there is no collision.
+ *
+ * @tparam T
+ * @param max_branch_length
+ * @param min_branch_length
+ * @param random_node
+ * @param nearest_node
+ * @param map
+ * @return std::shared_ptr<NodeParent<T>>
+ */
 template <typename T>
 std::shared_ptr<NodeParent<T>>
 WireNewNode(const int max_branch_length, const int min_branch_length,
@@ -103,16 +150,11 @@ WireNewNode(const int max_branch_length, const int min_branch_length,
   double unit_vector_y{(random_node.y_ - nearest_node->node->y_) / distance};
 
   // Calculate new node.
-  Node new_node;
+  Node new_node{random_node};
   if (distance > max_branch_length)
     {
       new_node.x_ = nearest_node->node->x_ + max_branch_length * unit_vector_x;
       new_node.y_ = nearest_node->node->y_ + max_branch_length * unit_vector_y;
-      distance = EuclideanDistance(new_node, *nearest_node->node);
-    }
-  else
-    {
-      new_node = random_node;
       distance = EuclideanDistance(new_node, *nearest_node->node);
     }
 
