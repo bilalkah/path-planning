@@ -39,13 +39,8 @@ Path RRT::FindPath(const Node &start_node, const Node &goal_node,
 
   for (auto i = 0; i < max_iteration_; i++)
     {
-      // Random sampling.
-      auto random_point{RandomSampling()};
-
       // Get random node from random point according to map.
-      auto random_node{Node{
-          static_cast<int>(random_point.first * (map_copy->GetHeight() - 1)),
-          static_cast<int>(random_point.second * (map_copy->GetWidth() - 1))}};
+      auto random_node{RandomNode(map_copy)};
 
       // Get nearest node.
       auto nearest_node{GetNearestNodeParent(random_node, visited_nodes_)};
@@ -55,37 +50,43 @@ Path RRT::FindPath(const Node &start_node, const Node &goal_node,
                                 random_node, nearest_node, map_copy)};
 
       // Check if new node is valid.
-      if (new_node != nullptr)
+      if (new_node == nullptr)
         {
-          new_node->cost.g = nearest_node->cost.g + 1;
-          new_node->cost.e =
-              EuclideanDistance(*new_node->node, *nearest_node->node);
-          new_node->cost.f = new_node->cost.g + new_node->cost.e;
+          continue;
+        }
 
-          // Add new node to visited nodes.
-          visited_nodes_.emplace_back(new_node);
-          log_.emplace_back(LogType{*new_node->node, *nearest_node->node,
-                                    NodeState::kVisited});
+      // Update cost of new node.
+      new_node->cost =
+          RRTCost(new_node->cost.g + 1,
+                  nearest_node->cost.e +
+                      EuclideanDistance(*new_node->node, *nearest_node->node));
 
-          auto ray{Get2DRayBetweenNodes(*nearest_node->node, *new_node->node)};
-          for (const auto &node : ray)
-            {
-              map_copy->SetNodeState(node, NodeState::kVisited);
-            }
+      // Add new node to visited nodes.
+      visited_nodes_.emplace_back(new_node);
+      log_.emplace_back(
+          LogType{*new_node->node, *nearest_node->node, NodeState::kVisited});
 
-          // Check if goal node is in radius.
-          if (EuclideanDistance(*new_node->node, goal_node) < goal_radius_)
-            {
-              // Add goal node to visited nodes.
-              auto goal{std::make_shared<NodeParent<RRTCost>>(
-                  std::make_shared<Node>(goal_node), new_node,
-                  RRTCost(new_node->cost.g + 1,
+      // Set nodes between new node and nearest node as kVisited.
+      auto ray{Get2DRayBetweenNodes(*nearest_node->node, *new_node->node)};
+      for (const auto &node : ray)
+        {
+          map_copy->SetNodeState(node, NodeState::kVisited);
+        }
+
+      // Check if goal node is in radius.
+      if (EuclideanDistance(*new_node->node, goal_node) <= goal_radius_)
+        {
+          // Add goal node to visited nodes.
+          auto goal{std::make_shared<NodeParent<RRTCost>>(
+              std::make_shared<Node>(goal_node), new_node,
+              RRTCost(new_node->cost.g + 1,
+                      new_node->cost.e +
                           EuclideanDistance(*new_node->node, goal_node)))};
-              log_.emplace_back(
-                  LogType{*goal->node, *new_node->node, NodeState::kGoal});
-              // Get path.
-              return ReconstructPath(goal);
-            }
+          log_.emplace_back(
+              LogType{*goal->node, *new_node->node, NodeState::kGoal});
+
+          // Get path.
+          return ReconstructPath(goal);
         }
     }
 

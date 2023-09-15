@@ -30,6 +30,24 @@ std::pair<double, double> RandomSampling()
   return std::make_pair(dis(gen), dis(gen));
 }
 
+Node RandomNode(const std::shared_ptr<Map> map)
+{
+  bool is_valid{false};
+  Node random_node;
+  while (!is_valid)
+    {
+      auto random_point{RandomSampling()};
+      random_node =
+          Node(static_cast<int>(random_point.first * map->GetWidth()),
+               static_cast<int>(random_point.second * map->GetHeight()));
+      if (map->GetNodeState(random_node) == NodeState::kFree)
+        {
+          is_valid = true;
+        }
+    }
+  return random_node;
+}
+
 std::vector<Node> Get2DRayBetweenNodes(const Node &src, const Node &dst)
 {
   std::pair<double, double> ray_vector{dst.x_ - src.x_, dst.y_ - src.y_};

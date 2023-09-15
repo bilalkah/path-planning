@@ -41,6 +41,12 @@ class RRT : public IPlanningWithLogging
 public:
   RRT() {}
   RRT(const int max_iteration) : max_iteration_(max_iteration) {}
+  RRT(const int max_iteration, const int max_branch_length,
+      const int min_branch_length, const int goal_radius)
+      : max_iteration_(max_iteration), max_branch_length_(max_branch_length),
+        min_branch_length_(min_branch_length), goal_radius_(goal_radius)
+  {
+  }
   ~RRT() {}
   Path FindPath(const Node &start_node, const Node &goal_node,
                 const std::shared_ptr<Map> map) override;
@@ -53,7 +59,6 @@ private:
   int max_iteration_{10000};
   int max_branch_length_{10};
   int min_branch_length_{5};
-  int neighbor_radius_{15};
   int goal_radius_{5};
 };
 
