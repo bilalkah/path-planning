@@ -47,6 +47,10 @@ template <typename T>
 Path ReconstructPath(std::shared_ptr<NodeParent<T>> current_node)
 {
   Path path;
+  if (current_node == nullptr)
+    {
+      return path;
+    }
   auto iterator_node = current_node;
   while (iterator_node->parent != nullptr)
     {
