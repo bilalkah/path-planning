@@ -56,14 +56,15 @@ void Visualizer::VisualizeGridLog(const planning::Log &log)
     }
 }
 
-void Visualizer::VisualizeTreeLog(const planning::Log &log)
+void Visualizer::VisualizeTreeLog(const planning::Log &log, const int delay)
 {
   for (auto &log_item : log)
     {
       UpdateLine(log_item.current_node_, log_item.parent_node_,
                  log_item.node_state_);
-      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+      std::this_thread::sleep_for(std::chrono::milliseconds(delay));
     }
+  std::this_thread::sleep_for(std::chrono::milliseconds(10));
 }
 
 void Visualizer::VisualizeGridPath(const planning::Path &path)
