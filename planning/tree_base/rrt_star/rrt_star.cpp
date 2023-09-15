@@ -12,6 +12,7 @@
 #include "planning/tree_base/rrt_star/rrt_star.h"
 
 #include <algorithm>
+#include <chrono>
 #include <cstddef>
 #include <iostream>
 #include <limits>
@@ -25,10 +26,13 @@ namespace tree_base
 Path RRTStar::FindPath(const Node &start_node, const Node &goal_node,
                        const std::shared_ptr<Map> map)
 {
-  std::shared_ptr<NodeParent<RRTStarCost>> final = nullptr;
-  bool is_goal_found{false};
-  visited_nodes_.clear();
+  // Start time
+  auto start_time{std::chrono::high_resolution_clock::now()};
   log_.clear();
+  visited_nodes_.clear();
+  std::shared_ptr<RRTStarNode> final{std::nullptr_t()};
+  auto current_cost = std::numeric_limits<double>::max();
+  int path_count{0};
 
   // Copy map to avoid changing it.
   auto map_copy{std::make_shared<Map>(*map)};
@@ -37,8 +41,8 @@ Path RRTStar::FindPath(const Node &start_node, const Node &goal_node,
   map_copy->SetNodeState(start_node, NodeState::kStart);
 
   // Create root node.
-  auto root{std::make_shared<NodeParent<RRTStarCost>>(
-      std::make_shared<Node>(start_node), nullptr, RRTStarCost())};
+  auto root{std::make_shared<RRTStarNode>(std::make_shared<Node>(start_node),
+                                          nullptr, RRTStarCost())};
 
   // Add root node to visited nodes.
   visited_nodes_.push_back(root);
@@ -46,18 +50,13 @@ Path RRTStar::FindPath(const Node &start_node, const Node &goal_node,
   for (auto i = 0; i < max_iteration_; i++)
     {
       // Random sampling.
-      auto random_point{RandomSampling()};
-
-      // Get random node from random point according to map.
-      auto random_node{Node{
-          static_cast<int>(random_point.first * (map_copy->GetHeight() - 1)),
-          static_cast<int>(random_point.second * (map_copy->GetWidth() - 1))}};
+      auto random_node{RandomNode(map_copy)};
 
       // Get all nearest nodes.
       auto neighbor_vector = GetNearestNodeParentVector(
           neighbor_radius_, random_node, visited_nodes_);
 
-      std::shared_ptr<NodeParent<RRTStarCost>> new_node = std::nullptr_t();
+      std::shared_ptr<RRTStarNode> new_node{std::nullptr_t()};
       if (neighbor_vector.empty())
         {
           auto nearest_node{GetNearestNodeParent(random_node, visited_nodes_)};
@@ -69,8 +68,8 @@ Path RRTStar::FindPath(const Node &start_node, const Node &goal_node,
           auto index{0u};
           // Sort nearest nodes according to their cost from low to high.
           std::sort(neighbor_vector.begin(), neighbor_vector.end(),
-                    [](const std::shared_ptr<NodeParent<RRTStarCost>> &node1,
-                       const std::shared_ptr<NodeParent<RRTStarCost>> &node2) {
+                    [](const std::shared_ptr<RRTStarNode> &node1,
+                       const std::shared_ptr<RRTStarNode> &node2) {
                       return node1->cost.f < node2->cost.f;
                     });
 
@@ -96,55 +95,89 @@ Path RRTStar::FindPath(const Node &start_node, const Node &goal_node,
 
       // Add new node to visited nodes.
       visited_nodes_.push_back(new_node);
+      log_.push_back(LogType{*new_node->node, *new_node->parent->node,
+                             NodeState::kVisited});
 
       // Check if new node is close enough to goal node.
       if (EuclideanDistance(*new_node->node, goal_node) < goal_radius_)
         {
           // Create goal node.
-          auto goal{std::make_shared<NodeParent<RRTStarCost>>(
+          auto goal{std::make_shared<RRTStarNode>(
               std::make_shared<Node>(goal_node), new_node,
               RRTStarCost(new_node->cost.g + 1,
                           new_node->cost.e +
                               EuclideanDistance(*new_node->node, goal_node)))};
 
-          // Add goal node to visited nodes.
-          visited_nodes_.push_back(goal);
-
-          ConvertVisitedNodesToLog(goal);
-          std::cout << "Goal found." << std::endl;
-          std::cout << "Log size: " << log_.size() << std::endl;
-          std::cout << "-----------" << std::endl;
-          // Get path.
-          is_goal_found = true;
-          final = goal;
+          if (final != std::nullptr_t())
+            {
+              if (goal->cost.f < final->cost.f)
+                {
+                  // Remove old goal node from visited nodes.
+                  visited_nodes_.erase(std::remove(visited_nodes_.begin(),
+                                                   visited_nodes_.end(), final),
+                                       visited_nodes_.end());
+                  // Remove old goal node from log.
+                  log_.erase(std::remove_if(log_.begin(), log_.end(),
+                                            [&final](const LogType &log_type) {
+                                              return log_type.current_node_ ==
+                                                     *final->node;
+                                            }),
+                             log_.end());
+                  final = goal;
+                  visited_nodes_.push_back(final);
+                  log_.push_back(LogType{*final->node, *final->parent->node,
+                                         NodeState::kVisited});
+                  std::cout << "Path changed." << std::endl;
+                }
+            }
+          else
+            {
+              final = goal;
+              visited_nodes_.push_back(final);
+              log_.push_back(LogType{*final->node, *final->parent->node,
+                                     NodeState::kVisited});
+              std::cout << "Path found." << std::endl;
+            }
         }
 
       // Rewire.
       if (!neighbor_vector.empty())
         {
-          Rewire(new_node, neighbor_vector, map_copy);
-        }
-
-      if (is_goal_found && i % 100 == 0)
-        {
-          ConvertVisitedNodesToLog(final);
+          auto is_rewired{Rewire(new_node, neighbor_vector, map_copy)};
+          if (is_rewired && final != std::nullptr_t() &&
+              current_cost > final->cost.f)
+            {
+              current_cost = final->cost.f;
+              std::cout << "Goal cost: " << final->cost.f << "\t";
+              std::cout << "Iteration: " << ++path_count << "\t";
+              // Print time
+              auto end_time{std::chrono::high_resolution_clock::now()};
+              std::cout
+                  << "Time: "
+                  << std::chrono::duration_cast<std::chrono::milliseconds>(
+                         end_time - start_time)
+                         .count()
+                  << " ms" << std::endl;
+              SaveCurrentLogAndPath(i, final);
+              ResetLogAndUpdateWithVisitedNodes();
+            }
         }
     }
-  // ConvertVisitedNodesToLog();
-  if (is_goal_found)
-    {
-      return ReconstructPath(final);
-    }
-  return Path();
+  return ReconstructPath(final);
 }
 
 Log RRTStar::GetLog() { return log_; }
 
-void RRTStar::Rewire(
-    const std::shared_ptr<NodeParent<RRTStarCost>> &new_node,
-    std::vector<std::shared_ptr<NodeParent<RRTStarCost>>> &nearest_nodes,
-    const std::shared_ptr<Map> map)
+std::vector<std::pair<Log, Path>> RRTStar::GetLogVector()
 {
+  return log_vector_;
+}
+
+bool RRTStar::Rewire(const std::shared_ptr<RRTStarNode> &new_node,
+                     std::vector<std::shared_ptr<RRTStarNode>> &nearest_nodes,
+                     const std::shared_ptr<Map> map)
+{
+  bool rewired{false};
   for (const auto &nearest : nearest_nodes)
     {
       if (nearest->node == new_node->parent->node)
@@ -172,13 +205,15 @@ void RRTStar::Rewire(
               nearest->cost = new_cost;
 
               RecursivelyCostUpdate(nearest);
+
+              rewired = true;
             }
         }
     }
+  return rewired;
 }
 
-void RRTStar::RecursivelyCostUpdate(
-    const std::shared_ptr<NodeParent<RRTStarCost>> &node)
+void RRTStar::RecursivelyCostUpdate(const std::shared_ptr<RRTStarNode> &node)
 {
   if (node == nullptr)
     {
@@ -203,17 +238,38 @@ void RRTStar::RecursivelyCostUpdate(
     }
 }
 
-void RRTStar::ConvertVisitedNodesToLog(
-    std::shared_ptr<NodeParent<RRTStarCost>> goal)
+void RRTStar::SaveCurrentLogAndPath(const int iteration,
+                                    const std::shared_ptr<RRTStarNode> &final)
 {
-  // Print Cost
-  std::cout << "Cost: " << goal->cost.f << std::endl;
-  auto path = ReconstructPath(goal);
-  auto index{0u};
-  for (index = 0; index < path.size() - 1; index++)
+
+  {
+    std::pair<Log, Path> log_path_pair;
+    for (const auto &visited_node : visited_nodes_)
+      {
+        if (visited_node->parent == nullptr)
+          {
+            continue;
+          }
+        log_path_pair.first.push_back(LogType{*visited_node->node,
+                                              *visited_node->parent->node,
+                                              NodeState::kVisited});
+      }
+    log_path_pair.second = ReconstructPath(final);
+    log_vector_.push_back(log_path_pair);
+  }
+}
+
+void RRTStar::ResetLogAndUpdateWithVisitedNodes()
+{
+  log_.clear();
+  for (const auto &visited_node : visited_nodes_)
     {
-      log_.emplace_back(
-          LogType{*path[index], *path[index + 1], NodeState::kVisited});
+      if (visited_node->parent == nullptr)
+        {
+          continue;
+        }
+      log_.push_back(LogType{*visited_node->node, *visited_node->parent->node,
+                             NodeState::kVisited});
     }
 }
 
