@@ -61,8 +61,14 @@ int main(int argc, char **argv)
 
   while (true)
     {
+      // Get time
+      auto start_time{std::chrono::high_resolution_clock::now()};
       planning::Path path = planner->FindPath(start_node, goal_node, map);
-
+      auto end_time{std::chrono::high_resolution_clock::now()};
+      auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+                          end_time - start_time)
+                          .count();
+      std::cout << "Planning Duration: " << duration << " ms" << std::endl;
       // dynamic cast to get log
 
       auto log = planner->GetLog();
@@ -83,7 +89,29 @@ int main(int argc, char **argv)
         }
       else if (planner_name == "rrt" || planner_name == "rrt_star")
         {
-          visualizer.VisualizeTreeLog(log);
+          if (planner_name == "rrt_star")
+            {
+              auto log_vector =
+                  std::dynamic_pointer_cast<planning::tree_base::RRTStar>(
+                      planner)
+                      ->GetLogVector();
+              for (auto &log : log_vector)
+                {
+                  visualizer.VisualizeTreeLog(log.first, 0);
+                  // sleep for 1 second
+                  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+                  if (!log.second.empty())
+                    {
+                      visualizer.VisualizeTreePath(log.second);
+                    }
+                  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+                  visualizer.UpdateMap(*map);
+                }
+            }
+          else
+            {
+              visualizer.VisualizeTreeLog(log, 10);
+            }
 
           // sleep for 1 second
           std::this_thread::sleep_for(std::chrono::milliseconds(1000));

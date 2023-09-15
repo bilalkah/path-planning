@@ -57,7 +57,7 @@ Path RRT::FindPath(const Node &start_node, const Node &goal_node,
 
       // Update cost of new node.
       new_node->cost =
-          RRTCost(new_node->cost.g + 1,
+          RRTCost(nearest_node->cost.g + 1,
                   nearest_node->cost.e +
                       EuclideanDistance(*new_node->node, *nearest_node->node));
 

@@ -58,7 +58,7 @@ public:
    *
    * @param path
    */
-  void VisualizeTreeLog(const planning::Log &log);
+  void VisualizeTreeLog(const planning::Log &log, const int delay);
 
   /**
    * @brief Visualize path. Thread safe.
