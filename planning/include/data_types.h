@@ -44,6 +44,30 @@ struct Node
     return (x_ != node.x_) || (y_ != node.y_);
   }
 
+  Node operator-(const Node &node) const
+  {
+    return Node(x_ - node.x_, y_ - node.y_);
+  }
+
+  Node operator-=(const Node &node)
+  {
+    x_ -= node.x_;
+    y_ -= node.y_;
+    return *this;
+  }
+
+  Node operator+(const Node &node) const
+  {
+    return Node(x_ + node.x_, y_ + node.y_);
+  }
+
+  Node operator+=(const Node &node)
+  {
+    x_ += node.x_;
+    y_ += node.y_;
+    return *this;
+  }
+
   int x_, y_;
 }; // class Node
 
