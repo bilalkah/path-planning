@@ -17,6 +17,7 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace planning
@@ -39,7 +40,7 @@ struct Cost
  * @brief A* path finding algorithm.
  *
  */
-class AStar : public IPlanning
+class AStar : public IPlanningWithLogging
 {
 public:
   AStar(const double &heuristic_weight, const int search_space);
@@ -48,7 +49,7 @@ public:
   Log GetLog() override;
 
 private:
-  ::planning::Log log_;
+  Log log_;
   SearchSpace search_space_;
 
   double heuristic_weight_;

@@ -11,18 +11,18 @@ link_directories(
 )
 
 set(
-    RRT_FILES
-    ${CMAKE_CURRENT_SOURCE_DIR}/rrt.cpp
+    RRT_STAR_FILES
+    ${CMAKE_CURRENT_SOURCE_DIR}/rrt_star.cpp
 )
 
 add_library(
-    rrt 
+    rrt_star 
     SHARED
-    ${RRT_FILES}
+    ${RRT_STAR_FILES}
 )
 
 target_link_libraries(
-    rrt
+    rrt_star
     PUBLIC
     common_tree_base
 )

@@ -34,6 +34,16 @@ struct Node
     return os;
   }
 
+  bool operator==(const Node &node) const
+  {
+    return (x_ == node.x_) && (y_ == node.y_);
+  }
+
+  bool operator!=(const Node &node) const
+  {
+    return (x_ != node.x_) || (y_ != node.y_);
+  }
+
   int x_, y_;
 }; // class Node
 
@@ -56,7 +66,7 @@ enum class NodeState : uint8_t
  *
  */
 using Path = std::vector<std::shared_ptr<Node>>;
-using Log = std::vector<std::pair<Node, NodeState>>;
+// using Log = std::vector<std::pair<Node, NodeState>>;
 
 } // namespace planning
 

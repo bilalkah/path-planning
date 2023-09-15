@@ -24,9 +24,9 @@ namespace planning
  */
 template <typename T> struct NodeParent
 {
-  NodeParent() : node(nullptr), parent(nullptr) {}
+  NodeParent() : node(nullptr), parent(nullptr), cost(0) {}
   NodeParent(std::shared_ptr<Node> node_, std::shared_ptr<NodeParent> parent_)
-      : node(node_), parent(parent_)
+      : node(node_), parent(parent_), cost(0)
   {
   }
   NodeParent(std::shared_ptr<Node> node_, std::shared_ptr<NodeParent> parent_,

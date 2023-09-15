@@ -10,6 +10,8 @@
  */
 
 #include "tools/include/visualizer.h"
+#include "planning/tree_base/include/common_tree_base.h"
+#include <cmath>
 
 namespace tools
 {
@@ -44,6 +46,59 @@ void Visualizer::UpdateMap(const planning::Map &map)
   std::lock_guard<std::mutex> lock_window(window_mutex_);
   map_ = map;
   SetWindow();
+}
+
+void Visualizer::VisualizeGridLog(const planning::Log &log)
+{
+  for (auto &log_item : log)
+    {
+      UpdateNode(log_item.current_node_, log_item.node_state_);
+    }
+}
+
+void Visualizer::VisualizeTreeLog(const planning::Log &log)
+{
+  for (auto &log_item : log)
+    {
+      UpdateLine(log_item.current_node_, log_item.parent_node_,
+                 log_item.node_state_);
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+}
+
+void Visualizer::VisualizeGridPath(const planning::Path &path)
+{
+  for (auto &node : path)
+    {
+      UpdateNode(*node, planning::NodeState::kPath);
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+}
+
+void Visualizer::VisualizeTreePath(const planning::Path &path)
+{
+  // Get first node.
+  auto current_node = path.front();
+
+  // Loop starting from second node.
+  for (auto it = path.begin() + 1; it != path.end(); ++it)
+    {
+      UpdateLine(*current_node, **it, planning::NodeState::kPath);
+      current_node = *it;
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    }
+}
+
+void Visualizer::UpdateLine(const planning::Node &node1,
+                            const planning::Node &node2,
+                            const planning::NodeState state)
+{
+  const auto ray{planning::tree_base::Get2DRayBetweenNodes(node1, node2)};
+
+  for (const auto node : ray)
+    {
+      UpdateNode(node, state);
+    }
 }
 
 void Visualizer::UpdateNode(const planning::Node &node,

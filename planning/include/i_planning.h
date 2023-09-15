@@ -12,14 +12,14 @@
 #ifndef PLANNING_INCLUDE_I_PLANNING_H_
 #define PLANNING_INCLUDE_I_PLANNING_H_
 
-#include "data_types.h"
+#include "planning/include/data_types.h"
+
 #include <memory>
 #include <vector>
 
 namespace planning
 {
 class Map;
-class Node;
 
 class IPlanning
 {
@@ -35,14 +35,38 @@ public:
   FindPath(const Node &start_node, const Node &goal_node,
            const std::shared_ptr<Map> map) = 0;
 
-  /**
-   * @brief Get history of search.
-   *
-   */
-  virtual Log GetLog() = 0;
-
   virtual ~IPlanning() {}
 }; // class IPathFinding
+
+struct LogType
+{
+  LogType(Node current_node, Node parent_node, NodeState node_state)
+      : current_node_(current_node), parent_node_(parent_node),
+        node_state_(node_state)
+  {
+  }
+  LogType(Node current_node, NodeState node_state)
+      : current_node_(current_node), node_state_(node_state)
+  {
+  }
+  Node current_node_;
+  Node parent_node_;
+  NodeState node_state_;
+};
+
+using Log = std::vector<LogType>;
+class ILogging
+{
+public:
+  virtual Log GetLog() = 0;
+
+  virtual ~ILogging() {}
+};
+
+class IPlanningWithLogging : public IPlanning, public ILogging
+{
+};
+
 } // namespace planning
 
 #endif /* PLANNING_INCLUDE_I_PLANNING_H_ */

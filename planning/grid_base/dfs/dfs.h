@@ -29,7 +29,7 @@ using CostDFS = int;
  * @brief Depth First Search algorithm.
  *
  */
-class DFS : public IPlanning
+class DFS : public IPlanningWithLogging
 {
 public:
   DFS(const int search_space);
@@ -38,7 +38,7 @@ public:
   Log GetLog() override;
 
 private:
-  ::planning::Log log_;
+  Log log_;
   SearchSpace search_space_;
 };
 

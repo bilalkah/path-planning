@@ -10,6 +10,7 @@
  */
 
 #include "dfs.h"
+#include "common_grid_base.h"
 #include "common_planning.h"
 #include <iostream>
 #include <stdexcept>
@@ -40,8 +41,8 @@ Path DFS::FindPath(const Node &start_node, const Node &goal_node,
 {
   // Clear log.
   log_.clear();
-  log_.emplace_back(start_node, NodeState::kStart);
-  log_.emplace_back(goal_node, NodeState::kGoal);
+  log_.emplace_back(LogType{start_node, NodeState::kStart});
+  log_.emplace_back(LogType{goal_node, NodeState::kGoal});
   // Copy map to avoid changing it.
   std::shared_ptr<Map> map_copy = std::make_shared<Map>(*map);
   map_copy->SetNodeState(goal_node, NodeState::kGoal);
@@ -65,7 +66,7 @@ Path DFS::FindPath(const Node &start_node, const Node &goal_node,
         {
           continue;
         }
-      log_.emplace_back(*current_node->node, NodeState::kVisited);
+      log_.emplace_back(LogType{*current_node->node, NodeState::kVisited});
       // Set node state to visited.
       map_copy->SetNodeState(*current_node->node, NodeState::kVisited);
 
