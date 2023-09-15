@@ -12,9 +12,9 @@
 #include "planning/grid_base/include/common_grid_base.h"
 
 #include <fstream>
-#include <gtest/gtest.h>
 #include <iostream>
 #include <string>
+#include <gtest/gtest.h>
 
 TEST(test, AccessData_ReadMap)
 {
