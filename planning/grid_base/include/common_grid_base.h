@@ -14,7 +14,6 @@
 
 #include "planning/include/common_planning.h"
 #include "planning/include/data_types.h"
-#include "planning/include/i_planning.h"
 
 #include <array>
 #include <cstddef>

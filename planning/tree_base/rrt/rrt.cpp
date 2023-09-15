@@ -10,7 +10,6 @@
  */
 
 #include "planning/tree_base/rrt/rrt.h"
-#include "node_parent.h"
 #include <cstddef>
 #include <iostream>
 

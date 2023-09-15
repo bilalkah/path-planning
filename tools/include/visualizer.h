@@ -18,7 +18,6 @@
 
 #include <SFML/Graphics.hpp>
 #include <chrono>
-#include <iostream>
 #include <memory>
 #include <mutex>
 #include <thread>

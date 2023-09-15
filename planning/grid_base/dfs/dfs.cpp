@@ -10,8 +10,6 @@
  */
 
 #include "dfs.h"
-#include "common_grid_base.h"
-#include "common_planning.h"
 #include <iostream>
 #include <stdexcept>
 

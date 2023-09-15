@@ -10,7 +10,6 @@
  */
 
 #include "a_star.h"
-#include "common_grid_base.h"
 
 #include <cmath>
 #include <iostream>

@@ -10,8 +10,6 @@
  */
 
 #include "bfs.h"
-#include "common_grid_base.h"
-#include "common_planning.h"
 #include <iostream>
 #include <memory>
 #include <queue>
