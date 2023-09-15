@@ -84,7 +84,7 @@ Path RRT::FindPath(const Node &start_node, const Node &goal_node,
                           EuclideanDistance(*new_node->node, goal_node)))};
           log_.emplace_back(
               LogType{*goal->node, *new_node->node, NodeState::kGoal});
-          
+
           // Get path.
           return ReconstructPath(goal);
         }
