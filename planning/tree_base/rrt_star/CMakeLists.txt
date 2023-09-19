@@ -25,4 +25,5 @@ target_link_libraries(
     rrt_star
     PUBLIC
     common_tree_base
+    tree_visualizer
 )

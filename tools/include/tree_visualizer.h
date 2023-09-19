@@ -15,25 +15,29 @@
 #include "planning/tree_base/include/common_tree_base.h"
 #include "tools/include/i_visualize.h"
 #include <SFML/Graphics.hpp>
+#include <memory>
 
 namespace tools
 {
 
-class TreeVisualizer : public IVisualize
+class TreeVisualizer
 {
 public:
-  TreeVisualizer(pair_size_t size, pair_double size_coeff, std::size_t kDelay,
-                 std::string window_name);
+  TreeVisualizer(std::shared_ptr<planning::Map> map, pair_double size_coeff,
+                 std::size_t kDelay, std::string window_name);
   ~TreeVisualizer();
 
-  void Visualize(const void *data) override;
+  void Visualize(const std::vector<std::shared_ptr<planning::NodeParent>>
+                     node_parent_vector,
+                 const std::shared_ptr<planning::NodeParent> goal_node_parent);
+
   void SetStartAndGoal(const planning::Node &start_node,
-                       const planning::Node &goal_node) override;
+                       const planning::Node &goal_node);
 
 private:
   sf::RenderWindow window_;
   std::string window_name_;
-  pair_size_t size_;
+  std::shared_ptr<planning::Map> map;
   pair_double size_coeff_;
   std::size_t kDelay_;
 

@@ -17,29 +17,27 @@
 namespace tools
 {
 
-TreeVisualizer::TreeVisualizer(pair_size_t size, pair_double size_coeff,
-                               std::size_t kDelay, std::string window_name)
-    : window_name_(window_name), size_(size), size_coeff_(size_coeff),
+TreeVisualizer::TreeVisualizer(std::shared_ptr<planning::Map> map,
+                               pair_double size_coeff, std::size_t kDelay,
+                               std::string window_name)
+    : window_name_(window_name), map(map), size_coeff_(size_coeff),
       kDelay_(kDelay)
 {
-  window_.create(sf::VideoMode(size_.first * size_coeff_.first,
-                               size_.second * size_coeff_.second),
+  window_.create(sf::VideoMode(map->GetHeight() * size_coeff_.first,
+                               map->GetWidth() * size_coeff_.second),
                  window_name_);
   colors_ = GetColorMap();
 };
 
 TreeVisualizer::~TreeVisualizer() { window_.close(); }
 
-void TreeVisualizer::Visualize(const void *data)
+void TreeVisualizer::Visualize(
+    const std::vector<std::shared_ptr<planning::NodeParent>> node_parent_vector,
+    const std::shared_ptr<planning::NodeParent> goal_node_parent)
 {
-  // data is std::vector<std::shared_ptr<planning::tree_based::Cost>>
-  auto *node_parent_vector = static_cast<const std::vector<
-      std::shared_ptr<planning::NodeParent<planning::tree_base::Cost>>> *>(
-      data);
 
   window_.clear();
-
-  for (auto &node_parent : *node_parent_vector)
+  for (auto &node_parent : node_parent_vector)
     {
       if (node_parent->parent == nullptr)
         {
@@ -47,7 +45,7 @@ void TreeVisualizer::Visualize(const void *data)
         }
 
       auto ray{planning::tree_base::Get2DRayBetweenNodes(
-          *node_parent->parent->node, *node_parent->node)};
+          node_parent->parent->node, node_parent->node)};
 
       for (auto &node : ray)
         {
@@ -58,6 +56,22 @@ void TreeVisualizer::Visualize(const void *data)
                                 node.x_ * size_coeff_.first);
           rectangle.setFillColor(
               GetColorMap().at(planning::NodeState::kVisited));
+          window_.draw(rectangle);
+        }
+    }
+
+  if (goal_node_parent != nullptr)
+    {
+      auto path{planning::ReconstructPath(goal_node_parent)};
+
+      for (auto &node : path)
+        {
+          sf::RectangleShape rectangle;
+          rectangle.setSize(
+              sf::Vector2f(size_coeff_.second, size_coeff_.first));
+          rectangle.setPosition(node.y_ * size_coeff_.second,
+                                node.x_ * size_coeff_.first);
+          rectangle.setFillColor(GetColorMap().at(planning::NodeState::kPath));
           window_.draw(rectangle);
         }
     }

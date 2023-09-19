@@ -17,7 +17,8 @@
 #include "planning/include/i_planning.h"
 #include "planning/tree_base/rrt/rrt.h"
 #include "planning/tree_base/rrt_star/rrt_star.h"
-#include "tools/include/visualizer.h"
+#include "tools/include/i_visualize.h"
+#include "tools/include/tree_visualizer.h"
 #include "yaml-cpp/yaml.h"
 
 #include <cstdlib>
@@ -51,17 +52,22 @@ int main(int argc, char **argv)
   auto planner_name = config["planner_name"].as<std::string>();
   PlannerType planner = GetPlanner(planner_name);
   // Visualizer config
-  auto rescale = config["visualizer"]["rescale"].as<float>();
-  auto delay = config["visualizer"]["delay"].as<float>();
-  auto show = config["visualizer"]["show"].as<bool>();
+  auto tree_visualizer = std::make_shared<tools::TreeVisualizer>(
+      map, tools::pair_double{2.0, 2.0}, 1u, "Tree Visualizer");
 
-  tools::Visualizer visualizer(*map, rescale, rescale, delay, show);
+  auto rrt_star =
+      std::dynamic_pointer_cast<planning::tree_base::RRTStar>(planner);
+
+  rrt_star->AttachVisualizer(tree_visualizer);
 
   // Path config
   auto s = config["path"]["start"];
   auto start_node = planning::Node(s["x"].as<int>(), s["y"].as<int>());
   auto g = config["path"]["goal"];
   auto goal_node = planning::Node(g["x"].as<int>(), g["y"].as<int>());
+
+  // Visualize start and goal nodes
+  tree_visualizer->SetStartAndGoal(start_node, goal_node);
 
   while (true)
     {
@@ -76,63 +82,6 @@ int main(int argc, char **argv)
       // dynamic cast to get log
 
       auto log = planner->GetLog();
-
-      std::cout << "Log size: " << log.size() << std::endl;
-      if (planner_name == "astar" || planner_name == "bfs" ||
-          planner_name == "dfs")
-        {
-          visualizer.VisualizeGridLog(log);
-
-          // sleep for 1 second
-          std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-
-          if (!path.empty())
-            {
-              visualizer.VisualizeGridPath(path);
-            }
-        }
-      else if (planner_name == "rrt" || planner_name == "rrt_star")
-        {
-          if (planner_name == "rrt_star")
-            {
-              auto log_vector =
-                  std::dynamic_pointer_cast<planning::tree_base::RRTStar>(
-                      planner)
-                      ->GetLogVector();
-              for (auto &log : log_vector)
-                {
-                  visualizer.VisualizeTreeLog(log.first, 0);
-                  // sleep for 1 second
-                  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-                  if (!log.second.empty())
-                    {
-                      visualizer.VisualizeTreePath(log.second);
-                    }
-                  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-                  visualizer.UpdateMap(*map);
-                }
-            }
-          else
-            {
-              visualizer.VisualizeTreeLog(log, 10);
-            }
-
-          // sleep for 1 second
-          std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-          if (!path.empty())
-            {
-              visualizer.VisualizeTreePath(path);
-            }
-        }
-
-      // sleep for 1 second
-      std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-
-      visualizer.UpdateMap(*map);
-
-      // sleep for 1 second
-      std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-      std::cout << "\n\n\n-----------\n\n\n" << std::endl;
     }
 
   return 0;

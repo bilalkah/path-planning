@@ -13,46 +13,6 @@ link_directories(
 )
 
 set(
-    VISUALIZER_SOURCES
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/visualizer.cpp
-    ${COMMON_PLANNING_FILES}
-)
-
-add_library(
-    visualizer
-    SHARED
-    ${VISUALIZER_SOURCES}
-)
-
-target_link_libraries(
-    visualizer
-    PUBLIC
-    sfml-system 
-    sfml-graphics 
-    sfml-window
-)
-
-set(
-    GRID_VISUALIZER_SOURCES
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/grid_visualizer.cpp
-    ${COMMON_PLANNING_FILES}
-)
-
-add_library(
-    grid_visualizer
-    SHARED
-    ${GRID_VISUALIZER_SOURCES}
-)
-
-target_link_libraries(
-    grid_visualizer
-    PUBLIC
-    sfml-system 
-    sfml-graphics 
-    sfml-window
-)
-
-set(
     TREE_VISUALIZER_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/src/tree_visualizer.cpp
     ${COMMON_PLANNING_FILES}
@@ -61,7 +21,7 @@ set(
 add_library(
     tree_visualizer
     SHARED
-    ${GRID_VISUALIZER_SOURCES}
+    ${TREE_VISUALIZER_SOURCES}
 )
 
 target_link_libraries(
@@ -70,4 +30,6 @@ target_link_libraries(
     sfml-system 
     sfml-graphics 
     sfml-window
+    common_tree_base
 )
+

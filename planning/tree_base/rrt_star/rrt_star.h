@@ -14,6 +14,7 @@
 
 #include "planning/include/i_planning.h"
 #include "planning/tree_base/include/common_tree_base.h"
+#include "tools/include/tree_visualizer.h"
 #include <memory>
 #include <unordered_map>
 #include <vector>
@@ -46,6 +47,11 @@ public:
   Log GetLog() override;
   std::vector<std::pair<Log, Path>> GetLogVector();
 
+  void AttachVisualizer(std::shared_ptr<tools::TreeVisualizer> visualizer)
+  {
+    visualize_ = visualizer;
+  }
+
 private:
   std::shared_ptr<NodeParent>
   WireNodeIfPossible(const Node &random_node,
@@ -77,9 +83,11 @@ private:
   int max_iteration_{10000};
   int max_branch_length_{10};
   int min_branch_length_{5};
-  int neighbor_radius_{20};
+  int neighbor_radius_{30};
   int goal_radius_{5};
   int save_log_interval_{100};
+
+  std::shared_ptr<tools::TreeVisualizer> visualize_{nullptr};
 };
 
 } // namespace tree_base

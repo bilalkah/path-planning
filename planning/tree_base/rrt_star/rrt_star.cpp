@@ -105,6 +105,12 @@ Path RRTStar::FindPath(const Node &start_node, const Node &goal_node,
               ResetLogAndUpdateWithVisitedNodes();
             }
         }
+
+      // Visualize.
+      if (visualize_ != nullptr)
+        {
+          visualize_->Visualize(visited_nodes_, final);
+        }
     }
   return ReconstructPath(final);
 }
