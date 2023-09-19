@@ -31,3 +31,23 @@ target_link_libraries(
     sfml-graphics 
     sfml-window
 )
+
+set(
+    GRID_VISUALIZER_SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/grid_visualizer.cpp
+    ${COMMON_PLANNING_FILES}
+)
+
+add_library(
+    grid_visualizer
+    SHARED
+    ${GRID_VISUALIZER_SOURCES}
+)
+
+target_link_libraries(
+    grid_visualizer
+    PUBLIC
+    sfml-system 
+    sfml-graphics 
+    sfml-window
+)
