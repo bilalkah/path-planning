@@ -51,3 +51,23 @@ target_link_libraries(
     sfml-graphics 
     sfml-window
 )
+
+set(
+    TREE_VISUALIZER_SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/tree_visualizer.cpp
+    ${COMMON_PLANNING_FILES}
+)
+
+add_library(
+    tree_visualizer
+    SHARED
+    ${GRID_VISUALIZER_SOURCES}
+)
+
+target_link_libraries(
+    tree_visualizer
+    PUBLIC
+    sfml-system 
+    sfml-graphics 
+    sfml-window
+)

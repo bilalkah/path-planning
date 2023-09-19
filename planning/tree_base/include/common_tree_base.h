@@ -25,6 +25,16 @@ namespace planning
 namespace tree_base
 {
 
+struct Cost
+{
+  Cost() : g(0), e(0), f(0) {}
+  Cost(double g, double e) : g(g), e(e), f(g + e) {}
+
+  double g; // cost from start node
+  double e; // real distance from start node
+  double f; // total cost
+};
+
 /**
  * @brief // Random sampling function (x, y) between (0, 1)
  *
