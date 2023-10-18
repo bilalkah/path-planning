@@ -89,7 +89,7 @@ enum class NodeState : uint8_t
  * @brief Path type.
  *
  */
-using Path = std::vector<std::shared_ptr<Node>>;
+using Path = std::vector<Node>;
 // using Log = std::vector<std::pair<Node, NodeState>>;
 
 } // namespace planning

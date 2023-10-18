@@ -21,18 +21,6 @@ namespace planning
 namespace tree_base
 {
 
-struct RRTStarCost
-{
-  RRTStarCost() : g(0), e(0), f(0) {}
-  RRTStarCost(double g, double e) : g(g), e(e), f(g + e) {}
-
-  double g; // cost from start node
-  double e; // real distance from start node
-  double f; // total cost
-};
-
-using RRTStarNode = NodeParent<RRTStarCost>;
-
 /**
  * @brief Rapidly-exploring Random Tree (RRT) algorithm.
  *
@@ -58,17 +46,17 @@ public:
   std::vector<std::pair<Log, Path>> GetLogVector();
 
 private:
-  bool Rewire(const std::shared_ptr<RRTStarNode> &new_node,
-              std::vector<std::shared_ptr<RRTStarNode>> &nearest_nodes,
+  bool Rewire(const std::shared_ptr<NodeParent> &new_node,
+              std::vector<std::shared_ptr<NodeParent>> &nearest_nodes,
               const std::shared_ptr<Map> map);
-  void RecursivelyCostUpdate(const std::shared_ptr<RRTStarNode> &node);
+  void RecursivelyCostUpdate(const std::shared_ptr<NodeParent> &node);
   void SaveCurrentLogAndPath(const int iteration,
-                             const std::shared_ptr<RRTStarNode> &final);
+                             const std::shared_ptr<NodeParent> &final);
   void ResetLogAndUpdateWithVisitedNodes();
 
   Log log_;
   std::vector<std::pair<Log, Path>> log_vector_;
-  std::vector<std::shared_ptr<RRTStarNode>> visited_nodes_;
+  std::vector<std::shared_ptr<NodeParent>> visited_nodes_;
 
   int max_iteration_{10000};
   int max_branch_length_{10};

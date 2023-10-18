@@ -18,33 +18,46 @@ namespace planning
 {
 
 /**
+ * @brief Common cost struct for planning algorithms.
+ *
+ */
+struct Cost
+{
+  Cost() : g(0), h(0), f(0) {}
+  Cost(double g, double h) : g(g), h(h), f(g + h) {}
+  Cost(double g, double h, double w) : g(g), h(h), f((1 - w) * g + w * h) {}
+
+  double g; // cost from start node
+  double h; // Euclidean distance to goal node or previous node
+  double f; // total cost
+};
+
+/**
  * @brief Node with parent and cost.
  *
  * @tparam T Cost type.
  */
-template <typename T> struct NodeParent
+struct NodeParent
 {
-  NodeParent() : node(nullptr), parent(nullptr), cost(0) {}
-  NodeParent(std::shared_ptr<Node> node_, std::shared_ptr<NodeParent> parent_)
-      : node(node_), parent(parent_), cost(0)
+  NodeParent() {}
+  NodeParent(Node node_, std::shared_ptr<NodeParent> parent_)
+      : node(node_), parent(parent_)
   {
   }
-  NodeParent(std::shared_ptr<Node> node_, std::shared_ptr<NodeParent> parent_,
-             T cost_)
+  NodeParent(Node node_, std::shared_ptr<NodeParent> parent_, Cost cost_)
       : node(node_), parent(parent_), cost(cost_)
   {
   }
-  std::shared_ptr<Node> node;
-  std::shared_ptr<NodeParent> parent;
-  T cost;
+  Node node{};
+  std::shared_ptr<NodeParent> parent{};
+  Cost cost{};
 };
 
 /**
  * @brief Backtrace path from goal to start.
  *
  */
-template <typename T>
-Path ReconstructPath(std::shared_ptr<NodeParent<T>> current_node)
+inline Path ReconstructPath(std::shared_ptr<NodeParent> current_node)
 {
   Path path;
   if (current_node == nullptr)

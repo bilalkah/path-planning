@@ -46,32 +46,31 @@ Path DFS::FindPath(const Node &start_node, const Node &goal_node,
   map_copy->SetNodeState(goal_node, NodeState::kGoal);
 
   // Create stack for search list.
-  std::stack<std::shared_ptr<NodeParent<CostDFS>>> search_list;
+  std::stack<std::shared_ptr<NodeParent>> search_list;
 
   // Create start node.
-  std::shared_ptr<NodeParent<CostDFS>> start_node_info =
-      std::make_shared<NodeParent<CostDFS>>(std::make_shared<Node>(start_node),
-                                            nullptr, CostDFS{0});
+  std::shared_ptr<NodeParent> start_node_info =
+      std::make_shared<NodeParent>(start_node, nullptr, Cost{});
   search_list.push(start_node_info);
 
-  while (!search_list.empty() && !IsGoal(*search_list.top()->node, goal_node))
+  while (!search_list.empty() && !IsGoal(search_list.top()->node, goal_node))
     {
       auto current_node = search_list.top();
       search_list.pop();
 
       // Check if node is already visited.
-      if (map_copy->GetNodeState(*current_node->node) == NodeState::kVisited)
+      if (map_copy->GetNodeState(current_node->node) == NodeState::kVisited)
         {
           continue;
         }
-      log_.emplace_back(LogType{*current_node->node, NodeState::kVisited});
+      log_.emplace_back(LogType{current_node->node, NodeState::kVisited});
       // Set node state to visited.
-      map_copy->SetNodeState(*current_node->node, NodeState::kVisited);
+      map_copy->SetNodeState(current_node->node, NodeState::kVisited);
 
       for (const auto &direction : search_space_)
         {
-          int x = current_node->node->x_ + direction[0];
-          int y = current_node->node->y_ + direction[1];
+          int x = current_node->node.x_ + direction[0];
+          int y = current_node->node.y_ + direction[1];
 
           if (!IsFree(Node(x, y), map_copy))
             {
@@ -79,10 +78,8 @@ Path DFS::FindPath(const Node &start_node, const Node &goal_node,
             }
 
           // Create new node.
-          std::shared_ptr<NodeParent<CostDFS>> new_node_parent =
-              std::make_shared<NodeParent<CostDFS>>(
-                  std::make_shared<Node>(Node(x, y)), current_node,
-                  CostDFS{current_node->cost + 1});
+          std::shared_ptr<NodeParent> new_node_parent =
+              std::make_shared<NodeParent>(Node(x, y), current_node, Cost{});
 
           // Add new node to search list.
           search_list.push(new_node_parent);

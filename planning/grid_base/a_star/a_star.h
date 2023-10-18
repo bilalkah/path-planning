@@ -26,16 +26,6 @@ namespace planning
 namespace grid_base
 {
 
-struct Cost
-{
-  Cost() : g(0), h(0), f(0) {}
-  Cost(double g, double h, double w) : g(g), h(h), f((1 - w) * g + w * h) {}
-
-  double g; // cost from start node
-  double h; // heuristic cost to goal node
-  double f; // total cost
-};
-
 /**
  * @brief A* path finding algorithm.
  *

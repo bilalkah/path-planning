@@ -23,8 +23,6 @@ namespace planning
 namespace grid_base
 {
 
-using CostDFS = int;
-
 /**
  * @brief Depth First Search algorithm.
  *

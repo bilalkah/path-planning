@@ -26,16 +26,6 @@ namespace planning
 namespace tree_base
 {
 
-struct RRTCost
-{
-  RRTCost() : g(0), e(0), f(0) {}
-  RRTCost(double g, double e) : g(g), e(e), f(g + e) {}
-
-  double g; // cost from start node
-  double e; // real distance from start node
-  double f; // total cost
-};
-
 class RRT : public IPlanningWithLogging
 {
 public:
@@ -55,7 +45,7 @@ public:
 private:
   Log log_;
 
-  std::vector<std::shared_ptr<NodeParent<RRTCost>>> visited_nodes_;
+  std::vector<std::shared_ptr<NodeParent>> visited_nodes_;
   int max_iteration_{10000};
   int max_branch_length_{10};
   int min_branch_length_{5};

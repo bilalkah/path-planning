@@ -81,7 +81,7 @@ void Map::UpdateMapWithPath(const Path &path)
 {
   for (const auto &node : path)
     {
-      map_[node->x_][node->y_] = NodeState::kPath;
+      map_[node.x_][node.y_] = NodeState::kPath;
     }
 }
 

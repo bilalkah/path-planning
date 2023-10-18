@@ -71,7 +71,7 @@ void Visualizer::VisualizeGridPath(const planning::Path &path)
 {
   for (auto &node : path)
     {
-      UpdateNode(*node, planning::NodeState::kPath);
+      UpdateNode(node, planning::NodeState::kPath);
       std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
 }
@@ -84,7 +84,7 @@ void Visualizer::VisualizeTreePath(const planning::Path &path)
   // Loop starting from second node.
   for (auto it = path.begin() + 1; it != path.end(); ++it)
     {
-      UpdateLine(*current_node, **it, planning::NodeState::kPath);
+      UpdateLine(current_node, *it, planning::NodeState::kPath);
       current_node = *it;
       std::this_thread::sleep_for(std::chrono::milliseconds(10));
     }
