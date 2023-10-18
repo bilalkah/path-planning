@@ -31,8 +31,7 @@ Path RRT::FindPath(const Node &start_node, const Node &goal_node,
   map_copy->SetNodeState(start_node, NodeState::kStart);
 
   // Create root node.
-  auto root{std::make_shared<NodeParent<RRTCost>>(
-      std::make_shared<Node>(start_node), nullptr, RRTCost())};
+  auto root{std::make_shared<NodeParent>(start_node, nullptr, Cost{})};
 
   // push start node to visited nodes.
   visited_nodes_.emplace_back(root);
@@ -57,33 +56,33 @@ Path RRT::FindPath(const Node &start_node, const Node &goal_node,
 
       // Update cost of new node.
       new_node->cost =
-          RRTCost(nearest_node->cost.g + 1,
-                  nearest_node->cost.e +
-                      EuclideanDistance(*new_node->node, *nearest_node->node));
+          Cost(nearest_node->cost.g + 1,
+               nearest_node->cost.h +
+                   EuclideanDistance(new_node->node, nearest_node->node));
 
       // Add new node to visited nodes.
       visited_nodes_.emplace_back(new_node);
       log_.emplace_back(
-          LogType{*new_node->node, *nearest_node->node, NodeState::kVisited});
+          LogType{new_node->node, nearest_node->node, NodeState::kVisited});
 
       // Set nodes between new node and nearest node as kVisited.
-      auto ray{Get2DRayBetweenNodes(*nearest_node->node, *new_node->node)};
+      auto ray{Get2DRayBetweenNodes(nearest_node->node, new_node->node)};
       for (const auto &node : ray)
         {
           map_copy->SetNodeState(node, NodeState::kVisited);
         }
 
       // Check if goal node is in radius.
-      if (EuclideanDistance(*new_node->node, goal_node) <= goal_radius_)
+      if (EuclideanDistance(new_node->node, goal_node) <= goal_radius_)
         {
           // Add goal node to visited nodes.
-          auto goal{std::make_shared<NodeParent<RRTCost>>(
-              std::make_shared<Node>(goal_node), new_node,
-              RRTCost(new_node->cost.g + 1,
-                      new_node->cost.e +
-                          EuclideanDistance(*new_node->node, goal_node)))};
+          auto goal{std::make_shared<NodeParent>(
+              goal_node, new_node,
+              Cost(new_node->cost.g + 1,
+                      new_node->cost.h +
+                          EuclideanDistance(new_node->node, goal_node)))};
           log_.emplace_back(
-              LogType{*goal->node, *new_node->node, NodeState::kGoal});
+              LogType{goal->node, new_node->node, NodeState::kGoal});
 
           // Get path.
           return ReconstructPath(goal);

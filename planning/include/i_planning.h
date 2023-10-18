@@ -31,9 +31,8 @@ public:
    * @param goal_node Goal node.
    * @param map Map to find path on.
    */
-  virtual std::vector<std::shared_ptr<Node>>
-  FindPath(const Node &start_node, const Node &goal_node,
-           const std::shared_ptr<Map> map) = 0;
+  virtual Path FindPath(const Node &start_node, const Node &goal_node,
+                        const std::shared_ptr<Map> map) = 0;
 
   virtual ~IPlanning() {}
 }; // class IPathFinding

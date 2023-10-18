@@ -30,7 +30,7 @@ Path RRTStar::FindPath(const Node &start_node, const Node &goal_node,
   auto start_time{std::chrono::high_resolution_clock::now()};
   log_.clear();
   visited_nodes_.clear();
-  std::shared_ptr<RRTStarNode> final{std::nullptr_t()};
+  std::shared_ptr<NodeParent> final{std::nullptr_t()};
   auto current_cost = std::numeric_limits<double>::max();
   int path_count{0};
 
@@ -41,8 +41,8 @@ Path RRTStar::FindPath(const Node &start_node, const Node &goal_node,
   map_copy->SetNodeState(start_node, NodeState::kStart);
 
   // Create root node.
-  auto root{std::make_shared<RRTStarNode>(std::make_shared<Node>(start_node),
-                                          nullptr, RRTStarCost())};
+  auto root{std::make_shared<NodeParent>(Node(start_node),
+                                         nullptr, Cost{})};
 
   // Add root node to visited nodes.
   visited_nodes_.push_back(root);
@@ -56,7 +56,7 @@ Path RRTStar::FindPath(const Node &start_node, const Node &goal_node,
       auto neighbor_vector = GetNearestNodeParentVector(
           neighbor_radius_, random_node, visited_nodes_);
 
-      std::shared_ptr<RRTStarNode> new_node{std::nullptr_t()};
+      std::shared_ptr<NodeParent> new_node{std::nullptr_t()};
       if (neighbor_vector.empty())
         {
           auto nearest_node{GetNearestNodeParent(random_node, visited_nodes_)};
@@ -68,8 +68,8 @@ Path RRTStar::FindPath(const Node &start_node, const Node &goal_node,
           auto index{0u};
           // Sort nearest nodes according to their cost from low to high.
           std::sort(neighbor_vector.begin(), neighbor_vector.end(),
-                    [](const std::shared_ptr<RRTStarNode> &node1,
-                       const std::shared_ptr<RRTStarNode> &node2) {
+                    [](const std::shared_ptr<NodeParent> &node1,
+                       const std::shared_ptr<NodeParent> &node2) {
                       return node1->cost.f < node2->cost.f;
                     });
 
@@ -88,25 +88,25 @@ Path RRTStar::FindPath(const Node &start_node, const Node &goal_node,
         }
 
       // Calculate cost.
-      new_node->cost = RRTStarCost(
-          new_node->parent->cost.g + 1,
-          new_node->parent->cost.e +
-              EuclideanDistance(*new_node->node, *new_node->parent->node));
+      new_node->cost =
+          Cost(new_node->parent->cost.g + 1,
+               new_node->parent->cost.h +
+                   EuclideanDistance(new_node->node, new_node->parent->node));
 
       // Add new node to visited nodes.
       visited_nodes_.push_back(new_node);
-      log_.push_back(LogType{*new_node->node, *new_node->parent->node,
-                             NodeState::kVisited});
+      log_.push_back(
+          LogType{new_node->node, new_node->parent->node, NodeState::kVisited});
 
       // Check if new node is close enough to goal node.
-      if (EuclideanDistance(*new_node->node, goal_node) < goal_radius_)
+      if (EuclideanDistance(new_node->node, goal_node) < goal_radius_)
         {
           // Create goal node.
-          auto goal{std::make_shared<RRTStarNode>(
-              std::make_shared<Node>(goal_node), new_node,
-              RRTStarCost(new_node->cost.g + 1,
-                          new_node->cost.e +
-                              EuclideanDistance(*new_node->node, goal_node)))};
+          auto goal{std::make_shared<NodeParent>(
+              goal_node, new_node,
+              Cost(new_node->cost.g + 1,
+                   new_node->cost.h +
+                       EuclideanDistance(new_node->node, goal_node)))};
 
           if (final != std::nullptr_t())
             {
@@ -120,12 +120,12 @@ Path RRTStar::FindPath(const Node &start_node, const Node &goal_node,
                   log_.erase(std::remove_if(log_.begin(), log_.end(),
                                             [&final](const LogType &log_type) {
                                               return log_type.current_node_ ==
-                                                     *final->node;
+                                                     final->node;
                                             }),
                              log_.end());
                   final = goal;
                   visited_nodes_.push_back(final);
-                  log_.push_back(LogType{*final->node, *final->parent->node,
+                  log_.push_back(LogType{final->node, final->parent->node,
                                          NodeState::kVisited});
                   std::cout << "Path changed." << std::endl;
                 }
@@ -134,7 +134,7 @@ Path RRTStar::FindPath(const Node &start_node, const Node &goal_node,
             {
               final = goal;
               visited_nodes_.push_back(final);
-              log_.push_back(LogType{*final->node, *final->parent->node,
+              log_.push_back(LogType{final->node, final->parent->node,
                                      NodeState::kVisited});
               std::cout << "Path found." << std::endl;
             }
@@ -173,8 +173,8 @@ std::vector<std::pair<Log, Path>> RRTStar::GetLogVector()
   return log_vector_;
 }
 
-bool RRTStar::Rewire(const std::shared_ptr<RRTStarNode> &new_node,
-                     std::vector<std::shared_ptr<RRTStarNode>> &nearest_nodes,
+bool RRTStar::Rewire(const std::shared_ptr<NodeParent> &new_node,
+                     std::vector<std::shared_ptr<NodeParent>> &nearest_nodes,
                      const std::shared_ptr<Map> map)
 {
   bool rewired{false};
@@ -186,17 +186,15 @@ bool RRTStar::Rewire(const std::shared_ptr<RRTStarNode> &new_node,
         }
 
       // Calculate new cost
-      auto new_cost{
-          RRTStarCost(new_node->cost.g + 1,
-                      new_node->cost.e +
-                          EuclideanDistance(*new_node->node, *nearest->node))};
+      auto new_cost{Cost(new_node->cost.g + 1,
+                         new_node->cost.h +
+                             EuclideanDistance(new_node->node, nearest->node))};
 
       // Check if new cost is lower than old cost.
       if (new_cost.f < nearest->cost.f)
         {
           // Check if there is collision between new node and nearest node.
-          if (!CheckIfCollisionBetweenNodes(*new_node->node, *nearest->node,
-                                            map))
+          if (!CheckIfCollisionBetweenNodes(new_node->node, nearest->node, map))
             {
               // Update parent.
               nearest->parent = new_node;
@@ -213,7 +211,7 @@ bool RRTStar::Rewire(const std::shared_ptr<RRTStarNode> &new_node,
   return rewired;
 }
 
-void RRTStar::RecursivelyCostUpdate(const std::shared_ptr<RRTStarNode> &node)
+void RRTStar::RecursivelyCostUpdate(const std::shared_ptr<NodeParent> &node)
 {
   if (node == nullptr)
     {
@@ -229,17 +227,17 @@ void RRTStar::RecursivelyCostUpdate(const std::shared_ptr<RRTStarNode> &node)
       if (visited_node->parent == node)
         {
           visited_node->cost =
-              RRTStarCost(visited_node->parent->cost.g + 1,
-                          visited_node->parent->cost.e +
-                              EuclideanDistance(*visited_node->node,
-                                                *visited_node->parent->node));
+              Cost(visited_node->parent->cost.g + 1,
+                   visited_node->parent->cost.h +
+                       EuclideanDistance(visited_node->node,
+                                         visited_node->parent->node));
           RecursivelyCostUpdate(visited_node);
         }
     }
 }
 
 void RRTStar::SaveCurrentLogAndPath(const int iteration,
-                                    const std::shared_ptr<RRTStarNode> &final)
+                                    const std::shared_ptr<NodeParent> &final)
 {
 
   {
@@ -250,8 +248,8 @@ void RRTStar::SaveCurrentLogAndPath(const int iteration,
           {
             continue;
           }
-        log_path_pair.first.push_back(LogType{*visited_node->node,
-                                              *visited_node->parent->node,
+        log_path_pair.first.push_back(LogType{visited_node->node,
+                                              visited_node->parent->node,
                                               NodeState::kVisited});
       }
     log_path_pair.second = ReconstructPath(final);
@@ -268,7 +266,7 @@ void RRTStar::ResetLogAndUpdateWithVisitedNodes()
         {
           continue;
         }
-      log_.push_back(LogType{*visited_node->node, *visited_node->parent->node,
+      log_.push_back(LogType{visited_node->node, visited_node->parent->node,
                              NodeState::kVisited});
     }
 }

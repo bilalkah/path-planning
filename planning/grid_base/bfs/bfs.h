@@ -22,8 +22,6 @@ namespace planning
 namespace grid_base
 {
 
-using CostBFS = int;
-
 class BFS : public IPlanningWithLogging
 {
 
