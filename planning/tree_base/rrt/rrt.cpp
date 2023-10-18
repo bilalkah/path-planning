@@ -79,8 +79,8 @@ Path RRT::FindPath(const Node &start_node, const Node &goal_node,
           auto goal{std::make_shared<NodeParent>(
               goal_node, new_node,
               Cost(new_node->cost.g + 1,
-                      new_node->cost.h +
-                          EuclideanDistance(new_node->node, goal_node)))};
+                   new_node->cost.h +
+                       EuclideanDistance(new_node->node, goal_node)))};
           log_.emplace_back(
               LogType{goal->node, new_node->node, NodeState::kGoal});
 

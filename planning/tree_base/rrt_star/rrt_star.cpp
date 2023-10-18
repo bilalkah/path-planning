@@ -41,8 +41,7 @@ Path RRTStar::FindPath(const Node &start_node, const Node &goal_node,
   map_copy->SetNodeState(start_node, NodeState::kStart);
 
   // Create root node.
-  auto root{std::make_shared<NodeParent>(Node(start_node),
-                                         nullptr, Cost{})};
+  auto root{std::make_shared<NodeParent>(Node(start_node), nullptr, Cost{})};
 
   // Add root node to visited nodes.
   visited_nodes_.push_back(root);
