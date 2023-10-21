@@ -14,9 +14,11 @@
 
 #include "planning/include/common_planning.h"
 #include "planning/include/i_planning.h"
+#include <algorithm>
 #include <cstddef>
 #include <limits>
 #include <memory>
+#include <vector>
 
 namespace planning
 {
@@ -77,23 +79,7 @@ bool CheckIfCollisionBetweenNodes(const Node &node1, const Node &node2,
  */
 std::shared_ptr<NodeParent>
 GetNearestNodeParent(const Node &node,
-                     const std::vector<std::shared_ptr<NodeParent>> &nodes)
-{
-  std::shared_ptr<NodeParent> nearest_node;
-  double min_distance{std::numeric_limits<double>::max()};
-
-  for (const auto &node_parent : nodes)
-    {
-      double distance{EuclideanDistance(node_parent->node, node)};
-      if (distance < min_distance)
-        {
-          min_distance = distance;
-          nearest_node = node_parent;
-        }
-    }
-
-  return nearest_node;
-}
+                     const std::vector<std::shared_ptr<NodeParent>> &nodes);
 
 /**
  * @brief Get the Nearest Node Parent Vector object
@@ -106,22 +92,7 @@ GetNearestNodeParent(const Node &node,
  */
 std::vector<std::shared_ptr<NodeParent>> GetNearestNodeParentVector(
     const int neighbor_radius, const Node &node,
-    const std::vector<std::shared_ptr<NodeParent>> &nodes)
-{
-  std::vector<std::shared_ptr<NodeParent>> nearest_nodes;
-
-  // Search in the neighbor_radius
-  for (const auto &node_parent : nodes)
-    {
-      double distance{EuclideanDistance(node_parent->node, node)};
-      if (distance < neighbor_radius)
-        {
-          nearest_nodes.emplace_back(node_parent);
-        }
-    }
-
-  return nearest_nodes;
-}
+    const std::vector<std::shared_ptr<NodeParent>> &nodes);
 
 /**
  * @brief Wire new node to nearest node if there is no collision.
@@ -138,51 +109,7 @@ std::shared_ptr<NodeParent>
 WireNewNode(const int max_branch_length, const int min_branch_length,
             const Node &random_node,
             const std::shared_ptr<NodeParent> &nearest_node,
-            const std::shared_ptr<Map> map)
-{
-  // Calculate distance between random node and nearest node.
-  double distance{EuclideanDistance(random_node, nearest_node->node)};
-  // Calculate unit vector between random node and nearest node.
-  double unit_vector_x{(random_node.x_ - nearest_node->node.x_) / distance};
-  double unit_vector_y{(random_node.y_ - nearest_node->node.y_) / distance};
-
-  // Calculate new node.
-  Node new_node{random_node};
-  if (distance > max_branch_length)
-    {
-      new_node.x_ = nearest_node->node.x_ + max_branch_length * unit_vector_x;
-      new_node.y_ = nearest_node->node.y_ + max_branch_length * unit_vector_y;
-      distance = EuclideanDistance(new_node, nearest_node->node);
-    }
-
-  // Check if there is collision between new node and nearest node.
-  // If there is no collision, wire new node to nearest node.
-  // If there is collision, check closer nodes to nearest node.
-  // Until there is no collision or reach to nearest node.
-  int i{0};
-
-  while (new_node != nearest_node->node &&
-         CheckIfCollisionBetweenNodes(new_node, nearest_node->node, map))
-    {
-      // Calculate new node closer to nearest node by 1 unit.
-      new_node.x_ -= unit_vector_x;
-      new_node.y_ -= unit_vector_y;
-      if (i < min_branch_length)
-        {
-          return std::nullptr_t();
-        }
-      i += 1;
-    }
-
-  // Check if new node is valid.
-  if (new_node != nearest_node->node &&
-      map->GetNodeState(new_node) != NodeState::kOccupied)
-    {
-      return std::make_shared<NodeParent>(new_node, nearest_node, Cost{});
-    }
-
-  return std::nullptr_t();
-};
+            const std::shared_ptr<Map> map);
 
 } // namespace tree_base
 } // namespace planning

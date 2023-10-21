@@ -67,7 +67,7 @@ inline Path ReconstructPath(std::shared_ptr<NodeParent> current_node)
   auto iterator_node = current_node;
   while (iterator_node->parent != nullptr)
     {
-      path.push_back(iterator_node->node);
+      path.insert(path.begin(), iterator_node->node);
       iterator_node = iterator_node->parent;
     }
   return path;
