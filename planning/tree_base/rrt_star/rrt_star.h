@@ -14,6 +14,8 @@
 
 #include "planning/include/i_planning.h"
 #include "planning/tree_base/include/common_tree_base.h"
+#include <memory>
+#include <unordered_map>
 #include <vector>
 
 namespace planning
@@ -46,17 +48,32 @@ public:
   std::vector<std::pair<Log, Path>> GetLogVector();
 
 private:
+  std::shared_ptr<NodeParent>
+  WireNodeIfPossible(const Node &random_node,
+                     std::vector<std::shared_ptr<NodeParent>>,
+                     const std::shared_ptr<Map> map);
+  void CheckIfGoalReached(const std::shared_ptr<NodeParent> &new_node,
+                          std::shared_ptr<NodeParent> &final,
+                          const Node &goal_node);
   bool Rewire(const std::shared_ptr<NodeParent> &new_node,
               std::vector<std::shared_ptr<NodeParent>> &nearest_nodes,
               const std::shared_ptr<Map> map);
+  void IterativelyCostUpdate(const std::shared_ptr<NodeParent> &node);
   void RecursivelyCostUpdate(const std::shared_ptr<NodeParent> &node);
   void SaveCurrentLogAndPath(const int iteration,
                              const std::shared_ptr<NodeParent> &final);
   void ResetLogAndUpdateWithVisitedNodes();
+  void AddVisitedLine(const std::shared_ptr<NodeParent> node,
+                      const std::shared_ptr<Map> map_copy);
+  void RemoveVisitedLine(const std::shared_ptr<NodeParent> node,
+                         const std::shared_ptr<Map> map_copy);
 
   Log log_;
-  std::vector<std::pair<Log, Path>> log_vector_;
-  std::vector<std::shared_ptr<NodeParent>> visited_nodes_;
+  std::vector<std::pair<Log, Path>> log_vector_{};
+  std::vector<std::shared_ptr<NodeParent>> visited_nodes_{};
+  std::unordered_map<std::shared_ptr<NodeParent>,
+                     std::vector<std::shared_ptr<NodeParent>>>
+      parent_child_map_{};
 
   int max_iteration_{10000};
   int max_branch_length_{10};

@@ -10,6 +10,8 @@
  */
 
 #include "planning/tree_base/rrt_star/rrt_star.h"
+#include "common_tree_base.h"
+#include "node_parent.h"
 
 #include <algorithm>
 #include <chrono>
@@ -17,6 +19,7 @@
 #include <iostream>
 #include <limits>
 #include <memory>
+#include <queue>
 
 namespace planning
 {
@@ -26,19 +29,20 @@ namespace tree_base
 Path RRTStar::FindPath(const Node &start_node, const Node &goal_node,
                        const std::shared_ptr<Map> map)
 {
-  // Start time
+  // Start timer
   auto start_time{std::chrono::high_resolution_clock::now()};
+
+  // Clear log and visited nodes.
   log_.clear();
   visited_nodes_.clear();
+
+  // Initialize final node.
   std::shared_ptr<NodeParent> final{std::nullptr_t()};
   auto current_cost = std::numeric_limits<double>::max();
   int path_count{0};
 
   // Copy map to avoid changing it.
   auto map_copy{std::make_shared<Map>(*map)};
-
-  // Set start node as kStart.
-  map_copy->SetNodeState(start_node, NodeState::kStart);
 
   // Create root node.
   auto root{std::make_shared<NodeParent>(Node(start_node), nullptr, Cost{})};
@@ -55,31 +59,8 @@ Path RRTStar::FindPath(const Node &start_node, const Node &goal_node,
       auto neighbor_vector = GetNearestNodeParentVector(
           neighbor_radius_, random_node, visited_nodes_);
 
-      std::shared_ptr<NodeParent> new_node{std::nullptr_t()};
-      if (neighbor_vector.empty())
-        {
-          auto nearest_node{GetNearestNodeParent(random_node, visited_nodes_)};
-          new_node = WireNewNode(max_branch_length_, min_branch_length_,
-                                 random_node, nearest_node, map_copy);
-        }
-      else
-        {
-          auto index{0u};
-          // Sort nearest nodes according to their cost from low to high.
-          std::sort(neighbor_vector.begin(), neighbor_vector.end(),
-                    [](const std::shared_ptr<NodeParent> &node1,
-                       const std::shared_ptr<NodeParent> &node2) {
-                      return node1->cost.f < node2->cost.f;
-                    });
-
-          while (new_node == nullptr && index < neighbor_vector.size())
-            {
-              new_node =
-                  WireNewNode(max_branch_length_, min_branch_length_,
-                              random_node, neighbor_vector[index], map_copy);
-              index++;
-            }
-        }
+      auto new_node =
+          WireNodeIfPossible(random_node, neighbor_vector, map_copy);
 
       if (new_node == nullptr)
         {
@@ -94,50 +75,13 @@ Path RRTStar::FindPath(const Node &start_node, const Node &goal_node,
 
       // Add new node to visited nodes.
       visited_nodes_.push_back(new_node);
+      parent_child_map_[new_node->parent].push_back(new_node);
+      AddVisitedLine(new_node, map_copy);
       log_.push_back(
           LogType{new_node->node, new_node->parent->node, NodeState::kVisited});
 
       // Check if new node is close enough to goal node.
-      if (EuclideanDistance(new_node->node, goal_node) < goal_radius_)
-        {
-          // Create goal node.
-          auto goal{std::make_shared<NodeParent>(
-              goal_node, new_node,
-              Cost(new_node->cost.g + 1,
-                   new_node->cost.h +
-                       EuclideanDistance(new_node->node, goal_node)))};
-
-          if (final != std::nullptr_t())
-            {
-              if (goal->cost.f < final->cost.f)
-                {
-                  // Remove old goal node from visited nodes.
-                  visited_nodes_.erase(std::remove(visited_nodes_.begin(),
-                                                   visited_nodes_.end(), final),
-                                       visited_nodes_.end());
-                  // Remove old goal node from log.
-                  log_.erase(std::remove_if(log_.begin(), log_.end(),
-                                            [&final](const LogType &log_type) {
-                                              return log_type.current_node_ ==
-                                                     final->node;
-                                            }),
-                             log_.end());
-                  final = goal;
-                  visited_nodes_.push_back(final);
-                  log_.push_back(LogType{final->node, final->parent->node,
-                                         NodeState::kVisited});
-                  std::cout << "Path changed." << std::endl;
-                }
-            }
-          else
-            {
-              final = goal;
-              visited_nodes_.push_back(final);
-              log_.push_back(LogType{final->node, final->parent->node,
-                                     NodeState::kVisited});
-              std::cout << "Path found." << std::endl;
-            }
-        }
+      CheckIfGoalReached(new_node, final, goal_node);
 
       // Rewire.
       if (!neighbor_vector.empty())
@@ -172,6 +116,68 @@ std::vector<std::pair<Log, Path>> RRTStar::GetLogVector()
   return log_vector_;
 }
 
+std::shared_ptr<NodeParent> RRTStar::WireNodeIfPossible(
+    const Node &random_node,
+    std::vector<std::shared_ptr<NodeParent>> neighbor_vector,
+    const std::shared_ptr<Map> map)
+{
+  std::shared_ptr<NodeParent> new_node{std::nullptr_t()};
+  auto neighbor_iterator = neighbor_vector.begin();
+  while (new_node == nullptr && neighbor_iterator != neighbor_vector.end())
+    {
+      new_node = WireNewNode(max_branch_length_, min_branch_length_,
+                             random_node, (*neighbor_iterator), map);
+      neighbor_iterator++;
+    }
+
+  return new_node;
+}
+
+void RRTStar::CheckIfGoalReached(const std::shared_ptr<NodeParent> &new_node,
+                                 std::shared_ptr<NodeParent> &final,
+                                 const Node &goal_node)
+{
+  auto remaining_distance{EuclideanDistance(new_node->node, goal_node)};
+  if (remaining_distance < goal_radius_)
+    {
+      // Create goal node.
+      auto goal{std::make_shared<NodeParent>(
+          goal_node, new_node,
+          Cost(new_node->cost.g + 1, new_node->cost.h + remaining_distance))};
+
+      if (final != std::nullptr_t())
+        {
+          if (goal->cost.f < final->cost.f)
+            {
+              // Remove old goal node from visited nodes.
+              visited_nodes_.erase(std::remove(visited_nodes_.begin(),
+                                               visited_nodes_.end(), final),
+                                   visited_nodes_.end());
+              // Remove old goal node from log.
+              log_.erase(std::remove_if(log_.begin(), log_.end(),
+                                        [&final](const LogType &log_type) {
+                                          return log_type.current_node_ ==
+                                                 final->node;
+                                        }),
+                         log_.end());
+              final = goal;
+              visited_nodes_.push_back(final);
+              log_.push_back(LogType{final->node, final->parent->node,
+                                     NodeState::kVisited});
+              std::cout << "Path changed." << std::endl;
+            }
+        }
+      else
+        {
+          final = goal;
+          visited_nodes_.push_back(final);
+          log_.push_back(
+              LogType{final->node, final->parent->node, NodeState::kVisited});
+          std::cout << "Path found." << std::endl;
+        }
+    }
+}
+
 bool RRTStar::Rewire(const std::shared_ptr<NodeParent> &new_node,
                      std::vector<std::shared_ptr<NodeParent>> &nearest_nodes,
                      const std::shared_ptr<Map> map)
@@ -195,19 +201,51 @@ bool RRTStar::Rewire(const std::shared_ptr<NodeParent> &new_node,
           // Check if there is collision between new node and nearest node.
           if (!CheckIfCollisionBetweenNodes(new_node->node, nearest->node, map))
             {
+              // Remove old parent from parent child map.
+              parent_child_map_[nearest->parent].erase(
+                  std::remove(parent_child_map_[nearest->parent].begin(),
+                              parent_child_map_[nearest->parent].end(),
+                              nearest),
+                  parent_child_map_[nearest->parent].end());
+              
+              RemoveVisitedLine(nearest, map);
+
               // Update parent.
               nearest->parent = new_node;
-
               // Update cost.
               nearest->cost = new_cost;
-
-              RecursivelyCostUpdate(nearest);
+              AddVisitedLine(nearest, map);
+              // Add new parent to parent child map.
+              parent_child_map_[new_node].push_back(nearest);
+              // Update node's cost bfs
+              IterativelyCostUpdate(nearest);
 
               rewired = true;
             }
         }
     }
   return rewired;
+}
+
+void RRTStar::IterativelyCostUpdate(const std::shared_ptr<NodeParent> &node)
+{
+  std::queue<std::shared_ptr<NodeParent>> queue;
+  queue.push(node);
+
+  while (!queue.empty())
+    {
+      auto current_node{queue.front()};
+      queue.pop();
+
+      for (const auto &child : parent_child_map_[current_node])
+        {
+          child->cost =
+              Cost(child->parent->cost.g + 1,
+                   child->parent->cost.h +
+                       EuclideanDistance(child->node, child->parent->node));
+          queue.push(child);
+        }
+    }
 }
 
 void RRTStar::RecursivelyCostUpdate(const std::shared_ptr<NodeParent> &node)
@@ -267,6 +305,28 @@ void RRTStar::ResetLogAndUpdateWithVisitedNodes()
         }
       log_.push_back(LogType{visited_node->node, visited_node->parent->node,
                              NodeState::kVisited});
+    }
+}
+
+void RRTStar::AddVisitedLine(const std::shared_ptr<NodeParent> node,
+                             const std::shared_ptr<Map> map_copy)
+{
+  auto ray{Get2DRayBetweenNodes(node->node, node->parent->node)};
+  for (const auto &node : ray)
+    {
+      map_copy->SetNodeState(node, NodeState::kVisited);
+    }
+}
+
+void RRTStar::RemoveVisitedLine(const std::shared_ptr<NodeParent> node,
+                                const std::shared_ptr<Map> map_copy)
+{
+  auto ray{Get2DRayBetweenNodes(node->node, node->parent->node)};
+  auto iterator = ray.begin() + 1;
+  while (iterator != ray.end() - 1)
+    {
+      map_copy->SetNodeState(*iterator, NodeState::kFree);
+      iterator++;
     }
 }
 
