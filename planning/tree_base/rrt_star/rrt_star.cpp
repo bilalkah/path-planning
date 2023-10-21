@@ -207,7 +207,7 @@ bool RRTStar::Rewire(const std::shared_ptr<NodeParent> &new_node,
                               parent_child_map_[nearest->parent].end(),
                               nearest),
                   parent_child_map_[nearest->parent].end());
-              
+
               RemoveVisitedLine(nearest, map);
 
               // Update parent.
