@@ -83,7 +83,7 @@ private:
   int max_iteration_{10000};
   int max_branch_length_{10};
   int min_branch_length_{5};
-  int neighbor_radius_{30};
+  int neighbor_radius_{15};
   int goal_radius_{5};
   int save_log_interval_{100};
 

@@ -13,6 +13,7 @@
 #include "planning/include/data_types.h"
 #include "planning/tree_base/include/common_tree_base.h"
 #include <vector>
+#include <chrono>
 
 namespace tools
 {
@@ -35,8 +36,9 @@ void TreeVisualizer::Visualize(
     const std::vector<std::shared_ptr<planning::NodeParent>> node_parent_vector,
     const std::shared_ptr<planning::NodeParent> goal_node_parent)
 {
-
+  
   window_.clear();
+  auto start_time = std::chrono::high_resolution_clock::now();
   for (auto &node_parent : node_parent_vector)
     {
       if (node_parent->parent == nullptr)
@@ -59,7 +61,11 @@ void TreeVisualizer::Visualize(
           window_.draw(rectangle);
         }
     }
-
+auto end_time = std::chrono::high_resolution_clock::now();
+  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+      end_time - start_time);
+  std::cout << "Visualize took " << duration.count() << " milliseconds"
+            << std::endl;
   if (goal_node_parent != nullptr)
     {
       auto path{planning::ReconstructPath(goal_node_parent)};

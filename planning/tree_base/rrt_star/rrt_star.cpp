@@ -107,7 +107,7 @@ Path RRTStar::FindPath(const Node &start_node, const Node &goal_node,
         }
 
       // Visualize.
-      if (visualize_ != nullptr)
+      if (visualize_ != nullptr && i % 20 == 0)
         {
           visualize_->Visualize(visited_nodes_, final);
         }
