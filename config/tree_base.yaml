@@ -1,0 +1,5 @@
+max_iteration: 10000
+max_branch_length: 10
+min_branch_length: 5
+neighbor_radius: 15
+goal_radius: 5

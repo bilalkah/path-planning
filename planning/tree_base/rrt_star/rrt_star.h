@@ -34,11 +34,10 @@ public:
   RRTStar(const int max_iteration) : max_iteration_(max_iteration) {}
   RRTStar(const int max_iteration, const int max_branch_length,
           const int min_branch_length, const int neighbor_radius,
-          const int goal_radius, const int save_log_interval)
+          const int goal_radius)
       : max_iteration_(max_iteration), max_branch_length_(max_branch_length),
         min_branch_length_(min_branch_length),
-        neighbor_radius_(neighbor_radius), goal_radius_(goal_radius),
-        save_log_interval_(save_log_interval)
+        neighbor_radius_(neighbor_radius), goal_radius_(goal_radius)
   {
   }
   ~RRTStar() {}

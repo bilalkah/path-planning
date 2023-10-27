@@ -1,8 +1,5 @@
 map: "/bg2/AR0205SR.map"
-planner:
-  name: "rrt_star"
-  search_space: 4
-  heuristic_weight: 0.7
+planner_name: "rrt_star"
 visualizer:
   rescale: 2.0
   delay: 1.0
