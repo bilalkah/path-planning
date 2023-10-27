@@ -22,30 +22,34 @@
 
 #include <cstdlib>
 #include <fstream>
+#include <functional>
 #include <iostream>
 #include <memory>
+#include <string>
+#include <thread>
+#include <unordered_map>
 
-std::shared_ptr<planning::IPlanningWithLogging> GetPlanner(YAML::Node node);
+using PlannerType = std::shared_ptr<planning::IPlanningWithLogging>;
+
+PlannerType GetGridBasedPlanner(std::string planner_name);
+PlannerType GetTreeBasedPlanner(std::string planner_name);
+PlannerType GetPlanner(std::string planner_name);
 
 int main(int argc, char **argv)
 {
   // Get config and data directories
-  std::string configDirectory = CONFIG_DIR;
-  std::string dataDirectory = DATA_DIR;
-
-  std::string configFilePath = configDirectory + "/main.yaml";
-  std::ifstream config_file(configFilePath);
-  YAML::Node config = YAML::LoadFile(configFilePath);
+  std::string config_directory = CONFIG_DIR;
+  std::string data_directory = DATA_DIR;
+  std::string config_file = config_directory + "/main.yaml";
+  YAML::Node config = YAML::LoadFile(config_file);
 
   // Map config
-  std::string mapFilePath = dataDirectory + config["map"].as<std::string>();
-  auto map = std::make_shared<planning::Map>(mapFilePath);
+  std::string map_file = data_directory + config["map"].as<std::string>();
+  const auto map = std::make_shared<planning::Map>(map_file);
 
   // Planner config
-  auto planner_name = config["planner"]["name"].as<std::string>();
-  std::shared_ptr<planning::IPlanningWithLogging> planner =
-      GetPlanner(config["planner"]);
-
+  auto planner_name = config["planner_name"].as<std::string>();
+  PlannerType planner = GetPlanner(planner_name);
   // Visualizer config
   auto rescale = config["visualizer"]["rescale"].as<float>();
   auto delay = config["visualizer"]["delay"].as<float>();
@@ -134,37 +138,82 @@ int main(int argc, char **argv)
   return 0;
 }
 
-std::shared_ptr<planning::IPlanningWithLogging> GetPlanner(YAML::Node node)
+struct FunctionMap
 {
-  auto name = node["name"].as<std::string>();
-  auto search_space = node["search_space"].as<int>();
-  std::cout << name << std::endl;
+  static std::unordered_map<std::string, PlannerType (*)(std::string)> map;
+};
 
-  if (name == "astar")
+std::unordered_map<std::string, PlannerType (*)(std::string)> FunctionMap::map =
+    {{"astar", GetGridBasedPlanner},
+     {"bfs", GetGridBasedPlanner},
+     {"dfs", GetGridBasedPlanner},
+     {"rrt", GetTreeBasedPlanner},
+     {"rrt_star", GetTreeBasedPlanner}};
+
+PlannerType GetPlanner(std::string planner_name)
+{
+  PlannerType result = FunctionMap::map.at(planner_name)(planner_name);
+  return result;
+}
+
+PlannerType GetGridBasedPlanner(std::string planner_name)
+{
+  std::string config_directory = CONFIG_DIR;
+  std::string config_file = config_directory + "/grid_base.yaml";
+  YAML::Node config = YAML::LoadFile(config_file);
+
+  auto heuristic_weight = config["heuristic_weight"].as<double>();
+  auto search_space = config["search_space"].as<int>();
+
+  PlannerType planner;
+  if (planner_name == "astar")
     {
-      auto heuristic = node["heuristic_weight"].as<double>();
-      return std::make_shared<planning::grid_base::AStar>(heuristic,
-                                                          search_space);
+      planner = std::make_shared<planning::grid_base::AStar>(heuristic_weight,
+                                                             search_space);
     }
-  else if (name == "bfs")
+  else if (planner_name == "bfs")
     {
-      return std::make_shared<planning::grid_base::BFS>(search_space);
+      planner = std::make_shared<planning::grid_base::BFS>(search_space);
     }
-  else if (name == "dfs")
+  else if (planner_name == "dfs")
     {
-      return std::make_shared<planning::grid_base::DFS>(search_space);
-    }
-  else if (name == "rrt")
-    {
-      return std::make_shared<planning::tree_base::RRT>();
-    }
-  else if (name == "rrt_star")
-    {
-      return std::make_shared<planning::tree_base::RRTStar>();
+      planner = std::make_shared<planning::grid_base::DFS>(search_space);
     }
   else
     {
-      std::cerr << "Invalid planner" << std::endl;
-      std::abort();
+      std::cout << "Invalid planner name" << std::endl;
+      exit(1);
     }
+  return planner;
+}
+PlannerType GetTreeBasedPlanner(std::string planner_name)
+{
+  std::string config_directory = CONFIG_DIR;
+  std::string config_file = config_directory + "/tree_base.yaml";
+  YAML::Node config = YAML::LoadFile(config_file);
+
+  auto max_iteration = config["max_iteration"].as<int>();
+  auto max_branch_length = config["max_branch_length"].as<int>();
+  auto min_branch_length = config["min_branch_length"].as<int>();
+  auto neighbor_radius = config["neighbor_radius"].as<int>();
+  auto goal_radius = config["goal_radius"].as<int>();
+
+  PlannerType planner;
+  if (planner_name == "rrt")
+    {
+      planner = std::make_shared<planning::tree_base::RRT>(
+          max_iteration, max_branch_length, min_branch_length, goal_radius);
+    }
+  else if (planner_name == "rrt_star")
+    {
+      planner = std::make_shared<planning::tree_base::RRTStar>(
+          max_iteration, max_branch_length, min_branch_length, neighbor_radius,
+          goal_radius);
+    }
+  else
+    {
+      std::cout << "Invalid planner name" << std::endl;
+      exit(1);
+    }
+  return planner;
 }
