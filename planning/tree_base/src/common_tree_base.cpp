@@ -38,8 +38,8 @@ Node RandomNode(const std::shared_ptr<Map> map)
     {
       auto random_point{RandomSampling()};
       random_node =
-          Node(static_cast<int>(random_point.first * map->GetWidth()),
-               static_cast<int>(random_point.second * map->GetHeight()));
+          Node(static_cast<int>(random_point.first * map->GetHeight()),
+               static_cast<int>(random_point.second * map->GetWidth()));
       if (map->GetNodeState(random_node) == NodeState::kFree)
         {
           is_valid = true;
