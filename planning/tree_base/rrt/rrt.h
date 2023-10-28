@@ -18,6 +18,7 @@
 #include <cmath>
 #include <iostream>
 #include <memory>
+#include <mutex>
 #include <random>
 #include <vector>
 
@@ -26,6 +27,10 @@ namespace planning
 namespace tree_base
 {
 
+/**
+ * @brief Rapidly-exploring Random Tree algorithm implementation.
+ *
+ */
 class RRT : public IPlanningWithLogging
 {
 public:
@@ -40,16 +45,26 @@ public:
   ~RRT() {}
   Path FindPath(const Node &start_node, const Node &goal_node,
                 const std::shared_ptr<Map> map) override;
-  Log GetLog() override;
+  Log GetLog() override
+  {
+    std::lock_guard<std::mutex> lock(log_mutex_);
+    return log_;
+  }
+  void ClearLog() override
+  {
+    std::lock_guard<std::mutex> lock(log_mutex_);
+    log_.first.clear();
+    log_.second = nullptr;
+  }
 
 private:
-  Log log_;
+  Log log_{};
 
-  std::vector<std::shared_ptr<NodeParent>> visited_nodes_;
   int max_iteration_{10000};
   int max_branch_length_{10};
   int min_branch_length_{5};
   int goal_radius_{5};
+  std::mutex log_mutex_;
 };
 
 } // namespace tree_base

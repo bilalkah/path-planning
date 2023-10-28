@@ -1,140 +1,88 @@
 /**
- * @file visualizer.h
+ * @file tree_visualizer.h
  * @author Bilal Kahraman (kahramannbilal@gmail.com)
- * @brief 2D visualization
+ * @brief
  * @version 0.1
- * @date 2023-09-05
+ * @date 2023-09-19
  *
  * @copyright Copyright (c) 2023
  *
  */
 
-#ifndef TOOLS_INCLUDE_VISUALIZER_H
-#define TOOLS_INCLUDE_VISUALIZER_H
+#ifndef TOOLS_INCLUDE_VISUALIZER_H_
+#define TOOLS_INCLUDE_VISUALIZER_H_
 
-#include "planning/include/common_planning.h"
 #include "planning/include/data_types.h"
 #include "planning/include/i_planning.h"
-
+#include "planning/tree_base/include/common_tree_base.h"
 #include <SFML/Graphics.hpp>
-#include <chrono>
+#include <SFML/Graphics/RenderTexture.hpp>
+#include <cstddef>
+#include <functional>
 #include <memory>
-#include <mutex>
 #include <thread>
 #include <unordered_map>
-
-using std::chrono::milliseconds;
 
 namespace tools
 {
 
-/**
- * @brief Visualizer class for 2D visualization
- *
- */
+using pair_size_t = std::pair<std::size_t, std::size_t>;
+using pair_double = std::pair<double, double>;
+
+inline std::unordered_map<planning::NodeState, sf::Color> GetColorMap()
+{
+  std::unordered_map<planning::NodeState, sf::Color> colors_;
+  colors_.insert({planning::NodeState::kFree, sf::Color::White});
+  colors_.insert({planning::NodeState::kVisited, sf::Color::Blue});
+  colors_.insert({planning::NodeState::kOccupied, sf::Color::Black});
+  colors_.insert({planning::NodeState::kStart, sf::Color::Green});
+  colors_.insert({planning::NodeState::kGoal, sf::Color::Yellow});
+  colors_.insert({planning::NodeState::kPath, sf::Color::Red});
+
+  return colors_;
+}
+
 class Visualizer
 {
 public:
-  Visualizer(planning::Map &map, float height_coeff, float width_coeff,
-             int kDelay, bool kShow);
+  Visualizer(std::shared_ptr<planning::Map> map, pair_double size_coeff,
+             std::size_t kDelay, std::string window_name,
+             std::string planner_name);
+  ~Visualizer() { window_.close(); }
 
-  ~Visualizer();
+  void SetStartAndGoal(const planning::Node &start_node,
+                       const planning::Node &goal_node);
 
-  /**
-   * @brief Writes map_ and updates window_. Thread safe.
-   * @param map
-   */
-  void UpdateMap(const planning::Map &map);
+  void MapToTexture();
 
-  /**
-   * @brief Visualize path. Thread safe.
-   *
-   * @param path
-   */
-  void VisualizeGridLog(const planning::Log &log);
+  void VizGridLog();
+  void VizTreeLog();
 
-  /**
-   * @brief Visualize path. Thread safe.
-   *
-   * @param path
-   */
-  void VisualizeTreeLog(const planning::Log &log, const int delay);
+  void SetGetLogFunction(std::function<planning::Log()> get_log_function)
+  {
+    get_log_function_ = get_log_function;
+  }
 
-  /**
-   * @brief Visualize path. Thread safe.
-   *
-   * @param path
-   */
-  void VisualizeGridPath(const planning::Path &path);
-
-  /**
-   * @brief Visualize path. Thread safe.
-   *
-   * @param path
-   */
-  void VisualizeTreePath(const planning::Path &path);
-
-  /**
-   * @brief Writes to window_. Thread safe.
-   *
-   * @param node1
-   * @param node2
-   * @param state
-   */
-  void UpdateLine(const planning::Node &node1, const planning::Node &node2,
-                  const planning::NodeState state);
-
-  /**
-   * @brief Update window_ with given position and state of node. Thread safe.
-   * Calls SetColor()
-   * @param node
-   * @param state
-   */
-  void UpdateNode(const planning::Node &node, const planning::NodeState state);
+  void Run();
 
 private:
-  /**
-   * @brief Reads map_ and updates window_. NOT Thread safe.
-   *  Calls SetColor()
-   */
-  void SetWindow();
+  std::shared_ptr<planning::Map> map;
+  pair_double size_coeff_;
+  std::size_t kDelay_;
+  std::string window_name_;
+  std::string planner_name_;
 
-  /**
-   * @brief  Writes to window_. NOT Thread safe.
-   *
-   * @param node
-   * @param color
-   */
-  void SetColor(const planning::Node &node, const planning::NodeState color);
+  std::unordered_map<planning::NodeState, sf::Color> colors_;
+  sf::RenderWindow window_;
+  sf::RenderTexture render_texture_;
+  std::function<void()> viz_function_;
+  std::function<planning::Log()> get_log_function_;
 
-  /**
-   * @brief Reads from window_. Thread safe.
-   *
-   * @return int
-   */
-  int RenderWindow();
-
-  /**
-   * @brief Initialize colors
-   *
-   */
-  void MapColor();
-
-  sf::RenderWindow window_{};
-  sf::RectangleShape cell_{};
-  planning::Map map_;
-
-  std::pair<float, float> cell_size_{}; // width, height
-  int delay_{};
-  bool show_{};
-
-  std::thread draw_thread_{};
-  std::mutex window_mutex_{};
-
-  std::unordered_map<planning::NodeState, sf::Color> colors_ = {};
-
-}; // class Visualizer
+  sf::CircleShape start_node_;
+  sf::CircleShape goal_node_;
+  std::thread window_thread_;
+};
 
 } // namespace tools
 
-#endif // TOOLS_INCLUDE_VISUALIZER_H
+#endif // TOOLS_INCLUDE_VISUALIZER_H_

@@ -30,4 +30,6 @@ target_link_libraries(
     sfml-system 
     sfml-graphics 
     sfml-window
+    common_tree_base
 )
+

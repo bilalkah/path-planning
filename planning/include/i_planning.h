@@ -13,8 +13,10 @@
 #define PLANNING_INCLUDE_I_PLANNING_H_
 
 #include "planning/include/data_types.h"
+#include "planning/include/node_parent.h"
 
 #include <memory>
+#include <utility>
 #include <vector>
 
 namespace planning
@@ -37,27 +39,14 @@ public:
   virtual ~IPlanning() {}
 }; // class IPathFinding
 
-struct LogType
-{
-  LogType(Node current_node, Node parent_node, NodeState node_state)
-      : current_node_(current_node), parent_node_(parent_node),
-        node_state_(node_state)
-  {
-  }
-  LogType(Node current_node, NodeState node_state)
-      : current_node_(current_node), node_state_(node_state)
-  {
-  }
-  Node current_node_;
-  Node parent_node_;
-  NodeState node_state_;
-};
+using Log = std::pair<std::vector<std::shared_ptr<NodeParent>>,
+                      std::shared_ptr<NodeParent>>;
 
-using Log = std::vector<LogType>;
 class ILogging
 {
 public:
   virtual Log GetLog() = 0;
+  virtual void ClearLog() = 0;
 
   virtual ~ILogging() {}
 };

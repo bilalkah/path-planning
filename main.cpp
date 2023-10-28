@@ -51,11 +51,8 @@ int main(int argc, char **argv)
   auto planner_name = config["planner_name"].as<std::string>();
   PlannerType planner = GetPlanner(planner_name);
   // Visualizer config
-  auto rescale = config["visualizer"]["rescale"].as<float>();
-  auto delay = config["visualizer"]["delay"].as<float>();
-  auto show = config["visualizer"]["show"].as<bool>();
-
-  tools::Visualizer visualizer(*map, rescale, rescale, delay, show);
+  auto tree_visualizer = std::make_shared<tools::Visualizer>(
+      map, tools::pair_double{2.0, 2.0}, 1u, "Tree Visualizer", planner_name);
 
   // Path config
   auto s = config["path"]["start"];
@@ -63,8 +60,14 @@ int main(int argc, char **argv)
   auto g = config["path"]["goal"];
   auto goal_node = planning::Node(g["x"].as<int>(), g["y"].as<int>());
 
+  // Visualize start and goal nodes
+  tree_visualizer->SetStartAndGoal(start_node, goal_node);
+
   while (true)
     {
+      tree_visualizer->SetGetLogFunction(
+          std::bind(&planning::IPlanningWithLogging::GetLog, planner));
+      std::cout << "Started" << std::endl;
       // Get time
       auto start_time{std::chrono::high_resolution_clock::now()};
       planning::Path path = planner->FindPath(start_node, goal_node, map);
@@ -73,86 +76,32 @@ int main(int argc, char **argv)
                           end_time - start_time)
                           .count();
       std::cout << "Planning Duration: " << duration << " ms" << std::endl;
-      // dynamic cast to get log
-
-      auto log = planner->GetLog();
-
-      std::cout << "Log size: " << log.size() << std::endl;
-      if (planner_name == "astar" || planner_name == "bfs" ||
-          planner_name == "dfs")
-        {
-          visualizer.VisualizeGridLog(log);
-
-          // sleep for 1 second
-          std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-
-          if (!path.empty())
-            {
-              visualizer.VisualizeGridPath(path);
-            }
-        }
-      else if (planner_name == "rrt" || planner_name == "rrt_star")
-        {
-          if (planner_name == "rrt_star")
-            {
-              auto log_vector =
-                  std::dynamic_pointer_cast<planning::tree_base::RRTStar>(
-                      planner)
-                      ->GetLogVector();
-              for (auto &log : log_vector)
-                {
-                  visualizer.VisualizeTreeLog(log.first, 0);
-                  // sleep for 1 second
-                  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-                  if (!log.second.empty())
-                    {
-                      visualizer.VisualizeTreePath(log.second);
-                    }
-                  std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-                  visualizer.UpdateMap(*map);
-                }
-            }
-          else
-            {
-              visualizer.VisualizeTreeLog(log, 10);
-            }
-
-          // sleep for 1 second
-          std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-          if (!path.empty())
-            {
-              visualizer.VisualizeTreePath(path);
-            }
-        }
-
-      // sleep for 1 second
       std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-
-      visualizer.UpdateMap(*map);
-
-      // sleep for 1 second
-      std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-      std::cout << "\n\n\n-----------\n\n\n" << std::endl;
+      std::cout << "Finished" << std::endl;
+      // set null to get_log_function_ to stop logging
+      tree_visualizer->SetGetLogFunction(nullptr);
+      planner->ClearLog();
     }
 
   return 0;
 }
 
-struct FunctionMap
-{
-  static std::unordered_map<std::string, PlannerType (*)(std::string)> map;
-};
-
-std::unordered_map<std::string, PlannerType (*)(std::string)> FunctionMap::map =
-    {{"astar", GetGridBasedPlanner},
-     {"bfs", GetGridBasedPlanner},
-     {"dfs", GetGridBasedPlanner},
-     {"rrt", GetTreeBasedPlanner},
-     {"rrt_star", GetTreeBasedPlanner}};
-
 PlannerType GetPlanner(std::string planner_name)
 {
-  PlannerType result = FunctionMap::map.at(planner_name)(planner_name);
+  PlannerType result{};
+  if (planner_name == "astar" || planner_name == "bfs" || planner_name == "dfs")
+    {
+      result = GetGridBasedPlanner(planner_name);
+    }
+  else if (planner_name == "rrt" || planner_name == "rrt_star")
+    {
+      result = GetTreeBasedPlanner(planner_name);
+    }
+  else
+    {
+      std::cout << "Invalid planner name" << std::endl;
+      exit(1);
+    }
   return result;
 }
 

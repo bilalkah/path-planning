@@ -10,10 +10,12 @@
  */
 
 #include "bfs.h"
+#include <chrono>
 #include <iostream>
 #include <memory>
 #include <queue>
 #include <stdexcept>
+#include <thread>
 
 namespace planning
 {
@@ -39,27 +41,20 @@ BFS::BFS(const int search_space)
 Path BFS::FindPath(const Node &start_node, const Node &goal_node,
                    const std::shared_ptr<Map> map)
 {
-  // Clear log.
-  log_.clear();
-  log_.emplace_back(LogType{start_node, NodeState::kStart});
-  log_.emplace_back(LogType{goal_node, NodeState::kGoal});
-  // Copy map to avoid changing it.
+  ClearLog();
+
   std::shared_ptr<Map> map_copy = std::make_shared<Map>(*map);
   map_copy->SetNodeState(goal_node, NodeState::kGoal);
-  // Create queue for search list.
-  std::queue<std::shared_ptr<NodeParent>> search_list;
 
-  // Create start node.
+  std::queue<std::shared_ptr<NodeParent>> search_list;
   auto start_node_info =
       std::make_shared<NodeParent>(start_node, nullptr, Cost{});
 
-  // Add start node to search list.
   search_list.push(start_node_info);
 
   while (!search_list.empty() &&
          !IsGoal((search_list.front()->node), goal_node))
     {
-      // Get first node from search list.
       auto current_node = search_list.front();
       search_list.pop();
 
@@ -67,8 +62,11 @@ Path BFS::FindPath(const Node &start_node, const Node &goal_node,
         {
           continue;
         }
-      log_.emplace_back(LogType{current_node->node, NodeState::kVisited});
-      // Update map.
+
+      {
+        std::lock_guard<std::mutex> lock(log_mutex_);
+        log_.first.emplace_back(current_node);
+      }
       map_copy->SetNodeState(current_node->node, NodeState::kVisited);
 
       for (const auto &direction : search_space_)
@@ -84,9 +82,9 @@ Path BFS::FindPath(const Node &start_node, const Node &goal_node,
           auto neighbor_node =
               std::make_shared<NodeParent>(Node(x, y), current_node, Cost{});
 
-          // Add neighbor node to search list.
           search_list.push(neighbor_node);
         }
+      std::this_thread::sleep_for(std::chrono::microseconds(100));
     }
   if (search_list.empty())
     {
@@ -95,13 +93,12 @@ Path BFS::FindPath(const Node &start_node, const Node &goal_node,
     }
 
   auto current_node = search_list.front();
+  log_.second = current_node;
   auto path = ReconstructPath(current_node);
   map_copy->UpdateMapWithPath(path);
 
   return path;
 }
-
-Log BFS::GetLog() { return log_; }
 
 } // namespace grid_base
 } // namespace planning

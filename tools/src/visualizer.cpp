@@ -1,139 +1,173 @@
 /**
- * @file visualizer.cpp
+ * @file tree_visualizer.cpp
  * @author Bilal Kahraman (kahramannbilal@gmail.com)
  * @brief
  * @version 0.1
- * @date 2023-09-05
+ * @date 2023-09-19
  *
  * @copyright Copyright (c) 2023
  *
  */
 
 #include "tools/include/visualizer.h"
+#include "planning/include/data_types.h"
 #include "planning/tree_base/include/common_tree_base.h"
-#include <cmath>
+#include <chrono>
+#include <thread>
+#include <vector>
 
 namespace tools
 {
 
-Visualizer::Visualizer(planning::Map &map, float height_coeff = 1.0f,
-                       float width_coeff = 1.0f, int kDelay = 0,
-                       bool kShow = true)
-    : window_(sf::VideoMode(map.GetWidth() * width_coeff,
-                            map.GetHeight() * height_coeff),
-              "Path Planning Visualizer"),
-      cell_(sf::Vector2f(1.0f * width_coeff, 1.0f * height_coeff)), map_(map),
-      cell_size_(std::make_pair(width_coeff, height_coeff)), delay_(kDelay),
-      show_(kShow)
+Visualizer::Visualizer(std::shared_ptr<planning::Map> map,
+                       pair_double size_coeff, std::size_t kDelay,
+                       std::string window_name, std::string planner_name)
+    : map(map), size_coeff_(size_coeff), kDelay_(kDelay),
+      window_name_(window_name), planner_name_(planner_name)
 {
-  window_.setFramerateLimit(60);
-  MapColor();
-  UpdateMap(map);
+  colors_ = GetColorMap();
+  window_.create(sf::VideoMode(map->GetHeight() * size_coeff_.first,
+                               map->GetWidth() * size_coeff_.second),
+                 window_name_);
+  MapToTexture();
 
-  draw_thread_ = std::thread(&Visualizer::RenderWindow, this);
-  draw_thread_.detach();
-}
-
-Visualizer::~Visualizer()
-{
-  show_ = false;
-  draw_thread_.join();
-  window_.close();
-}
-
-void Visualizer::UpdateMap(const planning::Map &map)
-{
-  std::lock_guard<std::mutex> lock_window(window_mutex_);
-  map_ = map;
-  SetWindow();
-}
-
-void Visualizer::VisualizeGridLog(const planning::Log &log)
-{
-  for (auto &log_item : log)
+  if (planner_name_ == "astar" || planner_name_ == "bfs" ||
+      planner_name_ == "dfs")
     {
-      UpdateNode(log_item.current_node_, log_item.node_state_);
+      viz_function_ = std::bind(&Visualizer::VizGridLog, this);
     }
-}
-
-void Visualizer::VisualizeTreeLog(const planning::Log &log, const int delay)
-{
-  for (auto &log_item : log)
+  else if (planner_name_ == "rrt" || planner_name_ == "rrt_star")
     {
-      UpdateLine(log_item.current_node_, log_item.parent_node_,
-                 log_item.node_state_);
-      std::this_thread::sleep_for(std::chrono::milliseconds(delay));
+      viz_function_ = std::bind(&Visualizer::VizTreeLog, this);
     }
-  std::this_thread::sleep_for(std::chrono::milliseconds(10));
-}
-
-void Visualizer::VisualizeGridPath(const planning::Path &path)
-{
-  for (auto &node : path)
+  else
     {
-      UpdateNode(node, planning::NodeState::kPath);
-      std::this_thread::sleep_for(std::chrono::milliseconds(10));
+      throw std::runtime_error("Unknown planner name");
     }
+
+  window_thread_ = std::thread(&Visualizer::Run, this);
+  window_thread_.detach();
+};
+
+void Visualizer::SetStartAndGoal(const planning::Node &start_node,
+                                 const planning::Node &goal_node)
+{
+  start_node_.setRadius(size_coeff_.first * 2);
+  start_node_.setFillColor(colors_.at(planning::NodeState::kStart));
+  start_node_.setPosition(start_node.y_ * size_coeff_.second,
+                          start_node.x_ * size_coeff_.first);
+
+  goal_node_.setRadius(size_coeff_.first * 2);
+  goal_node_.setFillColor(colors_.at(planning::NodeState::kGoal));
+  goal_node_.setPosition(goal_node.y_ * size_coeff_.second,
+                         goal_node.x_ * size_coeff_.first);
 }
 
-void Visualizer::VisualizeTreePath(const planning::Path &path)
+void Visualizer::MapToTexture()
 {
-  // Get first node.
-  auto current_node = path.front();
-
-  // Loop starting from second node.
-  for (auto it = path.begin() + 1; it != path.end(); ++it)
+  render_texture_.create(map->GetHeight() * size_coeff_.first,
+                         map->GetWidth() * size_coeff_.second);
+  render_texture_.clear();
+  for (auto i = 0u; i < map->GetHeight(); i++)
     {
-      UpdateLine(current_node, *it, planning::NodeState::kPath);
-      current_node = *it;
-      std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    }
-}
-
-void Visualizer::UpdateLine(const planning::Node &node1,
-                            const planning::Node &node2,
-                            const planning::NodeState state)
-{
-  const auto ray{planning::tree_base::Get2DRayBetweenNodes(node1, node2)};
-
-  for (const auto node : ray)
-    {
-      UpdateNode(node, state);
-    }
-}
-
-void Visualizer::UpdateNode(const planning::Node &node,
-                            const planning::NodeState state)
-{
-  std::lock_guard<std::mutex> lock(window_mutex_);
-  SetColor(node, state);
-}
-
-void Visualizer::SetWindow()
-{
-  for (auto i = 0u; i < map_.GetWidth(); i++)
-    {
-      for (auto j = 0u; j < map_.GetHeight(); j++)
+      for (auto j = 0u; j < map->GetWidth(); j++)
         {
-          SetColor(planning::Node(i, j),
-                   map_.GetNodeState(planning::Node(i, j)));
+          sf::RectangleShape rectangle;
+          rectangle.setSize(
+              sf::Vector2f(size_coeff_.second, size_coeff_.first));
+          rectangle.setPosition(j * size_coeff_.second, i * size_coeff_.first);
+          auto key = map->GetNodeState(planning::Node(i, j));
+          rectangle.setFillColor(colors_.at(key));
+          render_texture_.draw(rectangle);
+        }
+    }
+  render_texture_.display();
+}
+
+void Visualizer::VizGridLog()
+{
+  if (get_log_function_ == nullptr)
+    {
+      return;
+    }
+  auto log = get_log_function_();
+  sf::RectangleShape cell_{};
+  cell_.setSize(sf::Vector2f(size_coeff_.second, size_coeff_.first));
+  for (auto &node_parent : log.first)
+    {
+      if (node_parent == nullptr)
+        {
+          continue;
+        }
+      cell_.setPosition(node_parent->node.y_ * size_coeff_.second,
+                        node_parent->node.x_ * size_coeff_.first);
+      cell_.setFillColor(colors_.at(planning::NodeState::kVisited));
+      window_.draw(cell_);
+    }
+
+  if (log.second != nullptr)
+    {
+      auto path{planning::ReconstructPath(log.second)};
+      for (auto &node : path)
+        {
+          cell_.setPosition(node.y_ * size_coeff_.second,
+                            node.x_ * size_coeff_.first);
+          cell_.setFillColor(colors_.at(planning::NodeState::kPath));
+          window_.draw(cell_);
         }
     }
 }
 
-void Visualizer::SetColor(const planning::Node &node,
-                          const planning::NodeState color)
+void Visualizer::VizTreeLog()
 {
-  cell_.setPosition(node.y_ * cell_size_.second, node.x_ * cell_size_.first);
-  cell_.setFillColor(colors_[color]);
-  window_.draw(cell_);
+  if (get_log_function_ == nullptr)
+    {
+      return;
+    }
+  auto log = get_log_function_();
+  for (auto &node_parent : log.first)
+    {
+      if (node_parent->parent == nullptr)
+        {
+          continue;
+        }
+
+      sf::Vertex line[] = {
+          sf::Vertex(
+              sf::Vector2f(node_parent->parent->node.y_ * size_coeff_.second,
+                           node_parent->parent->node.x_ * size_coeff_.first),
+              colors_.at(planning::NodeState::kVisited)),
+          sf::Vertex(sf::Vector2f(node_parent->node.y_ * size_coeff_.second,
+                                  node_parent->node.x_ * size_coeff_.first),
+                     colors_.at(planning::NodeState::kVisited))};
+      window_.draw(line, 2, sf::Lines);
+    }
+
+  if (log.second != nullptr)
+    {
+      auto path{planning::ReconstructPath(log.second)};
+
+      for (auto i = 0u; i < path.size() - 1; i++)
+        {
+          sf::Vertex line[] = {
+              sf::Vertex(sf::Vector2f(path[i].y_ * size_coeff_.second,
+                                      path[i].x_ * size_coeff_.first),
+                         colors_.at(planning::NodeState::kPath)),
+              sf::Vertex(sf::Vector2f(path[i + 1].y_ * size_coeff_.second,
+                                      path[i + 1].x_ * size_coeff_.first),
+                         colors_.at(planning::NodeState::kPath))};
+          window_.draw(line, 2, sf::Lines);
+        }
+    }
 }
 
-int Visualizer::RenderWindow()
+void Visualizer::Run()
 {
-  while (window_.isOpen() && show_)
+  while (window_.isOpen())
     {
-      for (auto event = sf::Event{}; window_.pollEvent(event);)
+
+      sf::Event event;
+      while (window_.pollEvent(event))
         {
           if (event.type == sf::Event::Closed)
             {
@@ -141,26 +175,15 @@ int Visualizer::RenderWindow()
             }
         }
 
-      {
-        std::lock_guard<std::mutex> lock(window_mutex_);
-        {
-          window_.display();
-        }
-      }
-      // Delay
-      std::this_thread::sleep_for(std::chrono::milliseconds(delay_));
+      window_.clear();
+      sf::Sprite sprite(render_texture_.getTexture());
+      window_.draw(sprite);
+      viz_function_();
+      window_.draw(start_node_);
+      window_.draw(goal_node_);
+      window_.display();
+      std::this_thread::sleep_for(std::chrono::milliseconds(1000 / 30));
     }
-  return 0;
-}
-
-void Visualizer::MapColor()
-{
-  colors_.insert({planning::NodeState::kFree, sf::Color::White});
-  colors_.insert({planning::NodeState::kVisited, sf::Color::Blue});
-  colors_.insert({planning::NodeState::kOccupied, sf::Color::Black});
-  colors_.insert({planning::NodeState::kStart, sf::Color::Green});
-  colors_.insert({planning::NodeState::kGoal, sf::Color::Yellow});
-  colors_.insert({planning::NodeState::kPath, sf::Color::Red});
 }
 
 } // namespace tools

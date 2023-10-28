@@ -42,6 +42,16 @@ add_executable(
     test_access_data.cpp
 )
 
+add_executable(
+    test_rrt_star
+    test_rrt_star.cpp
+)
+
+add_executable(
+    test_rrt
+    test_rrt.cpp
+)
+
 target_link_libraries(
     test_map
     common_grid_base
@@ -72,9 +82,23 @@ target_link_libraries(
     GTest::gtest_main
 )
 
+target_link_libraries(
+    test_rrt_star
+    rrt_star
+    GTest::gtest_main
+)
+
+target_link_libraries(
+    test_rrt
+    rrt
+    GTest::gtest_main
+)
+
 include(GoogleTest)
 gtest_discover_tests(test_map)
 gtest_discover_tests(test_a_star)
 gtest_discover_tests(test_bfs)
 gtest_discover_tests(test_dfs)
 gtest_discover_tests(test_access_data)
+gtest_discover_tests(test_rrt_star)
+gtest_discover_tests(test_rrt)

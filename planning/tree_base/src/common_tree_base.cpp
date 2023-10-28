@@ -209,13 +209,15 @@ WireNewNode(const int max_branch_length, const int min_branch_length,
   };
 
   auto reverse_iterator_ray{ray.rbegin()};
-  while (check_collision(reverse_iterator_ray))
+  while (check_collision(reverse_iterator_ray) && distance > min_branch_length)
     {
       reverse_iterator_ray++;
+      distance = EuclideanDistance(nearest_node->node, *reverse_iterator_ray);
     }
 
   if (reverse_iterator_ray != ray.rend() &&
-      *reverse_iterator_ray != nearest_node->node)
+      *reverse_iterator_ray != nearest_node->node &&
+      !check_collision(reverse_iterator_ray))
     {
       return std::make_shared<NodeParent>(*reverse_iterator_ray, nearest_node,
                                           Cost{});
