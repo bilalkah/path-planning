@@ -81,7 +81,6 @@ Path DFS::FindPath(const Node &start_node, const Node &goal_node,
 
           search_list.push(new_node_parent);
         }
-
     }
 
   if (search_list.empty())

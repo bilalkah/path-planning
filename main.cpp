@@ -66,7 +66,7 @@ int main(int argc, char **argv)
   while (true)
     {
       tree_visualizer->SetGetLogFunction(
-      std::bind(&planning::IPlanningWithLogging::GetLog, planner));
+          std::bind(&planning::IPlanningWithLogging::GetLog, planner));
       std::cout << "Started" << std::endl;
       // Get time
       auto start_time{std::chrono::high_resolution_clock::now()};
@@ -81,7 +81,6 @@ int main(int argc, char **argv)
       // set null to get_log_function_ to stop logging
       tree_visualizer->SetGetLogFunction(nullptr);
       planner->ClearLog();
-
     }
 
   return 0;

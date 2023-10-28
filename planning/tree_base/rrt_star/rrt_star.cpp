@@ -94,7 +94,6 @@ Path RRTStar::FindPath(const Node &start_node, const Node &goal_node,
   return ReconstructPath(final);
 }
 
-
 std::shared_ptr<NodeParent> RRTStar::WireNodeIfPossible(
     const Node &random_node,
     std::vector<std::shared_ptr<NodeParent>> neighbor_vector,
