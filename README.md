@@ -1,5 +1,7 @@
 # 2D Pathfinding Algorithms
 
+This project is consist of A*, Breadth-First Search, Depth-First Search, RRT (Rapidly exploring random tree) and RRT* algorithms.
+
 ## File Structure
 
 ```
