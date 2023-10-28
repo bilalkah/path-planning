@@ -13,19 +13,19 @@ link_directories(
 )
 
 set(
-    TREE_VISUALIZER_SOURCES
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/tree_visualizer.cpp
+    VISUALIZER_SOURCES
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/visualizer.cpp
     ${COMMON_PLANNING_FILES}
 )
 
 add_library(
-    tree_visualizer
+    visualizer
     SHARED
-    ${TREE_VISUALIZER_SOURCES}
+    ${VISUALIZER_SOURCES}
 )
 
 target_link_libraries(
-    tree_visualizer
+    visualizer
     PUBLIC
     sfml-system 
     sfml-graphics 

@@ -11,10 +11,12 @@
 
 #include "a_star.h"
 
+#include <chrono>
 #include <cmath>
 #include <iostream>
 #include <memory>
 #include <queue>
+#include <thread>
 
 namespace planning
 {
@@ -26,7 +28,6 @@ auto Compare{
       return lhs->cost.f > rhs->cost.f;
     }};
 
-// Euclidean distance.
 auto heuristic{[](const Node &lhs, const Node &rhs) {
   return std::hypot(lhs.x_ - rhs.x_, lhs.y_ - rhs.y_);
 }};
@@ -52,31 +53,23 @@ AStar::AStar(const double &heuristic_weight, const int search_space)
 Path AStar::FindPath(const Node &start_node, const Node &goal_node,
                      const std::shared_ptr<Map> map)
 {
-  // Clear log.
-  log_.clear();
-  log_.emplace_back(LogType{start_node, NodeState::kStart});
-  log_.emplace_back(LogType{goal_node, NodeState::kGoal});
-  // Copy map to avoid changing it.
+  ClearLog();
   std::shared_ptr<Map> map_copy = std::make_shared<Map>(*map);
   map_copy->SetNodeState(goal_node, NodeState::kGoal);
 
-  // Create priority queue for search list.
   std::priority_queue<std::shared_ptr<NodeParent>,
                       std::vector<std::shared_ptr<NodeParent>>,
                       decltype(Compare)>
       search_list(Compare);
 
-  // Create start node.
   auto start_node_info = std::make_shared<NodeParent>(
       start_node, nullptr,
       Cost(0, heuristic(start_node, goal_node), heuristic_weight_));
 
-  // Add start node to search list.
   search_list.push(start_node_info);
 
   while (!search_list.empty() && !IsGoal(search_list.top()->node, goal_node))
     {
-      // Get the node with the lowest cost.
       auto current_node = search_list.top();
       search_list.pop();
 
@@ -84,11 +77,13 @@ Path AStar::FindPath(const Node &start_node, const Node &goal_node,
         {
           continue;
         }
-      log_.emplace_back(LogType{current_node->node, NodeState::kVisited});
-      // Update map.
+      {
+        std::lock_guard<std::mutex> lock(log_mutex_);
+        log_.first.emplace_back(current_node);
+      }
+
       map_copy->SetNodeState(current_node->node, NodeState::kVisited);
 
-      // Check neighbors.
       for (auto &direction : search_space_)
         {
           int x = current_node->node.x_ + direction[0];
@@ -106,6 +101,7 @@ Path AStar::FindPath(const Node &start_node, const Node &goal_node,
 
           search_list.push(neighbor_node);
         }
+      std::this_thread::sleep_for(std::chrono::microseconds(100));
     }
 
   if (search_list.empty())
@@ -115,12 +111,14 @@ Path AStar::FindPath(const Node &start_node, const Node &goal_node,
     }
 
   auto current_node = search_list.top();
+  {
+    std::lock_guard<std::mutex> lock(log_mutex_);
+    log_.second = current_node;
+  }
   auto path = ReconstructPath(current_node);
   map_copy->UpdateMapWithPath(path);
   return path;
 }
-
-Log AStar::GetLog() { return log_; }
 
 } // namespace grid_base
 } // namespace planning

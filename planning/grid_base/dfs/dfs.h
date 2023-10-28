@@ -14,6 +14,7 @@
 
 #include "planning/grid_base/include/common_grid_base.h"
 #include "planning/include/i_planning.h"
+#include <mutex>
 #include <stack>
 #include <string>
 
@@ -33,11 +34,23 @@ public:
   DFS(const int search_space);
   Path FindPath(const Node &start_node, const Node &goal_node,
                 const std::shared_ptr<Map> map) override;
-  Log GetLog() override;
+  Log GetLog() override
+  {
+    std::lock_guard<std::mutex> lock(log_mutex_);
+    return log_;
+  }
+  void ClearLog() override
+  {
+    std::lock_guard<std::mutex> lock(log_mutex_);
+    log_.first.clear();
+    log_.second = nullptr;
+  }
 
 private:
-  Log log_;
-  SearchSpace search_space_;
+  Log log_{};
+  SearchSpace search_space_{};
+
+  std::mutex log_mutex_{};
 };
 
 } // namespace grid_base

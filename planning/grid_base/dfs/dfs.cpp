@@ -11,7 +11,9 @@
 
 #include "dfs.h"
 #include <iostream>
+#include <memory>
 #include <stdexcept>
+#include <thread>
 
 namespace planning
 {
@@ -37,18 +39,13 @@ DFS::DFS(const int search_space)
 Path DFS::FindPath(const Node &start_node, const Node &goal_node,
                    const std::shared_ptr<Map> map)
 {
-  // Clear log.
-  log_.clear();
-  log_.emplace_back(LogType{start_node, NodeState::kStart});
-  log_.emplace_back(LogType{goal_node, NodeState::kGoal});
-  // Copy map to avoid changing it.
+  ClearLog();
+
   std::shared_ptr<Map> map_copy = std::make_shared<Map>(*map);
   map_copy->SetNodeState(goal_node, NodeState::kGoal);
 
-  // Create stack for search list.
   std::stack<std::shared_ptr<NodeParent>> search_list;
 
-  // Create start node.
   std::shared_ptr<NodeParent> start_node_info =
       std::make_shared<NodeParent>(start_node, nullptr, Cost{});
   search_list.push(start_node_info);
@@ -58,13 +55,15 @@ Path DFS::FindPath(const Node &start_node, const Node &goal_node,
       auto current_node = search_list.top();
       search_list.pop();
 
-      // Check if node is already visited.
       if (map_copy->GetNodeState(current_node->node) == NodeState::kVisited)
         {
           continue;
         }
-      log_.emplace_back(LogType{current_node->node, NodeState::kVisited});
-      // Set node state to visited.
+
+      {
+        std::lock_guard<std::mutex> lock(log_mutex_);
+        log_.first.emplace_back(current_node);
+      }
       map_copy->SetNodeState(current_node->node, NodeState::kVisited);
 
       for (const auto &direction : search_space_)
@@ -77,13 +76,12 @@ Path DFS::FindPath(const Node &start_node, const Node &goal_node,
               continue;
             }
 
-          // Create new node.
           std::shared_ptr<NodeParent> new_node_parent =
               std::make_shared<NodeParent>(Node(x, y), current_node, Cost{});
 
-          // Add new node to search list.
           search_list.push(new_node_parent);
         }
+
     }
 
   if (search_list.empty())
@@ -93,12 +91,14 @@ Path DFS::FindPath(const Node &start_node, const Node &goal_node,
     }
 
   auto current_node = search_list.top();
+  {
+    std::lock_guard<std::mutex> lock(log_mutex_);
+    log_.second = current_node;
+  }
   auto path = ReconstructPath(current_node);
   map_copy->UpdateMapWithPath(path);
   return path;
 }
-
-Log DFS::GetLog() { return log_; }
 
 } // namespace grid_base
 } // namespace planning

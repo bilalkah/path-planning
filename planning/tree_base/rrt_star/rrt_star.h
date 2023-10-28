@@ -14,11 +14,10 @@
 
 #include "planning/include/i_planning.h"
 #include "planning/tree_base/include/common_tree_base.h"
-#include "tools/include/tree_visualizer.h"
 #include <memory>
+#include <mutex>
 #include <unordered_map>
 #include <vector>
-
 namespace planning
 {
 namespace tree_base
@@ -44,12 +43,16 @@ public:
   ~RRTStar() {}
   Path FindPath(const Node &start_node, const Node &goal_node,
                 const std::shared_ptr<Map> map) override;
-  Log GetLog() override;
-  std::vector<std::pair<Log, Path>> GetLogVector();
-
-  void AttachVisualizer(std::shared_ptr<tools::TreeVisualizer> visualizer)
+  Log GetLog() override
   {
-    visualize_ = visualizer;
+    std::lock_guard<std::mutex> lock(log_mutex_);
+    return log_;
+  }
+  void ClearLog() override
+  {
+    std::lock_guard<std::mutex> lock(log_mutex_);
+    log_.first.clear();
+    log_.second = nullptr;
   }
 
 private:
@@ -64,18 +67,8 @@ private:
               std::vector<std::shared_ptr<NodeParent>> &nearest_nodes,
               const std::shared_ptr<Map> map);
   void IterativelyCostUpdate(const std::shared_ptr<NodeParent> &node);
-  void RecursivelyCostUpdate(const std::shared_ptr<NodeParent> &node);
-  void SaveCurrentLogAndPath(const int iteration,
-                             const std::shared_ptr<NodeParent> &final);
-  void ResetLogAndUpdateWithVisitedNodes();
-  void AddVisitedLine(const std::shared_ptr<NodeParent> node,
-                      const std::shared_ptr<Map> map_copy);
-  void RemoveVisitedLine(const std::shared_ptr<NodeParent> node,
-                         const std::shared_ptr<Map> map_copy);
 
   Log log_;
-  std::vector<std::pair<Log, Path>> log_vector_{};
-  std::vector<std::shared_ptr<NodeParent>> visited_nodes_{};
   std::unordered_map<std::shared_ptr<NodeParent>,
                      std::vector<std::shared_ptr<NodeParent>>>
       parent_child_map_{};
@@ -86,8 +79,7 @@ private:
   int neighbor_radius_{15};
   int goal_radius_{5};
   int save_log_interval_{100};
-
-  std::shared_ptr<tools::TreeVisualizer> visualize_{nullptr};
+  std::mutex log_mutex_;
 };
 
 } // namespace tree_base
