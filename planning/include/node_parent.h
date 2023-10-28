@@ -70,6 +70,7 @@ inline Path ReconstructPath(std::shared_ptr<NodeParent> current_node)
       path.insert(path.begin(), iterator_node->node);
       iterator_node = iterator_node->parent;
     }
+  path.insert(path.begin(), iterator_node->node);
   return path;
 }
 

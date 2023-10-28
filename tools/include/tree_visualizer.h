@@ -15,7 +15,9 @@
 #include "planning/tree_base/include/common_tree_base.h"
 #include "tools/include/i_visualize.h"
 #include <SFML/Graphics.hpp>
+#include <SFML/Graphics/RenderTexture.hpp>
 #include <memory>
+#include <thread>
 
 namespace tools
 {
@@ -34,16 +36,22 @@ public:
   void SetStartAndGoal(const planning::Node &start_node,
                        const planning::Node &goal_node);
 
+  void MapToTexture();
+
+  void Run();
+  
 private:
   sf::RenderWindow window_;
   std::string window_name_;
   std::shared_ptr<planning::Map> map;
   pair_double size_coeff_;
   std::size_t kDelay_;
+  sf::RenderTexture render_texture_;
 
   std::unordered_map<planning::NodeState, sf::Color> colors_;
   sf::CircleShape start_node_;
   sf::CircleShape goal_node_;
+  std::thread window_thread_;
 };
 
 } // namespace tools
