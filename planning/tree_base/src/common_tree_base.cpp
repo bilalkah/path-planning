@@ -50,15 +50,16 @@ Node RandomNode(const std::shared_ptr<Map> map)
 
 std::vector<Node> Get2DRayBetweenNodes(const Node &src, const Node &dst)
 {
+  if (src == dst)
+    {
+      return std::vector<Node>{};
+    }
   std::pair<double, double> ray_vector{dst.x_ - src.x_, dst.y_ - src.y_};
   auto ray_length{std::hypot(ray_vector.first, ray_vector.second)};
   auto unit_vector{std::make_pair(ray_vector.first / ray_length,
                                   ray_vector.second / ray_length)};
   std::vector<Node> ray;
-  if (src == dst)
-    {
-      return ray;
-    }
+
   // Check ray vector corresponds which past of cartesian coordinate system.
   std::pair<double, double> sign_vector{0.5, 0.5};
   if (ray_vector.first < 0)
@@ -119,57 +120,41 @@ std::shared_ptr<NodeParent>
 GetNearestNodeParent(const Node &node,
                      const std::vector<std::shared_ptr<NodeParent>> &nodes)
 {
-  std::shared_ptr<NodeParent> nearest_node;
-  double min_distance{std::numeric_limits<double>::max()};
+  // Get nearest node.
+  auto nearest_node =
+      std::min_element(nodes.begin(), nodes.end(),
+                       [&node](const std::shared_ptr<NodeParent> &node1,
+                               const std::shared_ptr<NodeParent> &node2) {
+                         return EuclideanDistance(node1->node, node) <
+                                EuclideanDistance(node2->node, node);
+                       });
 
-  for (const auto &node_parent : nodes)
-    {
-      double distance{EuclideanDistance(node_parent->node, node)};
-      if (distance < min_distance)
-        {
-          min_distance = distance;
-          nearest_node = node_parent;
-        }
-    }
-
-  return nearest_node;
+  return *nearest_node;
 }
 
 std::vector<std::shared_ptr<NodeParent>> GetNearestNodeParentVector(
     const int neighbor_radius, const Node &node,
     const std::vector<std::shared_ptr<NodeParent>> &nodes)
 {
-  std::vector<std::shared_ptr<NodeParent>> nearest_nodes;
-  std::shared_ptr<NodeParent> nearest_node;
-  double min_distance{std::numeric_limits<double>::max()};
+  auto nearest_nodes = std::vector<std::shared_ptr<NodeParent>>{};
 
-  // Search in the neighbor_radius
-  for (const auto &node_parent : nodes)
-    {
-      double distance{EuclideanDistance(node_parent->node, node)};
-      if (distance < neighbor_radius)
-        {
-          nearest_nodes.emplace_back(node_parent);
-        }
-      if (distance < min_distance)
-        {
-          min_distance = distance;
-          nearest_node = node_parent;
-        }
-    }
+  // copy_if and sort
+  std::copy_if(nodes.begin(), nodes.end(), std::back_inserter(nearest_nodes),
+               [&node, &neighbor_radius](const std::shared_ptr<NodeParent> &n) {
+                 return EuclideanDistance(n->node, node) < neighbor_radius;
+               });
+
   if (nearest_nodes.empty())
     {
-      nearest_nodes.emplace_back(nearest_node);
+      nearest_nodes.emplace_back(GetNearestNodeParent(node, nodes));
     }
-  if (nearest_nodes.size() > 1)
-    {
-      // Sort nearest nodes according to their cost from low to high.
-      std::sort(nearest_nodes.begin(), nearest_nodes.end(),
-                [](const std::shared_ptr<NodeParent> &node1,
-                   const std::shared_ptr<NodeParent> &node2) {
-                  return node1->cost.f < node2->cost.f;
-                });
-    }
+
+  std::sort(nearest_nodes.begin(), nearest_nodes.end(),
+            [](const std::shared_ptr<NodeParent> &node1,
+               const std::shared_ptr<NodeParent> &node2) {
+              return node1->cost.f < node2->cost.f;
+            });
+
   return nearest_nodes;
 }
 
@@ -179,13 +164,10 @@ WireNewNode(const int max_branch_length, const int min_branch_length,
             const std::shared_ptr<NodeParent> &nearest_node,
             const std::shared_ptr<Map> map)
 {
-  // Calculate distance between random node and nearest node.
   double distance{EuclideanDistance(random_node, nearest_node->node)};
-  // Calculate unit vector between random node and nearest node.
   double unit_vector_x{(random_node.x_ - nearest_node->node.x_) / distance};
   double unit_vector_y{(random_node.y_ - nearest_node->node.y_) / distance};
 
-  // Calculate new node.
   Node new_node{random_node};
   if (distance > max_branch_length)
     {
@@ -193,34 +175,33 @@ WireNewNode(const int max_branch_length, const int min_branch_length,
       new_node.y_ = nearest_node->node.y_ + max_branch_length * unit_vector_y;
       distance = EuclideanDistance(new_node, nearest_node->node);
     }
-
-  auto ray{Get2DRayBetweenNodes(nearest_node->node, new_node)};
-
-  auto check_collision = [&ray, &map](auto reverse_iterator_ray) {
-    while (reverse_iterator_ray != ray.rend())
-      {
-        if (map->GetNodeState(*reverse_iterator_ray) == NodeState::kOccupied)
-          {
-            return true;
-          }
-        reverse_iterator_ray++;
-      }
-    return false;
-  };
-
-  auto reverse_iterator_ray{ray.rbegin()};
-  while (check_collision(reverse_iterator_ray) && distance > min_branch_length)
+  else if (distance < min_branch_length)
     {
-      reverse_iterator_ray++;
-      distance = EuclideanDistance(nearest_node->node, *reverse_iterator_ray);
+      return std::nullptr_t();
     }
 
-  if (reverse_iterator_ray != ray.rend() &&
-      *reverse_iterator_ray != nearest_node->node &&
-      !check_collision(reverse_iterator_ray))
+  auto ray{Get2DRayBetweenNodes(nearest_node->node, new_node)};
+  if (ray.empty())
     {
-      return std::make_shared<NodeParent>(*reverse_iterator_ray, nearest_node,
-                                          Cost{});
+      return std::nullptr_t();
+    }
+  auto index{0u};
+  while (index < ray.size() &&
+         map->GetNodeState(ray[index]) != NodeState::kOccupied)
+    {
+      index++;
+    }
+  if (index == ray.size())
+    {
+      return std::make_shared<NodeParent>(new_node, nearest_node, Cost{});
+    }
+  auto isLengthValid{EuclideanDistance(ray[index - 1], nearest_node->node) >
+                     min_branch_length};
+  auto isNodeValid{map->GetNodeState(ray[index]) != NodeState::kOccupied &&
+                   ray[index] != new_node};
+  if (isLengthValid && isNodeValid)
+    {
+      return std::make_shared<NodeParent>(ray[index - 1], nearest_node, Cost{});
     }
 
   return std::nullptr_t();
