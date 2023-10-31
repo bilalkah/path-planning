@@ -17,88 +17,25 @@ FetchContent_Declare(
 # set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
-add_executable(
+set(TARGET_LIST 
     test_map
-    test_map.cpp
-)
-
-add_executable(
     test_a_star
-    test_a_star.cpp
-)
-
-add_executable(
     test_bfs
-    test_bfs.cpp
-)
-
-add_executable(
     test_dfs
-    test_dfs.cpp
-)
-
-add_executable(
     test_access_data
-    test_access_data.cpp
-)
-
-add_executable(
     test_rrt_star
-    test_rrt_star.cpp
-)
-
-add_executable(
     test_rrt
-    test_rrt.cpp
 )
 
-target_link_libraries(
-    test_map
-    common_grid_base
-    GTest::gtest_main
-)
-
-target_link_libraries(
-    test_a_star
-    a_star
-    GTest::gtest_main
-)
-
-target_link_libraries(
-    test_bfs
-    bfs
-    GTest::gtest_main
-)
-
-target_link_libraries(
-    test_dfs
-    dfs
-    GTest::gtest_main
-)
-
-target_link_libraries(
-    test_access_data
-    common_grid_base
-    GTest::gtest_main
-)
-
-target_link_libraries(
-    test_rrt_star
-    rrt_star
-    GTest::gtest_main
-)
-
-target_link_libraries(
-    test_rrt
-    rrt
-    GTest::gtest_main
-)
+foreach(TARGET ${TARGET_LIST})
+    add_executable(${TARGET} ${TARGET}.cpp)
+    target_link_libraries(${TARGET} GTest::gtest_main common_grid_base a_star bfs dfs rrt_star rrt)
+    add_test(NAME ${TARGET} COMMAND ${TARGET})
+    
+endforeach()
 
 include(GoogleTest)
-gtest_discover_tests(test_map)
-gtest_discover_tests(test_a_star)
-gtest_discover_tests(test_bfs)
-gtest_discover_tests(test_dfs)
-gtest_discover_tests(test_access_data)
-gtest_discover_tests(test_rrt_star)
-gtest_discover_tests(test_rrt)
+
+foreach(TARGET ${TARGET_LIST})
+    gtest_discover_tests(${TARGET})
+endforeach()

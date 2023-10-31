@@ -3,7 +3,7 @@
 	"tasks": [
 		{
 			"type": "cmake",
-			"label": "CMake: build all",
+			"label": "CMake: build test",
 			"command": "build",
 			"targets": [
 				"test_bfs",
@@ -11,6 +11,19 @@
 				"test_a_star",
 				"test_map",
 				"test_access_data",
+				"test_rrt",
+				"test_rrt_star",
+			],
+			"group": "build",
+			"problemMatcher": [],
+			"detail": "CMake template build task"
+		},
+		{
+			"type": "cmake",
+			"label": "CMake: build main",
+			"command": "build",
+			"targets": [
+				"main",
 			],
 			"group": "build",
 			"problemMatcher": [],
