@@ -68,6 +68,7 @@ Path RRTStar::FindPath(const Node &start_node, const Node &goal_node,
         log_.first.push_back(new_node);
       }
 
+      map_copy->SetNodeState(new_node->node, NodeState::kVisited);
       parent_child_map_[new_node->parent].push_back(new_node);
 
       CheckIfGoalReached(new_node, final, goal_node);
@@ -185,19 +186,24 @@ void RRTStar::IterativelyCostUpdate(const std::shared_ptr<NodeParent> &node)
   std::queue<std::shared_ptr<NodeParent>> queue;
   queue.push(node);
 
-  while (!queue.empty())
-    {
-      auto current_node{queue.front()};
-      queue.pop();
-
-      for (const auto &child : parent_child_map_[current_node])
-        {
+  auto update_cost = [&](std::shared_ptr<NodeParent> current_node) {
+    std::for_each(
+        parent_child_map_[current_node].begin(),
+        parent_child_map_[current_node].end(), [&](const auto &child) {
           child->cost =
               Cost(child->parent->cost.g + 1,
                    child->parent->cost.h +
                        EuclideanDistance(child->node, child->parent->node));
           queue.push(child);
-        }
+        });
+  };
+
+  while (!queue.empty())
+    {
+      auto current_node{queue.front()};
+      queue.pop();
+
+      update_cost(current_node);
     }
 }
 

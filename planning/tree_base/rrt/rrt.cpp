@@ -55,12 +55,7 @@ Path RRT::FindPath(const Node &start_node, const Node &goal_node,
         std::lock_guard<std::mutex> lock(log_mutex_);
         log_.first.emplace_back(new_node);
       }
-
-      auto ray{Get2DRayBetweenNodes(nearest_node->node, new_node->node)};
-      for (const auto &node : ray)
-        {
-          map_copy->SetNodeState(node, NodeState::kVisited);
-        }
+      map_copy->SetNodeState(new_node->node, NodeState::kVisited);
 
       // Check if goal node is in radius.
       if (EuclideanDistance(new_node->node, goal_node) <= goal_radius_)
