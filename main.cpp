@@ -50,9 +50,14 @@ int main(int argc, char **argv)
   // Planner config
   auto planner_name = config["planner_name"].as<std::string>();
   PlannerType planner = GetPlanner(planner_name);
+
   // Visualizer config
+  auto rescale_factor = config["visualizer"]["rescale"].as<double>();
+  auto delay = config["visualizer"]["delay"].as<size_t>();
+
   auto tree_visualizer = std::make_shared<tools::Visualizer>(
-      map, tools::pair_double{2.0, 2.0}, 1u, "Tree Visualizer", planner_name);
+      map, tools::pair_double{rescale_factor, rescale_factor}, delay,
+      "Tree Visualizer", planner_name);
 
   // Path config
   auto s = config["path"]["start"];
