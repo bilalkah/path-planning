@@ -81,7 +81,7 @@ Path DFS::FindPath(const Node &start_node, const Node &goal_node,
 
           search_list.push(new_node_parent);
         }
-        std::this_thread::sleep_for(std::chrono::microseconds(100));
+      std::this_thread::sleep_for(std::chrono::microseconds(100));
     }
 
   if (search_list.empty())

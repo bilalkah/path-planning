@@ -46,8 +46,7 @@ class Visualizer
 {
 public:
   Visualizer(std::shared_ptr<planning::Map> map, pair_double size_coeff,
-             double kDelay, std::string window_name,
-             std::string planner_name);
+             double kDelay, std::string window_name, std::string planner_name);
   ~Visualizer() { window_.close(); }
 
   void SetStartAndGoal(const planning::Node &start_node,
