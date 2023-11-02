@@ -195,6 +195,10 @@ WireNewNode(const int max_branch_length, const int min_branch_length,
     {
       return std::make_shared<NodeParent>(new_node, nearest_node, Cost{});
     }
+  if (index == 0)
+    {
+      return std::nullptr_t();
+    }
   auto isLengthValid{EuclideanDistance(ray[index - 1], nearest_node->node) >
                      min_branch_length};
   auto isNodeValid{map->GetNodeState(ray[index]) != NodeState::kOccupied &&

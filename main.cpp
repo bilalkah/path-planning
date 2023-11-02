@@ -50,9 +50,14 @@ int main(int argc, char **argv)
   // Planner config
   auto planner_name = config["planner_name"].as<std::string>();
   PlannerType planner = GetPlanner(planner_name);
+
   // Visualizer config
-  auto tree_visualizer = std::make_shared<tools::Visualizer>(
-      map, tools::pair_double{2.0, 2.0}, 1u, "Tree Visualizer", planner_name);
+  auto rescale_factor = config["visualizer"]["rescale"].as<double>();
+  auto delay = config["visualizer"]["delay"].as<double>();
+
+  auto visualizer = std::make_shared<tools::Visualizer>(
+      map, tools::pair_double{rescale_factor, rescale_factor}, delay,
+      "Tree Visualizer", planner_name);
 
   // Path config
   auto s = config["path"]["start"];
@@ -61,11 +66,11 @@ int main(int argc, char **argv)
   auto goal_node = planning::Node(g["x"].as<int>(), g["y"].as<int>());
 
   // Visualize start and goal nodes
-  tree_visualizer->SetStartAndGoal(start_node, goal_node);
+  visualizer->SetStartAndGoal(start_node, goal_node);
 
   while (true)
     {
-      tree_visualizer->SetGetLogFunction(
+      visualizer->SetGetLogFunction(
           std::bind(&planning::IPlanningWithLogging::GetLog, planner));
       std::cout << "Started" << std::endl;
       // Get time
@@ -79,7 +84,7 @@ int main(int argc, char **argv)
       std::this_thread::sleep_for(std::chrono::milliseconds(1000));
       std::cout << "Finished" << std::endl;
       // set null to get_log_function_ to stop logging
-      tree_visualizer->SetGetLogFunction(nullptr);
+      visualizer->SetGetLogFunction(nullptr);
       planner->ClearLog();
     }
 

@@ -20,7 +20,7 @@ namespace tools
 {
 
 Visualizer::Visualizer(std::shared_ptr<planning::Map> map,
-                       pair_double size_coeff, std::size_t kDelay,
+                       pair_double size_coeff, double kDelay,
                        std::string window_name, std::string planner_name)
     : map(map), size_coeff_(size_coeff), kDelay_(kDelay),
       window_name_(window_name), planner_name_(planner_name)
