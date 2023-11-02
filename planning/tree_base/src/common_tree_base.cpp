@@ -32,11 +32,19 @@ std::pair<double, double> RandomSampling()
 
 Node RandomNode(const std::shared_ptr<Map> map)
 {
+  bool is_valid{false};
   Node random_node;
-  auto random_point{RandomSampling()};
-  random_node = Node(static_cast<int>(random_point.first * map->GetHeight()),
-                     static_cast<int>(random_point.second * map->GetWidth()));
-
+  while (!is_valid)
+    {
+      auto random_point{RandomSampling()};
+      random_node =
+          Node(static_cast<int>(random_point.first * map->GetHeight()),
+               static_cast<int>(random_point.second * map->GetWidth()));
+      if (map->GetNodeState(random_node) == NodeState::kFree)
+        {
+          is_valid = true;
+        }
+    }
   return random_node;
 }
 
@@ -186,10 +194,6 @@ WireNewNode(const int max_branch_length, const int min_branch_length,
   if (index == ray.size())
     {
       return std::make_shared<NodeParent>(new_node, nearest_node, Cost{});
-    }
-  if (index == 0)
-    {
-      return std::nullptr_t();
     }
   auto isLengthValid{EuclideanDistance(ray[index - 1], nearest_node->node) >
                      min_branch_length};
