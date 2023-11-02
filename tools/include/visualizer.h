@@ -46,7 +46,7 @@ class Visualizer
 {
 public:
   Visualizer(std::shared_ptr<planning::Map> map, pair_double size_coeff,
-             std::size_t kDelay, std::string window_name,
+             double kDelay, std::string window_name,
              std::string planner_name);
   ~Visualizer() { window_.close(); }
 
@@ -68,7 +68,7 @@ public:
 private:
   std::shared_ptr<planning::Map> map;
   pair_double size_coeff_;
-  std::size_t kDelay_;
+  double kDelay_;
   std::string window_name_;
   std::string planner_name_;
 
