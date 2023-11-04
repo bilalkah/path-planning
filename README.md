@@ -36,7 +36,7 @@ sudo apt-get install libsfml-dev
 
 ## Run with Docker
 ```bash
-git clone --recurse-submodules <url>
+git clone --recurse-submodules https://github.com/bilalkah/path-planning.git
 cd path-planning/docker
 
 # build Docker image

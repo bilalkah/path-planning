@@ -31,6 +31,6 @@ RUN apt-get update && \
 WORKDIR /root
 
 
-RUN git clone --recurse-submodules https://github.com/Kucukcollu/path-planning.git && \
+RUN git clone --recurse-submodules https://github.com/bilalkah/path-planning.git && \
     cd path-planning && \
     bash build.sh
