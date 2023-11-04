@@ -9,6 +9,7 @@ path-planning/
 ├── CMakeLists.txt
 ├── config/
 │   └── main.yaml
+├── docker
 ├── maps/..
 ├── planning/
 │   ├── CmakeLists.txt
@@ -26,6 +27,26 @@ path-planning/
 │   └── yaml-cpp/..
 ├── tools/..
 
+```
+
+## Requirements
+``` bash
+sudo apt-get install libsfml-dev
+```
+
+## Run with Docker
+```bash
+git clone --recurse-submodules <url>
+cd path-planning/docker
+
+# build Docker image
+bash build.sh
+
+# create container
+bash run.sh
+
+# after creating container run sample demo
+cd path-planning/build && ./main
 ```
 
 ## Coloring
@@ -58,10 +79,3 @@ Path: Red
 ### RRT Star
 
 ![](images/rrt_star.png)
-
-
-## Requirements
-
-```
-sudo apt-get install libsfml-dev
-```
