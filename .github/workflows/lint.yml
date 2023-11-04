@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
         with:
-          token: ${{ secrets.BOT_TOKEN }}
+          token: ${{ secrets.BOT_TOKEN || github.token }}
           # check out HEAD on the branch
           ref: ${{ github.head_ref }}
           # make sure the parent commit is grabbed as well, because
