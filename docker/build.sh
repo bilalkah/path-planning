@@ -12,6 +12,5 @@ IMAGE_NAME="path_planning:latest"
 printf "${RED}---BUILDING THE DOCKERFILE---\n${NC}"
 
 docker build \
-    --no-cache \
     --tag $IMAGE_NAME \
     -f Dockerfile .

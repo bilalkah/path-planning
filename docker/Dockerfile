@@ -34,3 +34,9 @@ WORKDIR /root
 RUN git clone --recurse-submodules https://github.com/bilalkah/path-planning.git && \
     cd path-planning && \
     bash build.sh
+
+COPY entrypoint.sh /root
+RUN chmod +x entrypoint.sh
+
+ENTRYPOINT [ "entrypoint.sh" ]
+CMD ["bash"]
