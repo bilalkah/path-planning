@@ -1,4 +1,4 @@
 #!/bin/bash
 
 cd path-planning/build
-./main
+ctest -C --verbose

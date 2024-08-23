@@ -27,7 +27,7 @@ jobs:
           find . -not -path "./.git/*" -not -path "./.vscode/*" -name "*.cpp" -o -name "*.h" | xargs clang-format -i -style=file
       # commit the changes (if there are any)
       - name: Commit changes
-        uses: stefanzweifel/git-auto-commit-action@v4.16.0
+        uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: 🎨 apply clang-format changes
           branch: ${{ github.head_ref }}
