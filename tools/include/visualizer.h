@@ -12,11 +12,10 @@
 #ifndef TOOLS_INCLUDE_VISUALIZER_H_
 #define TOOLS_INCLUDE_VISUALIZER_H_
 
+#include "SDL3/SDL.h"
 #include "planning/include/data_types.h"
 #include "planning/include/i_planning.h"
 #include "planning/tree_base/include/common_tree_base.h"
-#include <SFML/Graphics.hpp>
-#include <SFML/Graphics/RenderTexture.hpp>
 #include <cstddef>
 #include <functional>
 #include <memory>
@@ -29,15 +28,15 @@ namespace tools
 using pair_size_t = std::pair<std::size_t, std::size_t>;
 using pair_double = std::pair<double, double>;
 
-inline std::unordered_map<planning::NodeState, sf::Color> GetColorMap()
+inline std::unordered_map<planning::NodeState, SDL_Color> GetColorMap()
 {
-  std::unordered_map<planning::NodeState, sf::Color> colors_;
-  colors_.insert({planning::NodeState::kFree, sf::Color::White});
-  colors_.insert({planning::NodeState::kVisited, sf::Color::Blue});
-  colors_.insert({planning::NodeState::kOccupied, sf::Color::Black});
-  colors_.insert({planning::NodeState::kStart, sf::Color::Green});
-  colors_.insert({planning::NodeState::kGoal, sf::Color::Yellow});
-  colors_.insert({planning::NodeState::kPath, sf::Color::Red});
+  std::unordered_map<planning::NodeState, SDL_Color> colors_;
+  colors_.insert({planning::NodeState::kFree, SDL_Color{255, 255, 255, 255}});
+  colors_.insert({planning::NodeState::kVisited, SDL_Color{0, 0, 255, 255}});
+  colors_.insert({planning::NodeState::kOccupied, SDL_Color{0, 0, 0, 255}});
+  colors_.insert({planning::NodeState::kStart, SDL_Color{0, 255, 0, 255}});
+  colors_.insert({planning::NodeState::kGoal, SDL_Color{255, 0, 0, 255}});
+  colors_.insert({planning::NodeState::kPath, SDL_Color{255, 0, 0, 255}});
 
   return colors_;
 }
@@ -47,12 +46,11 @@ class Visualizer
 public:
   Visualizer(std::shared_ptr<planning::Map> map, pair_double size_coeff,
              double kDelay, std::string window_name, std::string planner_name);
-  ~Visualizer() { window_.close(); }
-
+  ~Visualizer() = default;
   void SetStartAndGoal(const planning::Node &start_node,
                        const planning::Node &goal_node);
 
-  void MapToTexture();
+  void RenderMap();
 
   void VizGridLog();
   void VizTreeLog();
@@ -63,6 +61,11 @@ public:
   }
 
   void Run();
+  bool IsRunning() { return is_running_; }
+  void CheckEvent();
+  void ClearScreen();
+  void DrawLine(planning::Node start, planning::Node end);
+  void DrawFilledRectangle(planning::Node start, planning::Node end);
 
 private:
   std::shared_ptr<planning::Map> map;
@@ -70,15 +73,17 @@ private:
   double kDelay_;
   std::string window_name_;
   std::string planner_name_;
+  SDL_bool loopShouldStop = SDL_FALSE;
+  bool is_running_ = true;
 
-  std::unordered_map<planning::NodeState, sf::Color> colors_;
-  sf::RenderWindow window_;
-  sf::RenderTexture render_texture_;
+  std::unordered_map<planning::NodeState, SDL_Color> colors_;
+  SDL_Window *win = NULL;
+  SDL_Renderer *renderer = NULL;
   std::function<void()> viz_function_;
   std::function<planning::Log()> get_log_function_;
 
-  sf::CircleShape start_node_;
-  sf::CircleShape goal_node_;
+  planning::Node start_node_;
+  planning::Node goal_node_;
   std::thread window_thread_;
 };
 
