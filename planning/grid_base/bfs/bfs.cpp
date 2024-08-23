@@ -84,7 +84,6 @@ Path BFS::FindPath(const Node &start_node, const Node &goal_node,
 
           search_list.push(neighbor_node);
         }
-      std::this_thread::sleep_for(std::chrono::microseconds(100));
     }
   if (search_list.empty())
     {
