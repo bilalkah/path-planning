@@ -68,7 +68,7 @@ int main(int argc, char **argv)
   // Visualize start and goal nodes
   visualizer->SetStartAndGoal(start_node, goal_node);
 
-  while (true)
+  while (visualizer->IsRunning())
     {
       visualizer->SetGetLogFunction(
           std::bind(&planning::IPlanningWithLogging::GetLog, planner));

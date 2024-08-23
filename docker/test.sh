@@ -30,15 +30,10 @@ then
     fi
 else
     printf "${RED}---CREATING DOCKER CONTAINER---\n${NC}"
-    xhost +local:root &> /dev/null
-    docker run -it \
+    docker run \
         --rm \
-        --privileged \
         --net=host \
-        --gpus all \
-        --env=NVIDIA_VISIBLE_DEVICES=all \
-        --env=NVIDIA_DRIVER_CAPABILITIES=all \
-        --env=DISPLAY \
+        --privileged \
         $VOLUMES \
         --name="${CONTAINER_NAME}" \
         $IMAGE_NAME

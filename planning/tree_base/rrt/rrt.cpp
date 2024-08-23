@@ -75,7 +75,6 @@ Path RRT::FindPath(const Node &start_node, const Node &goal_node,
           // Get path.
           return ReconstructPath(goal);
         }
-      std::this_thread::sleep_for(std::chrono::milliseconds(1));
     }
 
   return Path();

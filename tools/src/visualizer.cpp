@@ -10,9 +10,14 @@
  */
 
 #include "tools/include/visualizer.h"
+#include "SDL3/SDL_error.h"
+#include "SDL3/SDL_events.h"
+#include "SDL3/SDL_init.h"
+#include "SDL3/SDL_rect.h"
+#include "SDL3/SDL_render.h"
+#include "SDL3/SDL_video.h"
 #include "planning/include/data_types.h"
-#include "planning/tree_base/include/common_tree_base.h"
-#include <chrono>
+#include <cstddef>
 #include <thread>
 #include <vector>
 
@@ -26,10 +31,6 @@ Visualizer::Visualizer(std::shared_ptr<planning::Map> map,
       window_name_(window_name), planner_name_(planner_name)
 {
   colors_ = GetColorMap();
-  window_.create(sf::VideoMode(map->GetHeight() * size_coeff_.first,
-                               map->GetWidth() * size_coeff_.second),
-                 window_name_);
-  MapToTexture();
 
   if (planner_name_ == "astar" || planner_name_ == "bfs" ||
       planner_name_ == "dfs")
@@ -44,44 +45,36 @@ Visualizer::Visualizer(std::shared_ptr<planning::Map> map,
     {
       throw std::runtime_error("Unknown planner name");
     }
-
-  window_thread_ = std::thread(&Visualizer::Run, this);
+  is_running_ = true;
+  window_thread_ = std::thread([this]() { Run(); });
   window_thread_.detach();
 };
 
 void Visualizer::SetStartAndGoal(const planning::Node &start_node,
                                  const planning::Node &goal_node)
 {
-  start_node_.setRadius(size_coeff_.first * 2);
-  start_node_.setFillColor(colors_.at(planning::NodeState::kStart));
-  start_node_.setPosition(start_node.y_ * size_coeff_.second,
-                          start_node.x_ * size_coeff_.first);
-
-  goal_node_.setRadius(size_coeff_.first * 2);
-  goal_node_.setFillColor(colors_.at(planning::NodeState::kGoal));
-  goal_node_.setPosition(goal_node.y_ * size_coeff_.second,
-                         goal_node.x_ * size_coeff_.first);
+  start_node_ = start_node;
+  goal_node_ = goal_node;
 }
 
-void Visualizer::MapToTexture()
+void Visualizer::RenderMap()
 {
-  render_texture_.create(map->GetHeight() * size_coeff_.first,
-                         map->GetWidth() * size_coeff_.second);
-  render_texture_.clear();
-  for (auto i = 0u; i < map->GetHeight(); i++)
+
+  for (auto i = 0u; i < map->GetWidth(); i++)
     {
-      for (auto j = 0u; j < map->GetWidth(); j++)
+      for (auto j = 0u; j < map->GetHeight(); j++)
         {
-          sf::RectangleShape rectangle;
-          rectangle.setSize(
-              sf::Vector2f(size_coeff_.second, size_coeff_.first));
-          rectangle.setPosition(j * size_coeff_.second, i * size_coeff_.first);
+
           auto key = map->GetNodeState(planning::Node(i, j));
-          rectangle.setFillColor(colors_.at(key));
-          render_texture_.draw(rectangle);
+          auto color = colors_.at(key);
+          SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+
+          DrawFilledRectangle(
+              {int(size_coeff_.first * j), int(i * size_coeff_.second)},
+              {int(size_coeff_.first * (j + 1)),
+               int(size_coeff_.second * (i + 1))});
         }
     }
-  render_texture_.display();
 }
 
 void Visualizer::VizGridLog()
@@ -91,30 +84,34 @@ void Visualizer::VizGridLog()
       return;
     }
   auto log = get_log_function_();
-  sf::RectangleShape cell_{};
-  cell_.setSize(sf::Vector2f(size_coeff_.second, size_coeff_.first));
-  for (auto &node_parent : log.first)
+  auto color = colors_.at(planning::NodeState::kVisited);
+  SDL_FRect *points = new SDL_FRect[log.first.size()];
+  for (int i = 0; i < log.first.size(); i++)
     {
-      if (node_parent == nullptr)
-        {
-          continue;
-        }
-      cell_.setPosition(node_parent->node.y_ * size_coeff_.second,
-                        node_parent->node.x_ * size_coeff_.first);
-      cell_.setFillColor(colors_.at(planning::NodeState::kVisited));
-      window_.draw(cell_);
+      points[i].x = log.first[i]->node.y_ * size_coeff_.second;
+      points[i].y = log.first[i]->node.x_ * size_coeff_.first;
+      points[i].w = size_coeff_.second;
+      points[i].h = size_coeff_.first;
     }
+  SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+  SDL_RenderFillRects(renderer, points, log.first.size());
+  delete[] points;
 
   if (log.second != nullptr)
     {
       auto path{planning::ReconstructPath(log.second)};
-      for (auto &node : path)
+      SDL_FRect *points2 = new SDL_FRect[path.size()];
+
+      for (int i = 0; i < path.size(); i++)
         {
-          cell_.setPosition(node.y_ * size_coeff_.second,
-                            node.x_ * size_coeff_.first);
-          cell_.setFillColor(colors_.at(planning::NodeState::kPath));
-          window_.draw(cell_);
+          points2[i].x = path[i].y_ * size_coeff_.second;
+          points2[i].y = path[i].x_ * size_coeff_.first;
+          points2[i].w = size_coeff_.second;
+          points2[i].h = size_coeff_.first;
         }
+      color = colors_.at(planning::NodeState::kPath);
+      SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
+      SDL_RenderFillRects(renderer, points2, path.size());
     }
 }
 
@@ -125,6 +122,8 @@ void Visualizer::VizTreeLog()
       return;
     }
   auto log = get_log_function_();
+  auto color = colors_.at(planning::NodeState::kVisited);
+  SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
   for (auto &node_parent : log.first)
     {
       if (node_parent->parent == nullptr)
@@ -132,58 +131,101 @@ void Visualizer::VizTreeLog()
           continue;
         }
 
-      sf::Vertex line[] = {
-          sf::Vertex(
-              sf::Vector2f(node_parent->parent->node.y_ * size_coeff_.second,
-                           node_parent->parent->node.x_ * size_coeff_.first),
-              colors_.at(planning::NodeState::kVisited)),
-          sf::Vertex(sf::Vector2f(node_parent->node.y_ * size_coeff_.second,
-                                  node_parent->node.x_ * size_coeff_.first),
-                     colors_.at(planning::NodeState::kVisited))};
-      window_.draw(line, 2, sf::Lines);
+      DrawLine(planning::Node(node_parent->parent->node.y_ * size_coeff_.second,
+                              node_parent->parent->node.x_ * size_coeff_.first),
+               planning::Node(node_parent->node.y_ * size_coeff_.second,
+                              node_parent->node.x_ * size_coeff_.first));
     }
 
   if (log.second != nullptr)
     {
       auto path{planning::ReconstructPath(log.second)};
+      color = colors_.at(planning::NodeState::kPath);
+      SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
 
       for (auto i = 0u; i < path.size() - 1; i++)
         {
-          sf::Vertex line[] = {
-              sf::Vertex(sf::Vector2f(path[i].y_ * size_coeff_.second,
-                                      path[i].x_ * size_coeff_.first),
-                         colors_.at(planning::NodeState::kPath)),
-              sf::Vertex(sf::Vector2f(path[i + 1].y_ * size_coeff_.second,
-                                      path[i + 1].x_ * size_coeff_.first),
-                         colors_.at(planning::NodeState::kPath))};
-          window_.draw(line, 2, sf::Lines);
+          DrawLine(planning::Node(path[i].y_ * size_coeff_.second,
+                                  path[i].x_ * size_coeff_.first),
+                   planning::Node(path[i + 1].y_ * size_coeff_.second,
+                                  path[i + 1].x_ * size_coeff_.first));
         }
     }
 }
 
 void Visualizer::Run()
 {
-  while (window_.isOpen())
+  if (SDL_Init(SDL_INIT_VIDEO) != 0)
     {
-
-      sf::Event event;
-      while (window_.pollEvent(event))
-        {
-          if (event.type == sf::Event::Closed)
-            {
-              window_.close();
-            }
-        }
-
-      window_.clear();
-      sf::Sprite sprite(render_texture_.getTexture());
-      window_.draw(sprite);
-      viz_function_();
-      window_.draw(start_node_);
-      window_.draw(goal_node_);
-      window_.display();
-      std::this_thread::sleep_for(std::chrono::milliseconds(1000 / 30));
+      std::cerr << "SDL_Init Error: " << SDL_GetError() << std::endl;
+      exit(EXIT_FAILURE);
     }
+
+  win = SDL_CreateWindow(window_name_.c_str(),
+                         map->GetWidth() * size_coeff_.second,
+                         map->GetHeight() * size_coeff_.first, 0);
+  if (win == nullptr)
+    {
+      std::cerr << "SDL_CreateWindow Error: " << SDL_GetError() << std::endl;
+      SDL_Quit();
+      exit(EXIT_FAILURE);
+    }
+
+  renderer = SDL_CreateRenderer(win, NULL);
+  if (renderer == nullptr)
+    {
+      std::cerr << "SDL_CreateRenderer Error: " << SDL_GetError() << std::endl;
+      SDL_DestroyWindow(win);
+      SDL_Quit();
+      exit(EXIT_FAILURE);
+    }
+
+  while (!loopShouldStop)
+    {
+      CheckEvent();
+      ClearScreen();
+      RenderMap();
+      viz_function_();
+      SDL_RenderPresent(renderer);
+    }
+
+  SDL_DestroyRenderer(renderer);
+  SDL_DestroyWindow(win);
+  SDL_Quit();
+}
+
+void Visualizer::CheckEvent()
+{
+  SDL_Event event;
+  while (SDL_PollEvent(&event))
+    {
+      // When user close the window
+      if (event.type == SDL_EVENT_QUIT ||
+          (event.type == SDL_EventType::SDL_EVENT_KEY_DOWN &&
+           event.key.key == SDLK_ESCAPE))
+        {
+          loopShouldStop = SDL_TRUE;
+          is_running_ = false;
+        }
+    }
+}
+
+void Visualizer::ClearScreen()
+{
+  SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+  SDL_RenderClear(renderer);
+}
+
+void Visualizer::DrawLine(planning::Node start, planning::Node end)
+{
+  SDL_RenderLine(renderer, start.x_, start.y_, end.x_, end.y_);
+}
+
+void Visualizer::DrawFilledRectangle(planning::Node start, planning::Node end)
+{
+  SDL_FRect rect{float(start.x_), float(start.y_), float(end.x_ - start.x_),
+                 float(end.y_ - start.y_)};
+  SDL_RenderFillRect(renderer, &rect);
 }
 
 } // namespace tools

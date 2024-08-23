@@ -5,10 +5,16 @@ on:
     branches: [ "main" ]
     types: [opened, labeled, unlabeled, synchronize]
 jobs:
-  format:
+  format-code:
     runs-on: ubuntu-latest
+
+    permissions:
+      # Give the default GITHUB_TOKEN write permission to commit and push the
+      # added or changed files to the repository.
+      contents: write
+    
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           token: ${{ secrets.BOT_TOKEN || github.token }}
           # check out HEAD on the branch
@@ -27,7 +33,7 @@ jobs:
           find . -not -path "./.git/*" -not -path "./.vscode/*" -name "*.cpp" -o -name "*.h" | xargs clang-format -i -style=file
       # commit the changes (if there are any)
       - name: Commit changes
-        uses: stefanzweifel/git-auto-commit-action@v4.16.0
+        uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: 🎨 apply clang-format changes
           branch: ${{ github.head_ref }}

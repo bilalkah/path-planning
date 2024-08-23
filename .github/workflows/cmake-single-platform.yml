@@ -90,4 +90,4 @@ jobs:
     - name: Run Docker
       working-directory: ${{github.workspace}}/docker
       run: |
-        bash run.sh
+        bash test.sh

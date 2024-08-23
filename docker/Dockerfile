@@ -1,9 +1,6 @@
 FROM ubuntu:22.04
 
-ENV DEBIAN_FRONTEND=noninteractive
 
-ENV LANG C.UTF-8
-ENV LC_ALL C.UTF-8
 
 RUN apt-get update && \
     apt-get upgrade -y && \
@@ -13,7 +10,6 @@ RUN apt-get update && \
     vim \
     nano \
     cmake \
-    libsfml-dev \
     build-essential \
     software-properties-common && \
     rm -rf /var/lib/apt/lists/*

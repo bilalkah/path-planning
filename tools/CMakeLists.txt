@@ -4,32 +4,33 @@ include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${PROJECT_SOURCE_DIR}
+    ${PROJECT_SOURCE_DIR}/third-party/SDL/include
+
 )
 
 link_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}/include
     ${PROJECT_SOURCE_DIR}
+    ${PROJECT_SOURCE_DIR}/third-party/SDL/include
 )
 
-set(
-    VISUALIZER_SOURCES
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/visualizer.cpp
-    ${COMMON_PLANNING_FILES}
-)
 
 add_library(
     visualizer
-    SHARED
-    ${VISUALIZER_SOURCES}
+    STATIC
+    src/visualizer.cpp
+)
+
+target_include_directories(visualizer PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
 target_link_libraries(
     visualizer
     PUBLIC
-    sfml-system 
-    sfml-graphics 
-    sfml-window
     common_tree_base
+    SDL3::SDL3
 )
 

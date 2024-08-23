@@ -3,7 +3,6 @@ project(PathFind)
 set(CMAKE_CXX_STANDARD 17)            
 add_definitions("-Wall" "-g")
 
-find_package(SFML COMPONENTS window graphics system)
 find_package(Git QUIET)
 
 set(DATA_DIR ${PROJECT_SOURCE_DIR}/maps)
@@ -32,22 +31,24 @@ if(NOT EXISTS "${PROJECT_SOURCE_DIR}/third-party/yaml-cpp/CMakeLists.txt")
 endif()
 
 
+add_subdirectory(${PROJECT_SOURCE_DIR}/third-party/yaml-cpp)
+add_subdirectory(${PROJECT_SOURCE_DIR}/third-party/SDL)
+add_subdirectory(${PROJECT_SOURCE_DIR}/planning)
+add_subdirectory(${PROJECT_SOURCE_DIR}/tools)
+
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${PROJECT_SOURCE_DIR}
     ${PROJECT_SOURCE_DIR}/third-party/yaml-cpp/include
+    ${PROJECT_SOURCE_DIR}/third-party/SDL/include
 )
 
 link_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${PROJECT_SOURCE_DIR}
     ${PROJECT_SOURCE_DIR}/third-party/yaml-cpp/include
+    ${PROJECT_SOURCE_DIR}/third-party/SDL/include
 )
-
-
-add_subdirectory(${PROJECT_SOURCE_DIR}/third-party/yaml-cpp)
-add_subdirectory(${PROJECT_SOURCE_DIR}/planning)
-add_subdirectory(${PROJECT_SOURCE_DIR}/tools)
 
 # enable test
 enable_testing()
