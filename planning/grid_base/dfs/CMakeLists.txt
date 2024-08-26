@@ -1,23 +1,13 @@
-cmake_minimum_required(VERSION 3.22)
-
-include_directories(
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${PROJECT_SOURCE_DIR}
-)
-
-link_directories(
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${PROJECT_SOURCE_DIR}
-)
-
-set(
-    DFS_FILES
+add_library(
+    dfs 
+    SHARED
     ${CMAKE_CURRENT_SOURCE_DIR}/dfs.cpp
 )
 
-add_library(
-    dfs SHARED
-    ${DFS_FILES}
+target_include_directories(
+    dfs
+    PUBLIC
+    ${PROJECT_SOURCE_DIR}/planning/utility
 )
 
 target_link_libraries(

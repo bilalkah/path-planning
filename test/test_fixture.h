@@ -12,7 +12,7 @@
 #ifndef TEST_TEST_FIXTURE_H_
 #define TEST_TEST_FIXTURE_H_
 
-#include "planning/grid_base/include/common_grid_base.h"
+#include "utility/common_grid_base.h"
 #include <cstddef>
 #include <fstream>
 #include <gtest/gtest.h>

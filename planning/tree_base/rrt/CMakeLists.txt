@@ -1,24 +1,19 @@
-cmake_minimum_required(VERSION 3.22)
-
-include_directories(
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${PROJECT_SOURCE_DIR}
-)
-
-link_directories(
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${PROJECT_SOURCE_DIR}
-)
-
-set(
-    RRT_FILES
-    ${CMAKE_CURRENT_SOURCE_DIR}/rrt.cpp
-)
-
 add_library(
     rrt 
     SHARED
-    ${RRT_FILES}
+    ${CMAKE_CURRENT_SOURCE_DIR}/rrt.cpp
+)
+
+target_include_directories(
+    rrt
+    PUBLIC
+    ${PROJECT_SOURCE_DIR}/planning/utility
+)
+
+target_link_directories(
+    rrt
+    PUBLIC
+    ${PROJECT_SOURCE_DIR}/planning/utility
 )
 
 target_link_libraries(

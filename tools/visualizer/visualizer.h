@@ -13,9 +13,9 @@
 #define TOOLS_INCLUDE_VISUALIZER_H_
 
 #include "SDL3/SDL.h"
-#include "planning/include/data_types.h"
-#include "planning/include/i_planning.h"
-#include "planning/tree_base/include/common_tree_base.h"
+#include "utility/common_planning.h"
+#include "utility/i_planning.h"
+#include "utility/common_tree_base.h"
 #include <cstddef>
 #include <functional>
 #include <memory>

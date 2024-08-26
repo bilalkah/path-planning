@@ -9,7 +9,7 @@
  *
  */
 
-#include "planning/tree_base/rrt/rrt.h"
+#include "tree_base/rrt/rrt.h"
 #include "test_fixture.h"
 #include <gtest/gtest.h>
 

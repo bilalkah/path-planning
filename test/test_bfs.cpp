@@ -9,7 +9,7 @@
  *
  */
 
-#include "planning/grid_base/bfs/bfs.h"
+#include "grid_base/bfs/bfs.h"
 #include "test_fixture.h"
 
 namespace planning

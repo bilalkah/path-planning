@@ -9,7 +9,7 @@
  *
  */
 
-#include "a_star.h"
+#include "astar.h"
 
 #include <chrono>
 #include <cmath>

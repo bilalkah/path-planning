@@ -15,7 +15,7 @@ path-planning/
 │   ├── CmakeLists.txt
 │   ├── grid_base
 │   │   ├── CmakeLists.txt
-│   │   ├── a_star/..
+│   │   ├── /..
 │   │   ├── bfs/..
 │   │   └── dfs/..
 │   └── tree_base

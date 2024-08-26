@@ -9,7 +9,7 @@
  *
  */
 
-#include "planning/tree_base/include/common_tree_base.h"
+#include "utility/common_tree_base.h"
 
 #include <gtest/gtest.h>
 

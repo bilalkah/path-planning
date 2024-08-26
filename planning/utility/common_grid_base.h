@@ -12,8 +12,8 @@
 #ifndef PLANNING_GRID_BASE_INCLUDE_COMMON_GRID_BASE_H_
 #define PLANNING_GRID_BASE_INCLUDE_COMMON_GRID_BASE_H_
 
-#include "planning/include/common_planning.h"
-#include "planning/include/data_types.h"
+#include "common_planning.h"
+#include "data_types.h"
 
 #include <array>
 #include <cstddef>

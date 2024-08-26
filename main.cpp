@@ -9,15 +9,15 @@
  *
  */
 
-#include "planning/grid_base/a_star/a_star.h"
-#include "planning/grid_base/bfs/bfs.h"
-#include "planning/grid_base/dfs/dfs.h"
-#include "planning/grid_base/include/common_grid_base.h"
+#include "grid_base/astar/astar.h"
+#include "grid_base/bfs/bfs.h"
+#include "grid_base/dfs/dfs.h"
+#include "utility/common_grid_base.h"
 
-#include "planning/include/i_planning.h"
-#include "planning/tree_base/rrt/rrt.h"
-#include "planning/tree_base/rrt_star/rrt_star.h"
-#include "tools/include/visualizer.h"
+#include "tools/visualizer/visualizer.h"
+#include "tree_base/rrt/rrt.h"
+#include "tree_base/rrt_star/rrt_star.h"
+#include "utility/i_planning.h"
 #include "yaml-cpp/yaml.h"
 
 #include <cstdlib>

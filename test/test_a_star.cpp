@@ -9,7 +9,7 @@
  *
  */
 
-#include "planning/grid_base/a_star/a_star.h"
+#include "grid_base/astar/astar.h"
 #include "test_fixture.h"
 #include <gtest/gtest.h>
 

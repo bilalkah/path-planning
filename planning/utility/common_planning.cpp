@@ -9,7 +9,7 @@
  *
  */
 
-#include "planning/include/common_planning.h"
+#include "common_planning.h"
 
 namespace planning
 {

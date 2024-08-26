@@ -12,8 +12,8 @@
 #ifndef PLANNING_GRID_BASE_BFS_BFS_H_
 #define PLANNING_GRID_BASE_BFS_BFS_H_
 
-#include "planning/grid_base/include/common_grid_base.h"
-#include "planning/include/i_planning.h"
+#include "utility/common_grid_base.h"
+#include "utility/i_planning.h"
 #include <cstdint>
 #include <mutex>
 #include <string>

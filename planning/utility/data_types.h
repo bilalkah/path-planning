@@ -12,8 +12,8 @@
 #ifndef PLANNING_INCLUDE_DATA_TYPES_H_
 #define PLANNING_INCLUDE_DATA_TYPES_H_
 
+#include <cstdint>
 #include <iostream>
-#include <memory>
 #include <vector>
 
 namespace planning

@@ -12,7 +12,8 @@
 #ifndef PLANNING_INCLUDE_NODE_PARENT_H_
 #define PLANNING_INCLUDE_NODE_PARENT_H_
 
-#include "planning/include/data_types.h"
+#include "data_types.h"
+#include <memory>
 
 namespace planning
 {

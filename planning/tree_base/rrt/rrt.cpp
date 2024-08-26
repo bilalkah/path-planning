@@ -9,7 +9,7 @@
  *
  */
 
-#include "planning/tree_base/rrt/rrt.h"
+#include "rrt.h"
 #include <chrono>
 #include <cstddef>
 #include <iostream>
