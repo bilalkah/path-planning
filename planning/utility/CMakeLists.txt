@@ -22,6 +22,12 @@ target_include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+target_link_libraries(
+    common_grid_base
+    PUBLIC
+    common_planning
+)
+
 add_library(
     common_tree_base
     SHARED
@@ -32,4 +38,10 @@ target_include_directories(
     common_tree_base
     PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+target_link_libraries(
+    common_tree_base
+    PUBLIC
+    common_planning
 )
