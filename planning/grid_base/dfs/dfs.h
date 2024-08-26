@@ -12,8 +12,8 @@
 #ifndef PLANNING_GRID_BASE_DFS_DFS_H_
 #define PLANNING_GRID_BASE_DFS_DFS_H_
 
-#include "planning/grid_base/include/common_grid_base.h"
-#include "planning/include/i_planning.h"
+#include "utility/common_grid_base.h"
+#include "utility/i_planning.h"
 #include <mutex>
 #include <stack>
 #include <string>

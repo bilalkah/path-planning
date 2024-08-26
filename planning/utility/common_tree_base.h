@@ -12,8 +12,8 @@
 #ifndef PLANNING_TREE_BASE_INCLUDE_COMMON_TREE_BASE_H_
 #define PLANNING_TREE_BASE_INCLUDE_COMMON_TREE_BASE_H_
 
-#include "planning/include/common_planning.h"
-#include "planning/include/i_planning.h"
+#include "common_planning.h"
+#include "i_planning.h"
 #include <algorithm>
 #include <cstddef>
 #include <limits>

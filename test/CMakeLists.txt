@@ -1,6 +1,8 @@
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${PROJECT_SOURCE_DIR}
+    ${PROJECT_SOURCE_DIR}/planning/utility
+    ${PROJECT_SOURCE_DIR}/planning/
 )
 
 link_directories(
@@ -25,11 +27,12 @@ set(TARGET_LIST
     test_access_data
     test_rrt_star
     test_rrt
+    test_ray_cast
 )
 
 foreach(TARGET ${TARGET_LIST})
     add_executable(${TARGET} ${TARGET}.cpp)
-    target_link_libraries(${TARGET} GTest::gtest_main common_grid_base a_star bfs dfs rrt_star rrt)
+    target_link_libraries(${TARGET} GTest::gtest_main astar bfs dfs rrt_star rrt common_grid_base common_tree_base common_planning)
     add_test(NAME ${TARGET} COMMAND ${TARGET})
     
 endforeach()

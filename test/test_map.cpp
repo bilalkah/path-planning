@@ -9,8 +9,8 @@
  *
  */
 
-#include "planning/grid_base/include/common_grid_base.h"
 #include "test_fixture.h"
+#include "utility/common_grid_base.h"
 #include <gtest/gtest.h>
 
 namespace planning

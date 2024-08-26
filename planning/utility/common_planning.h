@@ -12,7 +12,7 @@
 #ifndef PLANNING_INCLUDE_COMMON_PLANNING_H_
 #define PLANNING_INCLUDE_COMMON_PLANNING_H_
 
-#include "planning/include/node_parent.h"
+#include "node_parent.h"
 
 #include <cstddef>
 #include <fstream>

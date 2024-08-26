@@ -9,7 +9,7 @@
  *
  */
 
-#include "planning/grid_base/include/common_grid_base.h"
+#include "common_grid_base.h"
 
 namespace planning
 {

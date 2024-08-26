@@ -9,14 +9,13 @@
  *
  */
 
-#include "tools/include/visualizer.h"
+#include "visualizer.h"
 #include "SDL3/SDL_error.h"
 #include "SDL3/SDL_events.h"
 #include "SDL3/SDL_init.h"
 #include "SDL3/SDL_rect.h"
 #include "SDL3/SDL_render.h"
 #include "SDL3/SDL_video.h"
-#include "planning/include/data_types.h"
 #include <cstddef>
 #include <thread>
 #include <vector>

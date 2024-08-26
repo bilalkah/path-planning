@@ -34,7 +34,7 @@ endif()
 add_subdirectory(${PROJECT_SOURCE_DIR}/third-party/yaml-cpp)
 add_subdirectory(${PROJECT_SOURCE_DIR}/third-party/SDL)
 add_subdirectory(${PROJECT_SOURCE_DIR}/planning)
-add_subdirectory(${PROJECT_SOURCE_DIR}/tools)
+add_subdirectory(${PROJECT_SOURCE_DIR}/tools/visualizer)
 
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}
@@ -59,5 +59,5 @@ add_executable(
     main.cpp
 )
 
-target_link_libraries(main a_star bfs dfs rrt rrt_star visualizer yaml-cpp)
+target_link_libraries(main astar bfs dfs rrt rrt_star visualizer yaml-cpp)
 target_compile_features(main PRIVATE cxx_std_17)

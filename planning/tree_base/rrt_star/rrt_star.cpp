@@ -9,7 +9,7 @@
  *
  */
 
-#include "planning/tree_base/rrt_star/rrt_star.h"
+#include "rrt_star.h"
 #include "common_tree_base.h"
 #include "node_parent.h"
 
