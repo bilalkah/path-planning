@@ -12,8 +12,8 @@
 #ifndef PLANNING_TREE_BASE_RRT_STAR_RRT_STAR_H_
 #define PLANNING_TREE_BASE_RRT_STAR_RRT_STAR_H_
 
-#include "utility/i_planning.h"
 #include "utility/common_tree_base.h"
+#include "utility/i_planning.h"
 
 #include <cmath>
 #include <iostream>

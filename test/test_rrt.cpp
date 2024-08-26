@@ -9,8 +9,8 @@
  *
  */
 
-#include "tree_base/rrt/rrt.h"
 #include "test_fixture.h"
+#include "tree_base/rrt/rrt.h"
 #include <gtest/gtest.h>
 
 namespace planning

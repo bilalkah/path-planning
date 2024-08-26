@@ -14,8 +14,8 @@
 
 #include "SDL3/SDL.h"
 #include "utility/common_planning.h"
-#include "utility/i_planning.h"
 #include "utility/common_tree_base.h"
+#include "utility/i_planning.h"
 #include <cstddef>
 #include <functional>
 #include <memory>
