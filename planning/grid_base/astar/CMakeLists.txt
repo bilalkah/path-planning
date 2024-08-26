@@ -8,6 +8,13 @@ target_include_directories(
     astar
     PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
+    ${PROJECT_SOURCE_DIR}/planning
+)
+
+target_link_directories(
+    astar
+    PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}
     ${PROJECT_SOURCE_DIR}/planning/utility
 )
 
