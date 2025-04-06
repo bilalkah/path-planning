@@ -29,6 +29,16 @@
 #include <thread>
 #include <unordered_map>
 
+#if defined(_WIN32) || defined(_WIN64) // Windows
+#include <chrono>
+#include <windows.h>
+using high_resolution_clock = std::chrono::steady_clock;
+#else
+#include <chrono>
+#include <unistd.h>
+using high_resolution_clock = std::chrono::high_resolution_clock;
+#endif
+
 using PlannerType = std::shared_ptr<planning::IPlanningWithLogging>;
 
 PlannerType GetGridBasedPlanner(std::string planner_name);
@@ -37,11 +47,13 @@ PlannerType GetPlanner(std::string planner_name);
 
 int main(int argc, char **argv)
 {
+  std::cout << "Program started" << std::endl;
   // Get config and data directories
   std::string config_directory = CONFIG_DIR;
   std::string data_directory = DATA_DIR;
   std::string config_file = config_directory + "/main.yaml";
   YAML::Node config = YAML::LoadFile(config_file);
+  std::cout << "Config file: " << config_file << std::endl;
 
   // Map config
   std::string map_file = data_directory + config["map"].as<std::string>();
@@ -74,9 +86,9 @@ int main(int argc, char **argv)
           std::bind(&planning::IPlanningWithLogging::GetLog, planner));
       std::cout << "Started" << std::endl;
       // Get time
-      auto start_time{std::chrono::high_resolution_clock::now()};
+      auto start_time{high_resolution_clock::now()};
       planning::Path path = planner->FindPath(start_node, goal_node, map);
-      auto end_time{std::chrono::high_resolution_clock::now()};
+      auto end_time{high_resolution_clock::now()};
       auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
                           end_time - start_time)
                           .count();

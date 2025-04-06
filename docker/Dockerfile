@@ -11,6 +11,15 @@ RUN apt-get update && \
     nano \
     cmake \
     build-essential \
+    libx11-dev \
+    libxext-dev \
+    libxi-dev \
+    libxrandr-dev \
+    libxss-dev \
+    libxcursor-dev \
+    libgl1-mesa-dev \
+    libwayland-dev \
+    libwayland-egl-backend-dev \
     software-properties-common && \
     rm -rf /var/lib/apt/lists/*
 

@@ -73,7 +73,7 @@ private:
   double kDelay_;
   std::string window_name_;
   std::string planner_name_;
-  SDL_bool loopShouldStop = SDL_FALSE;
+  bool loopShouldStop = false;
   bool is_running_ = true;
 
   std::unordered_map<planning::NodeState, SDL_Color> colors_;

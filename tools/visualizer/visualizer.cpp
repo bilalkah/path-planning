@@ -87,10 +87,10 @@ void Visualizer::VizGridLog()
   SDL_FRect *points = new SDL_FRect[log.first.size()];
   for (int i = 0; i < log.first.size(); i++)
     {
-      points[i].x = log.first[i]->node.y_ * size_coeff_.second;
-      points[i].y = log.first[i]->node.x_ * size_coeff_.first;
-      points[i].w = size_coeff_.second;
-      points[i].h = size_coeff_.first;
+      points[i].x = float(log.first[i]->node.y_ * size_coeff_.second);
+      points[i].y = float(log.first[i]->node.x_ * size_coeff_.first);
+      points[i].w = float(size_coeff_.second);
+      points[i].h = float(size_coeff_.first);
     }
   SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
   SDL_RenderFillRects(renderer, points, log.first.size());
@@ -103,10 +103,10 @@ void Visualizer::VizGridLog()
 
       for (int i = 0; i < path.size(); i++)
         {
-          points2[i].x = path[i].y_ * size_coeff_.second;
-          points2[i].y = path[i].x_ * size_coeff_.first;
-          points2[i].w = size_coeff_.second;
-          points2[i].h = size_coeff_.first;
+          points2[i].x = float(path[i].y_) * size_coeff_.second;
+          points2[i].y = float(path[i].x_) * size_coeff_.first;
+          points2[i].w = float(size_coeff_.second);
+          points2[i].h = float(size_coeff_.first);
         }
       color = colors_.at(planning::NodeState::kPath);
       SDL_SetRenderDrawColor(renderer, color.r, color.g, color.b, color.a);
@@ -130,10 +130,11 @@ void Visualizer::VizTreeLog()
           continue;
         }
 
-      DrawLine(planning::Node(node_parent->parent->node.y_ * size_coeff_.second,
-                              node_parent->parent->node.x_ * size_coeff_.first),
-               planning::Node(node_parent->node.y_ * size_coeff_.second,
-                              node_parent->node.x_ * size_coeff_.first));
+      DrawLine(planning::Node(
+                   float(node_parent->parent->node.y_ * size_coeff_.second),
+                   float(node_parent->parent->node.x_ * size_coeff_.first)),
+               planning::Node(float(node_parent->node.y_ * size_coeff_.second),
+                              float(node_parent->node.x_ * size_coeff_.first)));
     }
 
   if (log.second != nullptr)
@@ -144,17 +145,18 @@ void Visualizer::VizTreeLog()
 
       for (auto i = 0u; i < path.size() - 1; i++)
         {
-          DrawLine(planning::Node(path[i].y_ * size_coeff_.second,
-                                  path[i].x_ * size_coeff_.first),
-                   planning::Node(path[i + 1].y_ * size_coeff_.second,
-                                  path[i + 1].x_ * size_coeff_.first));
+          DrawLine(planning::Node(float(path[i].y_ * size_coeff_.second),
+                                  float(path[i].x_ * size_coeff_.first)),
+                   planning::Node(float(path[i + 1].y_ * size_coeff_.second),
+                                  float(path[i + 1].x_ * size_coeff_.first)));
         }
     }
 }
 
 void Visualizer::Run()
 {
-  if (SDL_Init(SDL_INIT_VIDEO) != 0)
+
+  if (!SDL_Init(SDL_INIT_VIDEO))
     {
       std::cerr << "SDL_Init Error: " << SDL_GetError() << std::endl;
       exit(EXIT_FAILURE);
@@ -178,6 +180,8 @@ void Visualizer::Run()
       SDL_Quit();
       exit(EXIT_FAILURE);
     }
+
+  SDL_SetHint(SDL_HINT_RENDER_VSYNC, "0"); // Disable V-Sync
 
   while (!loopShouldStop)
     {
@@ -203,7 +207,7 @@ void Visualizer::CheckEvent()
           (event.type == SDL_EventType::SDL_EVENT_KEY_DOWN &&
            event.key.key == SDLK_ESCAPE))
         {
-          loopShouldStop = SDL_TRUE;
+          loopShouldStop = true;
           is_running_ = false;
         }
     }
@@ -217,7 +221,8 @@ void Visualizer::ClearScreen()
 
 void Visualizer::DrawLine(planning::Node start, planning::Node end)
 {
-  SDL_RenderLine(renderer, start.x_, start.y_, end.x_, end.y_);
+  SDL_RenderLine(renderer, float(start.x_), float(start.y_), float(end.x_),
+                 float(end.y_));
 }
 
 void Visualizer::DrawFilledRectangle(planning::Node start, planning::Node end)
