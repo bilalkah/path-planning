@@ -1,0 +1,62 @@
+name: Pages
+
+# Builds the planners to WebAssembly, puts them in site/ with the maps, and
+# publishes the project page on GitHub Pages. The repository's Pages source
+# must be set to GitHub Actions.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "site/**"
+      - "web/**"
+      - "planning/**"
+      - "maps/**"
+      - "CMakeLists.txt"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time: a newer push replaces a run still in progress
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+env:
+  EM_VERSION: 6.0.10
+
+jobs:
+  build:
+    name: Build the page and the WebAssembly planners
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      # The browser build needs no submodules
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Emscripten
+        uses: emscripten-core/setup-emsdk@4528d102f7230f0e7b276855c01ea1159be0e984 # v16
+        with:
+          version: ${{ env.EM_VERSION }}
+          actions-cache-folder: emsdk-cache
+
+      - name: Build the planners and assemble site/
+        run: ./web/build.sh
+
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: site
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-24.04
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1

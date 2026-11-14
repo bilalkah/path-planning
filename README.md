@@ -2,6 +2,8 @@
 
 This project is consist of A*, Breadth-First Search, Depth-First Search, RRT (Rapidly exploring random tree) and RRT* algorithms.
 
+**Try it in the browser: [bilalkah.github.io/path-planning](https://bilalkah.github.io/path-planning/)**. The page runs these C++ planners, compiled to WebAssembly.
+
 ## File Structure
 
 ```
@@ -22,10 +24,12 @@ path-planning/
 │   │   ├── CmakeLists.txt
 │   │   ├── rrt/..
 │   │   └── rrt_star/..
+├── site/          # project page (GitHub Pages)
 ├── test/..
 ├── third-party/
 │   └── yaml-cpp/..
 ├── tools/..
+├── web/           # WebAssembly bindings and build script
 
 ```
 
@@ -48,6 +52,21 @@ bash run.sh
 # after creating container run sample demo
 cd path-planning/build && ./main
 ```
+
+## Web demo
+
+`site/` is the project page. `web/planner_bindings.cpp` exposes the planners
+to JavaScript with Embind, and `web/build.sh` compiles them to WebAssembly
+with Emscripten and copies the maps next to the page:
+
+```bash
+source /path/to/emsdk/emsdk_env.sh
+./web/build.sh
+python3 -m http.server --directory site   # then open http://localhost:8000
+```
+
+`.github/workflows/pages.yml` runs the same build and publishes `site/` to
+GitHub Pages.
 
 ## Coloring
 
