@@ -12,6 +12,17 @@ add_definitions(
     -DCONFIG_DIR="${CONFIG_DIR}"
 )
 
+# Browser build for the project page: the planners and their WebAssembly
+# bindings only. It needs no submodules, visualizer or tests.
+if(EMSCRIPTEN)
+    # Link everything into one module: build the SHARED planner libraries
+    # as static ones.
+    set_property(GLOBAL PROPERTY TARGET_SUPPORTS_SHARED_LIBS FALSE)
+    add_subdirectory(${PROJECT_SOURCE_DIR}/planning)
+    add_subdirectory(${PROJECT_SOURCE_DIR}/web)
+    return()
+endif()
+
 if(GIT_FOUND AND EXISTS "${PROJECT_SOURCE_DIR}/.git")
 # Update submodules as needed
     option(GIT_SUBMODULE "Check submodules during build" ON)
