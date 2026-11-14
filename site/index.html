@@ -3,275 +3,233 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="A*, BFS, DFS, RRT and RRT* path planners written in C++ and compiled to WebAssembly. Set a start and a goal on a benchmark map and watch the search run.">
-  <meta name="theme-color" content="#f2eee4">
-  <meta property="og:title" content="Path Planning — C++ planners, running in the browser">
-  <meta property="og:description" content="Pick a map and a planner, place a start and a goal, and watch the C++ search run, compiled to WebAssembly.">
+  <meta name="description" content="A*, BFS, DFS, RRT and RRT* path planners written in C++ and compiled to WebAssembly. Place a start and a goal on a benchmark map and watch the search run.">
+  <meta name="theme-color" content="#061733">
+  <meta property="og:title" content="Path Planning — five C++ planners in the browser">
+  <meta property="og:description" content="Pick a planner and a map, place a start and a goal, and watch the C++ search run, compiled to WebAssembly.">
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://bilalkah.github.io/path-planning/">
-  <title>Path Planning — C++ planners, running in the browser</title>
+  <title>Path Planning — five C++ planners in the browser</title>
   <link rel="canonical" href="https://bilalkah.github.io/path-planning/">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="styles.css">
   <script src="demo.js" defer></script>
 </head>
 <body>
-  <a class="skip-link" href="#main">Skip to main content</a>
+  <a class="skip-link" href="#demo">Skip to the demo</a>
 
-  <header class="site-header">
-    <a class="brand" href="https://bilalkah.github.io/" aria-label="Bilal Kahraman project index">
-      <span class="brand-mark" aria-hidden="true">PP</span>
-      <span class="brand-copy"><strong>Path Planning</strong><small>C++ planners / WebAssembly</small></span>
-    </a>
-    <nav class="site-nav" aria-label="Main navigation">
-      <a class="nav-keep" href="#demo">Demo</a>
-      <a href="#planners">Planners</a>
-      <a href="#inside">Inside the C++</a>
-      <a class="nav-keep" href="https://github.com/bilalkah/path-planning">Source <span aria-hidden="true">↗</span></a>
-    </nav>
+  <svg class="icon-sprite" aria-hidden="true">
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z"/></symbol>
+    <symbol id="i-pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></symbol>
+    <symbol id="i-skip" viewBox="0 0 24 24"><path d="M5 5l9 7-9 7zM18 5v14"/></symbol>
+    <symbol id="i-swap" viewBox="0 0 24 24"><path d="M4 8h15l-4-4M20 16H5l4 4"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+    <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></symbol>
+    <symbol id="i-copy" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></symbol>
+    <symbol id="i-out" viewBox="0 0 24 24"><path d="M7 17 17 7M8 7h9v9"/></symbol>
+    <symbol id="i-github" viewBox="0 0 24 24"><path d="M15 22v-4.1c.04-1.02-.36-2.01-1.1-2.71 3.6-.4 7.38-1.77 7.38-8A6.24 6.24 0 0 0 19.61 2.8 5.8 5.8 0 0 0 19.45.15S18.4-.2 16 1.78a15.4 15.4 0 0 0-8 0C5.6-.2 4.55.15 4.55.15a5.8 5.8 0 0 0-.16 2.65A6.24 6.24 0 0 0 2.72 7.2c0 6.22 3.78 7.6 7.38 8A3.54 3.54 0 0 0 9 17.89V22"/><path d="M9 19c-3 .92-3-1.5-4.2-2"/></symbol>
+  </svg>
+
+  <header class="topbar">
+    <div class="wrap topbar-inner">
+      <a class="brand" href="https://bilalkah.github.io/" aria-label="Path Planning, part of Bilal Kahraman's project index">
+        <svg class="brand-mark" viewBox="0 0 28 28" aria-hidden="true">
+          <rect x="0.5" y="0.5" width="27" height="27" rx="3" fill="#041024" stroke="rgba(160,205,255,0.5)"/>
+          <path d="M6 21 L11 15 L16 16 L22 7" fill="none" stroke="#ff7a3d" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="6" cy="21" r="2.6" fill="#59f0a6"/>
+          <circle cx="22" cy="7" r="2.6" fill="#ffcc4d"/>
+        </svg>
+        <strong>path-planning</strong>
+        <small>/ bilalkah</small>
+      </a>
+      <nav class="topnav" aria-label="Main navigation">
+        <a href="#demo">Demo</a>
+        <a href="#planners">Planners</a>
+        <a href="#inside">Inside the C++</a>
+        <a href="#native">Run natively</a>
+        <a class="gh" href="https://github.com/bilalkah/path-planning"><svg class="icon" aria-hidden="true"><use href="#i-github"/></svg>Source</a>
+      </nav>
+    </div>
   </header>
 
-  <main id="main">
-    <section class="hero wrap" aria-labelledby="hero-title">
-      <div class="hero-copy">
-        <p class="eyebrow">C++17 / grid search / sampling-based planning</p>
-        <h1 id="hero-title">Five ways across a map.</h1>
-        <p class="hero-intro">
-          A C++ library of 2D path planners: A*, breadth-first and depth-first
-          search on the grid, and RRT and RRT* in continuous space. The demo
-          on this page runs that same C++, compiled to WebAssembly, on game
-          maps from the Moving AI benchmarks.
-        </p>
-        <div class="hero-actions">
-          <a class="button button-primary" href="#demo">Run the planners <span aria-hidden="true">↓</span></a>
-          <a class="text-link" href="https://github.com/bilalkah/path-planning">View the source <span aria-hidden="true">↗</span></a>
-        </div>
-        <dl class="hero-facts">
-          <div><dt>Planners</dt><dd>A*, BFS, DFS, RRT, RRT*</dd></div>
-          <div><dt>Core</dt><dd>C++17 / CMake</dd></div>
-          <div><dt>In the browser</dt><dd>WebAssembly</dd></div>
-          <div><dt>Native viewer</dt><dd>SDL3</dd></div>
-        </dl>
-      </div>
-
-      <div class="planner-index" aria-label="Planner index">
-        <div class="index-bar">
-          <span>planning/</span>
-          <span>5 planners</span>
-        </div>
-        <div class="index-head" aria-hidden="true">
-          <span>Planner</span>
-          <span>Family</span>
-          <span>Next node</span>
-        </div>
-        <button class="index-row" type="button" data-try="astar"><strong>A*</strong><span>grid</span><span>lowest f-cost</span></button>
-        <button class="index-row" type="button" data-try="bfs"><strong>BFS</strong><span>grid</span><span>queue front</span></button>
-        <button class="index-row" type="button" data-try="dfs"><strong>DFS</strong><span>grid</span><span>stack top</span></button>
-        <button class="index-row" type="button" data-try="rrt"><strong>RRT</strong><span>tree</span><span>nearest to a sample</span></button>
-        <button class="index-row" type="button" data-try="rrt_star"><strong>RRT*</strong><span>tree</span><span>cheapest, then rewire</span></button>
-        <div class="index-status">
-          <span class="status-dot" aria-hidden="true"></span>
-          <span>Pick a planner to run it on the map below.</span>
-        </div>
-      </div>
+  <main>
+    <section class="wrap intro" aria-labelledby="title">
+      <h1 id="title">Five path planners in C++, <em>running in your browser.</em></h1>
+      <p>
+        A*, BFS, DFS, RRT and RRT* from
+        <a href="https://github.com/bilalkah/path-planning">bilalkah/path-planning</a>,
+        compiled to WebAssembly. Click the map to place a start and a goal, then press <kbd>R</kbd> or Run.
+      </p>
     </section>
 
-    <!-- Demo ---------------------------------------------------------------- -->
-    <section class="section demo wrap" id="demo" aria-labelledby="demo-title">
-      <div class="section-heading">
-        <p class="eyebrow">Live demo</p>
-        <h2 id="demo-title">Place two points. Run the search.</h2>
-        <p>Click the map to set the start, then the goal, or drag a marker. <strong>Run</strong> calls <code>FindPath</code> in the compiled C++ and replays its log.</p>
-      </div>
+    <!-- Demo -------------------------------------------------------------- -->
+    <section class="wrap" id="demo" aria-label="Interactive demo">
+      <div class="app frame">
+        <div class="toolbar">
+          <div class="seg planners" id="planner-seg" role="radiogroup" aria-label="Planner">
+            <button type="button" role="radio" aria-checked="true" data-planner="astar" title="A* · priority queue on f · key 1">A*</button>
+            <button type="button" role="radio" aria-checked="false" data-planner="bfs" title="Breadth-first search · queue · key 2">BFS</button>
+            <button type="button" role="radio" aria-checked="false" data-planner="dfs" title="Depth-first search · stack · key 3">DFS</button>
+            <button type="button" role="radio" aria-checked="false" data-planner="rrt" title="Rapidly-exploring random tree · key 4">RRT</button>
+            <button type="button" role="radio" aria-checked="false" data-planner="rrt_star" title="RRT with rewiring · key 5">RRT*</button>
+          </div>
 
-      <div class="workbench">
-        <div class="stage">
-          <div class="stage-bar">
-            <span><strong id="map-title">AR0205SR.map</strong> <span id="map-size">512 × 512</span></span>
-            <span class="status-chip" id="status" data-state="loading" role="status" aria-live="polite"><i aria-hidden="true"></i><span id="status-text">loading the C++ planners</span></span>
-          </div>
-          <div class="stage-tools">
-            <div class="segmented" role="radiogroup" aria-label="Next click on the map places">
-              <label><input type="radio" name="place" value="start" checked><span><i class="dot dot-start" aria-hidden="true"></i>Place start</span></label>
-              <label><input type="radio" name="place" value="goal"><span><i class="dot dot-goal" aria-hidden="true"></i>Place goal</span></label>
-            </div>
-            <button class="text-button" type="button" id="swap">Swap</button>
-            <button class="text-button" type="button" id="reset-points">Map defaults</button>
-            <span class="cursor-readout" id="cursor" aria-hidden="true">x — · y —</span>
-          </div>
-          <div class="canvas-wrap">
-            <canvas id="map-canvas" width="512" height="512" role="img" aria-label="Map"></canvas>
-            <div class="canvas-overlay" id="overlay">
-              <p id="overlay-text">Loading the C++ planners compiled to WebAssembly…</p>
+          <div class="dropdown">
+            <button class="tool-btn" type="button" id="map-button" aria-expanded="false" aria-controls="map-menu">
+              <canvas class="mini-thumb" id="map-thumb" width="64" height="64" aria-hidden="true"></canvas>
+              <span class="tool-btn-text"><small>map</small><strong id="map-name">AR0205SR</strong></span>
+              <svg class="icon" aria-hidden="true"><use href="#i-chevron"/></svg>
+            </button>
+            <div class="menu" id="map-menu" hidden>
+              <div class="map-grid" id="map-grid" role="radiogroup" aria-label="Map"></div>
+              <p class="menu-note">Moving AI benchmark maps. The planners read them with <code>planning::Map</code>.</p>
             </div>
           </div>
-          <ul class="legend" aria-label="Legend">
-            <li><span class="swatch swatch-free"></span>free</li>
-            <li><span class="swatch swatch-occupied"></span>occupied</li>
-            <li><span class="swatch swatch-visited"></span>visited</li>
-            <li><span class="swatch swatch-frontier"></span>latest / tree</li>
-            <li><span class="swatch swatch-path"></span>path</li>
-            <li><i class="dot dot-start"></i>start</li>
-            <li><i class="dot dot-goal"></i>goal</li>
-          </ul>
-        </div>
 
-        <form class="panel" id="controls" onsubmit="return false">
-          <fieldset class="field">
-            <legend>Planner</legend>
-            <div class="choice-grid planner-choices">
-              <label class="choice"><input type="radio" name="planner" value="astar" checked><span><strong>A*</strong><small>grid · priority queue on f</small></span></label>
-              <label class="choice"><input type="radio" name="planner" value="bfs"><span><strong>BFS</strong><small>grid · queue</small></span></label>
-              <label class="choice"><input type="radio" name="planner" value="dfs"><span><strong>DFS</strong><small>grid · stack</small></span></label>
-              <label class="choice"><input type="radio" name="planner" value="rrt"><span><strong>RRT</strong><small>tree · random samples</small></span></label>
-              <label class="choice"><input type="radio" name="planner" value="rrt_star"><span><strong>RRT*</strong><small>tree · samples + rewiring</small></span></label>
-            </div>
-          </fieldset>
-
-          <fieldset class="field">
-            <legend>Map</legend>
-            <div class="choice-grid map-choices" id="map-choices"></div>
-          </fieldset>
-
-          <fieldset class="field">
-            <legend>Points <small>x = row, y = column</small></legend>
-            <div class="point-row">
-              <span class="point-name"><i class="dot dot-start" aria-hidden="true"></i>start</span>
-              <label class="num"><span>x</span><input type="number" id="start-x" inputmode="numeric" min="0" step="1" aria-label="Start x (row)"></label>
-              <label class="num"><span>y</span><input type="number" id="start-y" inputmode="numeric" min="0" step="1" aria-label="Start y (column)"></label>
-            </div>
-            <div class="point-row">
-              <span class="point-name"><i class="dot dot-goal" aria-hidden="true"></i>goal</span>
-              <label class="num"><span>x</span><input type="number" id="goal-x" inputmode="numeric" min="0" step="1" aria-label="Goal x (row)"></label>
-              <label class="num"><span>y</span><input type="number" id="goal-y" inputmode="numeric" min="0" step="1" aria-label="Goal y (column)"></label>
-            </div>
-            <p class="field-note" id="points-note" aria-live="polite"></p>
-          </fieldset>
-
-          <fieldset class="field">
-            <legend id="params-legend">config/grid_base.yaml</legend>
-            <div class="params" id="params-grid">
-              <label class="param" id="param-weight">
-                <span class="param-head"><code>heuristic_weight</code><output id="weight-out">0.70</output></span>
-                <input type="range" id="heuristic_weight" min="0" max="1" step="0.05" value="0.7">
-                <span class="param-foot"><span>0 · like BFS by g</span><span>1 · greedy by h</span></span>
-              </label>
-              <div class="param">
-                <span class="param-head"><code>search_space</code><small>neighbours</small></span>
-                <div class="segmented" role="radiogroup" aria-label="search_space">
-                  <label><input type="radio" name="search_space" value="4"><span>4</span></label>
-                  <label><input type="radio" name="search_space" value="8" checked><span>8</span></label>
+          <div class="dropdown">
+            <button class="tool-btn tool-btn-plain" type="button" id="settings-button" aria-expanded="false" aria-controls="settings-menu">
+              <svg class="icon" aria-hidden="true"><use href="#i-sliders"/></svg>
+              <span class="tool-btn-text"><small>settings</small><strong id="settings-summary">w 0.7 · 8-dir</strong></span>
+            </button>
+            <div class="menu settings-menu" id="settings-menu" hidden>
+              <div class="menu-section">
+                <h3>Points <small>x = row · y = column</small></h3>
+                <div class="point-inputs">
+                  <span class="point-name"><i class="dot dot-start" aria-hidden="true"></i>start</span>
+                  <label class="field"><span>x</span><input type="number" id="start-x" min="0" step="1" aria-label="Start x (row)"></label>
+                  <label class="field"><span>y</span><input type="number" id="start-y" min="0" step="1" aria-label="Start y (column)"></label>
+                  <span class="point-name"><i class="dot dot-goal" aria-hidden="true"></i>goal</span>
+                  <label class="field"><span>x</span><input type="number" id="goal-x" min="0" step="1" aria-label="Goal x (row)"></label>
+                  <label class="field"><span>y</span><input type="number" id="goal-y" min="0" step="1" aria-label="Goal y (column)"></label>
                 </div>
+                <p class="note" id="points-note" aria-live="polite"></p>
+              </div>
+              <div class="menu-section">
+                <h3><span id="params-title">config/grid_base.yaml</span></h3>
+                <div class="params" id="params-grid">
+                  <label class="param" id="param-weight">
+                    <span class="param-head"><code>heuristic_weight</code><output id="weight-out">0.70</output></span>
+                    <input type="range" id="heuristic_weight" min="0" max="1" step="0.05" value="0.7">
+                    <span class="param-foot"><span>0 · by g, like BFS</span><span>1 · greedy by h</span></span>
+                  </label>
+                  <div class="param">
+                    <span class="param-head"><code>search_space</code><small>neighbours</small></span>
+                    <div class="seg seg-small" role="radiogroup" aria-label="search_space">
+                      <button type="button" role="radio" aria-checked="false" data-space="4">4</button>
+                      <button type="button" role="radio" aria-checked="true" data-space="8">8</button>
+                    </div>
+                  </div>
+                </div>
+                <div class="params" id="params-tree" hidden>
+                  <div class="param-grid">
+                    <label class="param"><span class="param-head"><code>max_iteration</code></span><span class="field"><input type="number" id="max_iteration" min="100" max="20000" step="100" value="10000"></span></label>
+                    <label class="param"><span class="param-head"><code>goal_radius</code></span><span class="field"><input type="number" id="goal_radius" min="1" max="50" step="1" value="5"></span></label>
+                    <label class="param"><span class="param-head"><code>max_branch_length</code></span><span class="field"><input type="number" id="max_branch_length" min="1" max="60" step="1" value="10"></span></label>
+                    <label class="param"><span class="param-head"><code>min_branch_length</code></span><span class="field"><input type="number" id="min_branch_length" min="0" max="60" step="1" value="5"></span></label>
+                    <label class="param" id="param-radius"><span class="param-head"><code>neighbor_radius</code></span><span class="field"><input type="number" id="neighbor_radius" min="1" max="60" step="1" value="15"></span></label>
+                  </div>
+                </div>
+                <div class="menu-foot"><button class="text-btn" type="button" id="reset-params">Reset to repository defaults</button></div>
               </div>
             </div>
-            <div class="params" id="params-tree" hidden>
-              <div class="param-grid">
-                <label class="param"><span class="param-head"><code>max_iteration</code></span><span class="param-num"><input type="number" id="max_iteration" min="100" max="20000" step="100" value="10000"></span></label>
-                <label class="param"><span class="param-head"><code>goal_radius</code></span><span class="param-num"><input type="number" id="goal_radius" min="1" max="50" step="1" value="5"></span></label>
-                <label class="param"><span class="param-head"><code>max_branch_length</code></span><span class="param-num"><input type="number" id="max_branch_length" min="1" max="60" step="1" value="10"></span></label>
-                <label class="param"><span class="param-head"><code>min_branch_length</code></span><span class="param-num"><input type="number" id="min_branch_length" min="0" max="60" step="1" value="5"></span></label>
-                <label class="param" id="param-radius"><span class="param-head"><code>neighbor_radius</code></span><span class="param-num"><input type="number" id="neighbor_radius" min="1" max="60" step="1" value="15"></span></label>
-              </div>
-            </div>
-            <p class="param-foot params-foot"><span>Defaults come from the repository.</span><button class="text-button" type="button" id="reset-params">Reset</button></p>
-          </fieldset>
-
-          <fieldset class="field">
-            <legend>Replay speed</legend>
-            <input type="range" id="speed" min="1" max="5" step="1" value="3" aria-describedby="speed-out">
-            <div class="speed-labels"><span>slower</span><output id="speed-out">normal</output><span>faster</span></div>
-          </fieldset>
-
-          <div class="actions">
-            <button class="button button-primary run" type="button" id="run" disabled>Run planner</button>
-            <button class="button button-light" type="button" id="pause" disabled>Pause</button>
-            <button class="button button-light" type="button" id="skip" disabled>Skip to end</button>
           </div>
-        </form>
-      </div>
 
-      <div class="demo-lower">
-        <article class="card results" aria-labelledby="result-title">
-          <header class="card-bar"><span id="result-title">run_result</span><strong id="result-planner">not run yet</strong></header>
-          <dl class="stats">
-            <div><dt>Result</dt><dd id="stat-result">—</dd></div>
-            <div><dt id="stat-logged-label">Logged nodes</dt><dd id="stat-logged">—</dd></div>
-            <div><dt>FindPath time</dt><dd id="stat-time">—</dd></div>
-            <div><dt>Waypoints</dt><dd id="stat-waypoints">—</dd></div>
-            <div><dt>Path length</dt><dd id="stat-length">—</dd></div>
-            <div><dt>Replay</dt><dd id="stat-replay">—</dd></div>
-          </dl>
-          <div class="stdout">
-            <span class="stdout-label">std::cout during FindPath</span>
-            <pre id="stdout"><span class="quiet">Run a planner to see what the C++ code prints.</span></pre>
+          <div class="points" aria-label="Choose which point the next click places">
+            <button class="point-chip" type="button" data-point="start" aria-pressed="true" title="Next click places the start"><i class="dot dot-start" aria-hidden="true"></i><small>start</small><span id="start-label">215, 25</span></button>
+            <button class="icon-btn" type="button" id="swap" title="Swap start and goal" aria-label="Swap start and goal"><svg class="icon" aria-hidden="true"><use href="#i-swap"/></svg></button>
+            <button class="point-chip" type="button" data-point="goal" aria-pressed="false" title="Next click places the goal"><i class="dot dot-goal" aria-hidden="true"></i><small>goal</small><span id="goal-label">330, 475</span></button>
           </div>
-          <figure class="cost-chart" id="cost-chart" hidden>
-            <figcaption><span>Goal cost (f = edges + length) printed by RRTStar::FindPath, over time</span><span id="cost-range"></span></figcaption>
-            <svg id="cost-svg" viewBox="0 0 300 92" preserveAspectRatio="none" role="img" aria-label="RRT* goal cost falling over time"></svg>
-          </figure>
-        </article>
 
-        <article class="card reproduce" aria-labelledby="yaml-title">
-          <header class="card-bar"><span id="yaml-title">same run, natively: config/</span><button class="text-button" type="button" id="copy-yaml">Copy</button></header>
-          <pre id="yaml"></pre>
-          <p class="note">Put these values in <code>config/</code>, build with <code>./build.sh</code> and run <code>./build/main</code>. The SDL3 window draws the same log while the search runs. Tree planners sample at random, so each run grows a different tree.</p>
-        </article>
-      </div>
-
-      <article class="card compare" aria-labelledby="compare-title">
-        <header class="compare-head">
-          <div>
-            <h3 id="compare-title">Compare all five</h3>
-            <p>Runs every planner on the current map and points, with the parameters above. Times are measured around <code>FindPath</code> inside the WebAssembly module.</p>
-          </div>
-          <button class="button button-dark" type="button" id="compare" disabled>Run all five</button>
-        </header>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th scope="col">Planner</th>
-                <th scope="col">Result</th>
-                <th scope="col" class="num-cell">Path length</th>
-                <th scope="col" class="num-cell">Waypoints</th>
-                <th scope="col" class="num-cell">Logged nodes</th>
-                <th scope="col" class="num-cell">FindPath time</th>
-                <th scope="col"><span class="visually-hidden">Replay</span></th>
-              </tr>
-            </thead>
-            <tbody id="compare-body">
-              <tr class="empty"><td colspan="7">No comparison yet.</td></tr>
-            </tbody>
-          </table>
+          <button class="run" type="button" id="run" disabled>
+            <svg class="icon icon-fill" aria-hidden="true"><use href="#i-play"/></svg>
+            <span id="run-label">Run A*</span>
+            <kbd aria-hidden="true">R</kbd>
+          </button>
         </div>
-      </article>
 
-      <div class="demo-note">
-        <h3>How the demo works</h3>
-        <p>
-          Each run sends the map, the points and the parameters to the C++
-          planners, compiled to WebAssembly and running in a Web Worker.
-          <code>FindPath</code> runs to the end, then the page replays
-          <code>GetLog()</code>: the nodes in the order the planner logged
-          them, which is what the native SDL3 visualizer draws. For A*, BFS,
-          DFS and RRT that is the exact order of the search. RRT* rewires as
-          it goes and its log holds only the final tree, so a node that was
-          later rewired shows as a dot until its new parent appears. RRT and
-          RRT* sample with <code>std::random_device</code>, so every run
-          grows a different tree.
-        </p>
+        <div class="app-body">
+          <div class="stage" id="stage">
+            <div class="hud hud-map" aria-hidden="true"><strong id="hud-map">AR0205SR.map</strong><span id="hud-size">512 × 512</span><span class="hud-cursor" id="cursor"></span></div>
+            <div class="hud hud-hint" id="hint" aria-hidden="true">Click the map to place the start. Drag a marker to move it.</div>
+            <div class="canvas-box" id="canvas-box">
+              <canvas id="map-canvas" width="512" height="512" role="img" aria-label="Map"></canvas>
+            </div>
+            <div class="loading" id="overlay">
+              <p><span class="spinner" aria-hidden="true"></span><span id="overlay-text">Loading the C++ planners (WebAssembly)…</span></p>
+            </div>
+            <div class="playback">
+              <button class="icon-btn" type="button" id="pause" disabled aria-label="Pause replay" title="Pause / resume · Space"><svg class="icon" aria-hidden="true"><use href="#i-pause"/></svg></button>
+              <button class="icon-btn" type="button" id="skip" disabled aria-label="Skip to the end of the replay" title="Skip to the end"><svg class="icon" aria-hidden="true"><use href="#i-skip"/></svg></button>
+              <div class="progress" aria-hidden="true"><div class="progress-bar" id="progress-bar"></div></div>
+              <span class="progress-text" id="progress-text">replay idle</span>
+              <label class="speed" title="Replay speed"><span>speed</span><input type="range" id="speed" min="1" max="5" step="1" value="3" aria-label="Replay speed"></label>
+            </div>
+          </div>
+
+          <aside class="side" aria-label="Run result">
+            <div class="side-block">
+              <div class="side-head">
+                <span class="status" id="status" data-state="loading" role="status" aria-live="polite"><i aria-hidden="true"></i><span id="status-text">loading</span></span>
+                <strong id="result-planner">no run yet</strong>
+              </div>
+              <p class="result-line" id="result-line" hidden></p>
+              <dl class="stats">
+                <div><dt id="stat-logged-label">Logged nodes</dt><dd id="stat-logged">—</dd></div>
+                <div><dt>FindPath</dt><dd id="stat-time">—</dd></div>
+                <div><dt>Path length</dt><dd id="stat-length">—</dd></div>
+                <div><dt>Waypoints</dt><dd id="stat-waypoints">—</dd></div>
+              </dl>
+            </div>
+            <div class="side-block">
+              <span class="label">std::cout during FindPath</span>
+              <pre class="stdout" id="stdout"><span class="quiet">Run a planner to see what the C++ prints.</span></pre>
+              <figure class="cost-chart" id="cost-chart" hidden>
+                <figcaption><span>RRT* goal cost over time</span><span id="cost-range"></span></figcaption>
+                <svg id="cost-svg" viewBox="0 0 300 64" preserveAspectRatio="none" role="img" aria-label="RRT* goal cost falling over time"></svg>
+              </figure>
+            </div>
+            <div class="side-block">
+              <div class="compare-head">
+                <span class="label">All five, same points</span>
+                <button class="btn" type="button" id="compare" disabled>Compare</button>
+              </div>
+              <table class="compare-table">
+                <thead><tr><th scope="col">Planner</th><th scope="col">Length</th><th scope="col">Nodes</th><th scope="col">ms</th></tr></thead>
+                <tbody id="compare-body"><tr class="empty"><td colspan="4">Runs every planner on these points. Click a row to replay it.</td></tr></tbody>
+              </table>
+            </div>
+            <div class="side-block side-foot">
+              <ul class="legend" aria-label="Legend">
+                <li><span class="swatch sw-free"></span>free</li>
+                <li><span class="swatch sw-wall"></span>occupied</li>
+                <li><span class="swatch sw-visited"></span>visited</li>
+                <li><span class="swatch sw-front"></span>latest</li>
+                <li><span class="swatch sw-path"></span>path</li>
+              </ul>
+              <p class="keys"><kbd>R</kbd> run · <kbd>Space</kbd> pause · <kbd>1</kbd>–<kbd>5</kbd> planner</p>
+            </div>
+          </aside>
+        </div>
       </div>
+      <p class="demo-caption">
+        Each run calls <code>FindPath</code> in the compiled C++ inside a Web Worker, then replays <code>GetLog()</code>, the log the native SDL3 visualizer draws.
+        RRT* rewires as it goes and its log holds the final tree, so a node that was later rewired shows as a dot until its new parent appears.
+      </p>
     </section>
 
     <!-- Planners ------------------------------------------------------------ -->
-    <section class="section wrap" id="planners" aria-labelledby="planners-title">
-      <div class="section-heading">
-        <p class="eyebrow">The planners</p>
-        <h2 id="planners-title">Two families, five planners.</h2>
+    <section class="wrap section" id="planners" aria-labelledby="planners-title">
+      <div class="sheet-head">
+        <span class="sheet-no">01</span>
+        <h2 id="planners-title">How each planner searches</h2>
         <p>Grid planners search cell by cell. Tree planners sample free space and join points with straight segments.</p>
       </div>
 
       <div class="family">
-        <div class="family-copy">
+        <div>
           <span class="family-tag">planning/grid_base</span>
           <h3>Grid search: one loop, three containers.</h3>
           <p>
@@ -283,13 +241,12 @@
             their parent.
           </p>
           <p>
-            The container that holds the frontier is the only real
-            difference. It decides which node comes out next, and that
-            decides everything else: how much of the map gets explored and
-            what the path looks like.
+            The container that holds the frontier is the only real difference.
+            It decides which node comes out next, and that decides how much of
+            the map gets explored and what the path looks like.
           </p>
         </div>
-        <figure class="code">
+        <figure class="code frame">
           <figcaption><span>the shared loop, simplified</span><span>astar.cpp · bfs.cpp · dfs.cpp</span></figcaption>
 <pre><code><span class="kw">while</span> (!search_list.empty() &amp;&amp;
        !IsGoal(<span class="hl">next(search_list)</span>-&gt;node, goal_node))
@@ -315,90 +272,89 @@
         </figure>
       </div>
 
-      <div class="algo-grid">
-        <article class="algo">
-          <figure class="algo-visual">
-            <canvas data-order="bfs" width="585" height="582" aria-label="Order in which BFS expands cells on map lak505d"></canvas>
-            <figcaption data-caption="bfs">Expansion order on lak505d, rendered from the C++ log. Light cells were expanded first, dark cells last.</figcaption>
+      <div class="cards">
+        <article class="card">
+          <figure class="card-visual">
+            <canvas data-order="bfs" width="582" height="585" aria-label="Order in which BFS expands cells on map lak505d"></canvas>
+            <figcaption data-caption="bfs">Expansion order on lak505d, from the C++ log.</figcaption>
           </figure>
-          <div class="algo-body">
-            <span class="algo-meta">01 · grid · std::queue</span>
-            <h4>Breadth-first search</h4>
+          <div class="card-body">
+            <span class="card-meta">grid · std::queue</span>
+            <h3>Breadth-first search</h3>
             <p>
               Takes the oldest node in the queue, so the search spreads out in
               rings: every cell one move from the start, then every cell two
-              moves away, and so on until the goal reaches the front.
+              moves away, until the goal reaches the front.
             </p>
             <dl>
               <div><dt>Path</dt><dd>Fewest moves. With every move costing 1, the first time the goal comes out of the queue no shorter path exists.</dd></div>
-              <div><dt>Cost</dt><dd>Expands every cell closer to the start than the goal is, in every direction.</dd></div>
+              <div><dt>Cost</dt><dd>Expands every cell closer to the start than the goal, in every direction.</dd></div>
             </dl>
-            <div class="algo-links">
-              <a class="text-link" href="https://github.com/bilalkah/path-planning/blob/main/planning/grid_base/bfs/bfs.cpp">bfs.cpp <span aria-hidden="true">↗</span></a>
-              <button class="button button-light" type="button" data-try="bfs">Run BFS</button>
+            <div class="card-links">
+              <a class="source-link" href="https://github.com/bilalkah/path-planning/blob/main/planning/grid_base/bfs/bfs.cpp">bfs.cpp ↗</a>
+              <button class="btn" type="button" data-try="bfs"><svg class="icon icon-fill" aria-hidden="true"><use href="#i-play"/></svg>Run BFS</button>
             </div>
           </div>
         </article>
 
-        <article class="algo">
-          <figure class="algo-visual">
-            <canvas data-order="dfs" width="585" height="582" aria-label="Order in which DFS expands cells on map lak505d"></canvas>
-            <figcaption data-caption="dfs">Expansion order on lak505d, rendered from the C++ log.</figcaption>
+        <article class="card">
+          <figure class="card-visual">
+            <canvas data-order="dfs" width="582" height="585" aria-label="Order in which DFS expands cells on map lak505d"></canvas>
+            <figcaption data-caption="dfs">Expansion order on lak505d, from the C++ log.</figcaption>
           </figure>
-          <div class="algo-body">
-            <span class="algo-meta">02 · grid · std::stack</span>
-            <h4>Depth-first search</h4>
+          <div class="card-body">
+            <span class="card-meta">grid · std::stack</span>
+            <h3>Depth-first search</h3>
             <p>
               Takes the newest node on the stack, so it commits to one
-              direction and keeps going until it is blocked, then backs up to
-              the most recent unexplored branch. The path is the chain of
-              parents that led there.
+              direction until it is blocked, then backs up to the most recent
+              unexplored branch. The path is the chain of parents that led
+              there.
             </p>
             <dl>
               <div><dt>Path</dt><dd>Finds one if it exists, but a winding one. On large maps it can be tens of thousands of moves long.</dd></div>
               <div><dt>Cost</dt><dd>Unpredictable: it can stumble on the goal early or sweep most of the map first.</dd></div>
             </dl>
-            <div class="algo-links">
-              <a class="text-link" href="https://github.com/bilalkah/path-planning/blob/main/planning/grid_base/dfs/dfs.cpp">dfs.cpp <span aria-hidden="true">↗</span></a>
-              <button class="button button-light" type="button" data-try="dfs">Run DFS</button>
+            <div class="card-links">
+              <a class="source-link" href="https://github.com/bilalkah/path-planning/blob/main/planning/grid_base/dfs/dfs.cpp">dfs.cpp ↗</a>
+              <button class="btn" type="button" data-try="dfs"><svg class="icon icon-fill" aria-hidden="true"><use href="#i-play"/></svg>Run DFS</button>
             </div>
           </div>
         </article>
 
-        <article class="algo">
-          <figure class="algo-visual">
-            <canvas data-order="astar" width="585" height="582" aria-label="Order in which A* expands cells on map lak505d"></canvas>
-            <figcaption data-caption="astar">Expansion order on lak505d, rendered from the C++ log.</figcaption>
+        <article class="card">
+          <figure class="card-visual">
+            <canvas data-order="astar" width="582" height="585" aria-label="Order in which A* expands cells on map lak505d"></canvas>
+            <figcaption data-caption="astar">Expansion order on lak505d, from the C++ log.</figcaption>
           </figure>
-          <div class="algo-body">
-            <span class="algo-meta">03 · grid · std::priority_queue</span>
-            <h4>A*</h4>
+          <div class="card-body">
+            <span class="card-meta">grid · std::priority_queue</span>
+            <h3>A*</h3>
             <p>
               Takes the node with the lowest f. g counts the moves from the
               start; h is the straight-line distance to the goal. The weight
-              blends the two:
+              blends them:
             </p>
             <p class="formula">f = (1 − w) · g + w · h</p>
             <p>
-              With <code>heuristic_weight</code> 0.7 from
-              <code>config/grid_base.yaml</code>, the search leans hard toward
-              the goal. 0 orders nodes by g alone, like BFS; 1 ignores g and
-              becomes greedy best-first search.
+              <code>heuristic_weight</code> is 0.7 in
+              <code>config/grid_base.yaml</code>, so the search leans toward
+              the goal. 0 orders by g alone, like BFS; 1 is greedy best-first.
             </p>
             <dl>
-              <div><dt>Path</dt><dd>Short, but not guaranteed shortest: h can overestimate when a diagonal move costs 1, and w = 0.7 weights it further.</dd></div>
-              <div><dt>Cost</dt><dd>Usually a small fraction of the cells BFS expands.</dd></div>
+              <div><dt>Path</dt><dd>Short, not guaranteed shortest: h can overestimate when a diagonal move costs 1, and w = 0.7 weights it further.</dd></div>
+              <div><dt>Cost</dt><dd>Usually a fraction of the cells BFS expands.</dd></div>
             </dl>
-            <div class="algo-links">
-              <a class="text-link" href="https://github.com/bilalkah/path-planning/blob/main/planning/grid_base/astar/astar.cpp">astar.cpp <span aria-hidden="true">↗</span></a>
-              <button class="button button-light" type="button" data-try="astar">Run A*</button>
+            <div class="card-links">
+              <a class="source-link" href="https://github.com/bilalkah/path-planning/blob/main/planning/grid_base/astar/astar.cpp">astar.cpp ↗</a>
+              <button class="btn" type="button" data-try="astar"><svg class="icon icon-fill" aria-hidden="true"><use href="#i-play"/></svg>Run A*</button>
             </div>
           </div>
         </article>
       </div>
 
       <div class="family">
-        <div class="family-copy">
+        <div>
           <span class="family-tag">planning/tree_base</span>
           <h3>Sampling: grow a tree through free space.</h3>
           <p>
@@ -410,12 +366,11 @@
           <p>
             Before a step joins the tree, <code>Get2DRayBetweenNodes</code>
             lists every cell on the straight line between the two points. One
-            occupied cell rejects the step. The result is any-angle paths
-            built from straight segments, rather than moves between
-            neighbouring cells.
+            occupied cell rejects the step. Paths come out as straight
+            segments at any angle, not moves between neighbouring cells.
           </p>
         </div>
-        <figure class="code">
+        <figure class="code frame">
           <figcaption><span>one RRT iteration</span><span>rrt.cpp</span></figcaption>
 <pre><code><span class="kw">for</span> (<span class="kw">auto</span> i = 0; i &lt; max_iteration_; i++)
   {
@@ -435,106 +390,107 @@
         </figure>
       </div>
 
-      <div class="algo-grid algo-grid-tree">
-        <article class="algo">
-          <figure class="algo-visual">
+      <div class="cards cards-2">
+        <article class="card">
+          <figure class="card-visual">
             <svg class="diagram" viewBox="0 0 320 210" role="img" aria-labelledby="rrt-svg-title">
               <title id="rrt-svg-title">One RRT iteration: a random sample, its nearest tree node, and a new node one branch length toward the sample. A second step is rejected because its ray hits a wall.</title>
-              <rect width="320" height="210" fill="#fffdf7"/>
-              <rect x="170" y="18" width="80" height="74" fill="#151815"/>
-              <g stroke="#2c5bd6" stroke-width="2" fill="none" stroke-linecap="round">
+              <defs>
+                <pattern id="hatch-a" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#061529"/><path d="M0 0 V6" stroke="rgba(160,205,255,0.35)" stroke-width="1.2"/></pattern>
+              </defs>
+              <rect x="170" y="18" width="80" height="74" fill="url(#hatch-a)" stroke="rgba(160,205,255,0.55)"/>
+              <g stroke="#6edcff" stroke-width="2" fill="none" stroke-linecap="round">
                 <path d="M36 168 L74 148 L116 160 M74 148 L92 110 L134 90 M36 168 L48 124"/>
               </g>
-              <g fill="#2c5bd6">
+              <g fill="#6edcff">
                 <circle cx="74" cy="148" r="3"/><circle cx="116" cy="160" r="3.5"/><circle cx="92" cy="110" r="3"/><circle cx="134" cy="90" r="3"/><circle cx="48" cy="124" r="3"/>
               </g>
-              <path d="M134 90 L170 81" stroke="#bd4b28" stroke-width="1.6" stroke-dasharray="3 3"/>
-              <path d="M165 76 L175 86 M175 76 L165 86" stroke="#bd4b28" stroke-width="2.4"/>
-              <text x="160" y="62" text-anchor="end" fill="#bd4b28">ray hits a wall: rejected</text>
-              <path d="M116 160 L272 170" stroke="#62655f" stroke-width="1.2" stroke-dasharray="4 3"/>
-              <path d="M116 160 L166 163" stroke="#d6452b" stroke-width="3" stroke-linecap="round"/>
-              <circle cx="166" cy="163" r="4.5" fill="#d6452b" stroke="#151815" stroke-width="1"/>
-              <circle cx="272" cy="170" r="6" fill="#fffdf7" stroke="#151815" stroke-width="1.5"/>
-              <path d="M116 175 L166 178 M116 171 L116 179 M166 174 L166 182" stroke="#151815" stroke-width="1"/>
-              <text x="141" y="196" text-anchor="middle" fill="#151815">max_branch_length</text>
-              <text x="112" y="146" text-anchor="middle" fill="#151815">nearest</text>
-              <text x="170" y="150" text-anchor="middle" fill="#d6452b">new node</text>
-              <text x="272" y="194" text-anchor="middle" fill="#151815">random sample</text>
-              <circle cx="284" cy="118" r="20" fill="none" stroke="#b07d12" stroke-width="1.2" stroke-dasharray="3 3"/>
-              <circle cx="284" cy="118" r="6" fill="#f2b33d" stroke="#151815" stroke-width="1.5"/>
-              <text x="284" y="150" text-anchor="middle" fill="#7a5608">goal_radius</text>
-              <circle cx="36" cy="168" r="6" fill="#1fa463" stroke="#151815" stroke-width="1.5"/>
-              <text x="36" y="192" text-anchor="middle" fill="#151815">start</text>
+              <path d="M134 90 L170 81" stroke="#ff8f8f" stroke-width="1.6" stroke-dasharray="3 3"/>
+              <path d="M165 76 L175 86 M175 76 L165 86" stroke="#ff8f8f" stroke-width="2.4"/>
+              <text x="160" y="62" text-anchor="end" fill="#ff8f8f">ray hits a wall: rejected</text>
+              <path d="M116 160 L272 170" stroke="#8aa6cb" stroke-width="1.2" stroke-dasharray="4 3"/>
+              <path d="M116 160 L166 163" stroke="#ff7a3d" stroke-width="3" stroke-linecap="round"/>
+              <circle cx="166" cy="163" r="4.5" fill="#ff7a3d" stroke="#041024" stroke-width="1"/>
+              <circle cx="272" cy="170" r="6" fill="none" stroke="#eef5ff" stroke-width="1.5"/>
+              <path d="M116 175 L166 178 M116 171 L116 179 M166 174 L166 182" stroke="#bfd2ec" stroke-width="1"/>
+              <text x="141" y="196" text-anchor="middle" fill="#bfd2ec">max_branch_length</text>
+              <text x="112" y="146" text-anchor="middle" fill="#eef5ff">nearest</text>
+              <text x="170" y="150" text-anchor="middle" fill="#ff9563">new node</text>
+              <text x="272" y="194" text-anchor="middle" fill="#eef5ff">random sample</text>
+              <circle cx="284" cy="118" r="20" fill="none" stroke="#ffcc4d" stroke-width="1.2" stroke-dasharray="3 3"/>
+              <circle cx="284" cy="118" r="6" fill="#ffcc4d" stroke="#041024" stroke-width="1.5"/>
+              <text x="284" y="150" text-anchor="middle" fill="#ffcc4d">goal_radius</text>
+              <circle cx="36" cy="168" r="6" fill="#59f0a6" stroke="#041024" stroke-width="1.5"/>
+              <text x="36" y="192" text-anchor="middle" fill="#bfd2ec">start</text>
             </svg>
-            <figcaption>One iteration: sample, nearest node, a step of at most max_branch_length, ray check.</figcaption>
+            <figcaption>Sample, nearest node, a step of at most max_branch_length, then a ray check.</figcaption>
           </figure>
-          <div class="algo-body">
-            <span class="algo-meta">04 · tree · rapidly-exploring random tree</span>
-            <h4>RRT</h4>
+          <div class="card-body">
+            <span class="card-meta">tree · rapidly-exploring random tree</span>
+            <h3>RRT</h3>
             <p>
-              Grows from the tree node nearest to each random sample. Random
-              samples land mostly in large unexplored regions, so the tree
-              reaches into open space quickly. It stops as soon as a new node
-              lands within <code>goal_radius</code> of the goal.
+              Grows from the tree node nearest to each random sample. Samples
+              land mostly in large unexplored regions, so the tree reaches into
+              open space quickly. It stops as soon as a new node lands within
+              <code>goal_radius</code> of the goal.
             </p>
             <dl>
               <div><dt>Path</dt><dd>The first one found. Every edge points at a random sample, so it zigzags.</dd></div>
               <div><dt>Cost</dt><dd>Stops early. Each iteration scans the whole tree for the nearest node.</dd></div>
             </dl>
-            <div class="algo-links">
-              <a class="text-link" href="https://github.com/bilalkah/path-planning/blob/main/planning/tree_base/rrt/rrt.cpp">rrt.cpp <span aria-hidden="true">↗</span></a>
-              <button class="button button-light" type="button" data-try="rrt">Run RRT</button>
+            <div class="card-links">
+              <a class="source-link" href="https://github.com/bilalkah/path-planning/blob/main/planning/tree_base/rrt/rrt.cpp">rrt.cpp ↗</a>
+              <button class="btn" type="button" data-try="rrt"><svg class="icon icon-fill" aria-hidden="true"><use href="#i-play"/></svg>Run RRT</button>
             </div>
           </div>
         </article>
 
-        <article class="algo">
-          <figure class="algo-visual">
+        <article class="card">
+          <figure class="card-visual">
             <svg class="diagram" viewBox="0 0 320 210" role="img" aria-labelledby="rrts-svg-title">
               <title id="rrts-svg-title">One RRT* iteration: the new node attaches to the cheapest neighbour within neighbor_radius, then a neighbour that is cheaper to reach through the new node is rewired under it.</title>
-              <rect width="320" height="210" fill="#fffdf7"/>
-              <circle cx="160" cy="108" r="62" fill="#e7edf9" stroke="#2c5bd6" stroke-width="1.2" stroke-dasharray="4 3"/>
-              <text x="160" y="38" text-anchor="middle" fill="#1d3f99">neighbor_radius</text>
-              <g stroke="#2c5bd6" stroke-width="2" fill="none" stroke-linecap="round">
+              <circle cx="160" cy="108" r="62" fill="rgba(110,220,255,0.07)" stroke="#6edcff" stroke-width="1.2" stroke-dasharray="4 3"/>
+              <text x="160" y="38" text-anchor="middle" fill="#6edcff">neighbor_radius</text>
+              <g stroke="#6edcff" stroke-width="2" fill="none" stroke-linecap="round">
                 <path d="M30 172 L70 150 L118 146 M70 150 L64 104 L112 76 L206 72 L284 98 L284 176"/>
               </g>
-              <path d="M284 176 L206 142" stroke="#9a9d96" stroke-width="2" stroke-dasharray="4 3"/>
-              <path d="M240 154 L250 164 M250 154 L240 164" stroke="#151815" stroke-width="2"/>
-              <path d="M112 76 L160 108" stroke="#9a9d96" stroke-width="1.2" stroke-dasharray="2 3"/>
-              <path d="M206 72 L160 108" stroke="#9a9d96" stroke-width="1.2" stroke-dasharray="2 3"/>
-              <path d="M118 146 L160 108" stroke="#1d3f99" stroke-width="3.2" stroke-linecap="round"/>
-              <path d="M160 108 L206 142" stroke="#d6452b" stroke-width="3.2" stroke-linecap="round"/>
-              <g fill="#2c5bd6">
+              <path d="M284 176 L206 142" stroke="#8aa6cb" stroke-width="2" stroke-dasharray="4 3"/>
+              <path d="M240 154 L250 164 M250 154 L240 164" stroke="#eef5ff" stroke-width="2"/>
+              <path d="M112 76 L160 108" stroke="#8aa6cb" stroke-width="1.2" stroke-dasharray="2 3"/>
+              <path d="M206 72 L160 108" stroke="#8aa6cb" stroke-width="1.2" stroke-dasharray="2 3"/>
+              <path d="M118 146 L160 108" stroke="#eef5ff" stroke-width="3.2" stroke-linecap="round"/>
+              <path d="M160 108 L206 142" stroke="#ff7a3d" stroke-width="3.2" stroke-linecap="round"/>
+              <g fill="#6edcff">
                 <circle cx="70" cy="150" r="3"/><circle cx="64" cy="104" r="3"/><circle cx="112" cy="76" r="3.5"/><circle cx="118" cy="146" r="3.5"/><circle cx="206" cy="72" r="3.5"/><circle cx="284" cy="98" r="3"/><circle cx="284" cy="176" r="3"/><circle cx="206" cy="142" r="3.5"/>
               </g>
-              <circle cx="160" cy="108" r="5" fill="#d6452b" stroke="#151815" stroke-width="1"/>
-              <text x="163" y="133" text-anchor="middle" fill="#d6452b">new node</text>
-              <text x="46" y="196" fill="#1d3f99">1 · attach to cheapest neighbour</text>
-              <text x="216" y="126" fill="#d6452b">2 · rewire</text>
-              <text x="300" y="196" text-anchor="end" fill="#62655f">old edge dropped</text>
-              <circle cx="30" cy="172" r="6" fill="#1fa463" stroke="#151815" stroke-width="1.5"/>
+              <circle cx="160" cy="108" r="5" fill="#ff7a3d" stroke="#041024" stroke-width="1"/>
+              <text x="163" y="133" text-anchor="middle" fill="#ff9563">new node</text>
+              <text x="46" y="196" fill="#eef5ff">1 · attach to cheapest neighbour</text>
+              <text x="216" y="126" fill="#ff9563">2 · rewire</text>
+              <text x="300" y="196" text-anchor="end" fill="#8aa6cb">old edge dropped</text>
+              <circle cx="30" cy="172" r="6" fill="#59f0a6" stroke="#041024" stroke-width="1.5"/>
             </svg>
-            <figcaption>One iteration: choose the cheapest parent in reach, then rewire neighbours that get cheaper.</figcaption>
+            <figcaption>Choose the cheapest parent in reach, then rewire neighbours that get cheaper.</figcaption>
           </figure>
-          <div class="algo-body">
-            <span class="algo-meta">05 · tree · RRT with rewiring</span>
-            <h4>RRT*</h4>
+          <div class="card-body">
+            <span class="card-meta">tree · RRT with rewiring</span>
+            <h3>RRT*</h3>
             <p>
               Finds the tree nodes within <code>neighbor_radius</code> of the
               sample and tries them in order of cost; the new node attaches to
               the cheapest one it can reach. Then it rewires: a neighbour that
               is cheaper to reach through the new node moves under it, and
               <code>IterativelyCostUpdate</code> pushes the change down that
-              subtree. Cost is <code>f = g + h</code>: edges from the root
-              plus Euclidean length.
+              subtree. Cost is <code>f = g + h</code>: edges from the root plus
+              Euclidean length.
             </p>
             <dl>
               <div><dt>Path</dt><dd>Keeps getting shorter after the first one is found. It prints each improvement to std::cout; the demo charts them.</dd></div>
-              <div><dt>Cost</dt><dd>Uses every one of <code>max_iteration</code> samples.</dd></div>
+              <div><dt>Cost</dt><dd>Uses every one of the <code>max_iteration</code> samples.</dd></div>
             </dl>
-            <div class="algo-links">
-              <a class="text-link" href="https://github.com/bilalkah/path-planning/blob/main/planning/tree_base/rrt_star/rrt_star.cpp">rrt_star.cpp <span aria-hidden="true">↗</span></a>
-              <button class="button button-light" type="button" data-try="rrt_star">Run RRT*</button>
+            <div class="card-links">
+              <a class="source-link" href="https://github.com/bilalkah/path-planning/blob/main/planning/tree_base/rrt_star/rrt_star.cpp">rrt_star.cpp ↗</a>
+              <button class="btn" type="button" data-try="rrt_star"><svg class="icon icon-fill" aria-hidden="true"><use href="#i-play"/></svg>Run RRT*</button>
             </div>
           </div>
         </article>
@@ -566,39 +522,38 @@
     </section>
 
     <!-- Inside the C++ ------------------------------------------------------- -->
-    <section class="section wrap" id="inside" aria-labelledby="inside-title">
-      <div class="section-heading">
-        <p class="eyebrow">Inside the C++</p>
+    <section class="wrap section" id="inside" aria-labelledby="inside-title">
+      <div class="sheet-head">
+        <span class="sheet-no">02</span>
         <h2 id="inside-title">Planners don't draw. They log.</h2>
         <p>Planning and drawing share one data structure and nothing else.</p>
       </div>
 
-      <div class="system-map" role="img" aria-label="Configuration files feed main.cpp, which builds a planner and calls FindPath. The planner writes a log that the SDL3 visualizer and this web page both read.">
-        <div class="system-node">
+      <div class="schematic" role="img" aria-label="Configuration files feed main.cpp, which builds a planner and calls FindPath. The planner writes a log that the SDL3 visualizer and this web page both read.">
+        <div class="node">
           <small>config/*.yaml</small>
           <strong>Configuration</strong>
           <p><code>main.yaml</code> picks the map, planner, start and goal. <code>grid_base.yaml</code> and <code>tree_base.yaml</code> hold the parameters.</p>
         </div>
-        <div class="system-node">
+        <div class="node">
           <small>main.cpp</small>
           <strong>Planner factory</strong>
           <p><code>GetPlanner()</code> builds one planner behind <code>IPlanningWithLogging</code> and calls <code>FindPath(start, goal, map)</code>.</p>
         </div>
-        <div class="system-node system-log">
+        <div class="node node-log">
           <small>utility/i_planning.h</small>
           <strong>The log</strong>
           <p>Every node in the order the planner logged it, plus the final node. A mutex guards it.</p>
         </div>
-        <div class="system-node">
-          <small>Readers</small>
-          <div class="system-readers">
-            <div class="reader"><strong>tools/visualizer</strong><span>SDL3 thread polls <code>GetLog()</code> every frame</span></div>
-            <div class="reader"><strong>web/planner_bindings.cpp</strong><span>this page replays it after <code>FindPath</code> returns</span></div>
-          </div>
+        <div class="node">
+          <small>readers</small>
+          <strong>Two consumers</strong>
+          <div class="reader"><b>tools/visualizer</b><span>SDL3 thread polls GetLog() every frame</span></div>
+          <div class="reader"><b>web/planner_bindings.cpp</b><span>this page replays it after FindPath</span></div>
         </div>
       </div>
 
-      <div class="decision-grid">
+      <div class="decisions">
         <article>
           <span>01 / interface</span>
           <h3>One interface, five planners</h3>
@@ -607,7 +562,7 @@
         <article>
           <span>02 / log</span>
           <h3>The log is the visualization</h3>
-          <p>Planners append to <code>log_</code> under a mutex while they search. The visualizer runs on its own thread and redraws whatever the log holds, so the search is visible while it runs, and the planner knows nothing about drawing.</p>
+          <p>Planners append to <code>log_</code> under a mutex while they search. The visualizer runs on its own thread and redraws whatever the log holds, so the search is visible while it runs and the planner knows nothing about drawing.</p>
         </article>
         <article>
           <span>03 / paths</span>
@@ -622,7 +577,7 @@
       </div>
 
       <div class="wasm">
-        <div class="wasm-copy">
+        <div>
           <span class="family-tag">web/</span>
           <h3>From the C++ to this page.</h3>
           <p>
@@ -637,7 +592,7 @@
             <li><span>A Web Worker hosts the module, so a long search never freezes the page. The page draws the log on a canvas.</span></li>
           </ol>
         </div>
-        <figure class="code">
+        <figure class="code frame">
           <figcaption><span>web/planner_bindings.cpp, trimmed</span><span>Embind</span></figcaption>
 <pre><code>val Plan(<span class="kw">const</span> std::string &amp;map_path,
          <span class="kw">const</span> std::string &amp;planner_name,
@@ -663,61 +618,66 @@ EMSCRIPTEN_BINDINGS(path_planning)
         </figure>
       </div>
 
-      <div class="stack">
-        <h3>Built with</h3>
-        <ul aria-label="Technologies used by the project">
-          <li>C++17</li>
-          <li>CMake</li>
-          <li>yaml-cpp</li>
-          <li>SDL3</li>
-          <li>GoogleTest</li>
-          <li>Docker</li>
-          <li>GitHub Actions</li>
-          <li>Emscripten</li>
-          <li>WebAssembly</li>
-        </ul>
-      </div>
+      <ul class="stack" aria-label="Technologies used by the project">
+        <li>C++17</li>
+        <li>CMake</li>
+        <li>yaml-cpp</li>
+        <li>SDL3</li>
+        <li>GoogleTest</li>
+        <li>Docker</li>
+        <li>GitHub Actions</li>
+        <li>Emscripten</li>
+        <li>WebAssembly</li>
+      </ul>
     </section>
 
-    <section class="section wrap" aria-labelledby="maps-title">
-      <div class="maps-credit">
+    <!-- Run natively ---------------------------------------------------------- -->
+    <section class="wrap section" id="native" aria-labelledby="native-title">
+      <div class="sheet-head">
+        <span class="sheet-no">03</span>
+        <h2 id="native-title">Run the same case natively.</h2>
+        <p>The config below follows the demo: change the planner, map or points above and it updates.</p>
+      </div>
+      <div class="native">
         <div>
-          <p class="eyebrow">Benchmark maps</p>
-          <h3 id="maps-title">Maps from real games.</h3>
-        </div>
-        <p>
-          The six maps come from the
-          <a class="text-link" href="https://movingai.com/benchmarks/grids.html">Moving AI Lab 2D pathfinding benchmarks</a>
-          (N. Sturtevant, “Benchmarks for Grid-Based Pathfinding”, 2012).
-          In the <code>.map</code> format, <code>.</code> and <code>G</code>
-          are passable. <code>planning::Map</code> treats every other cell,
-          including trees, water and swamp, as occupied.
-        </p>
-      </div>
-    </section>
-
-    <section class="wrap" aria-labelledby="source-title">
-      <div class="source-cta">
-        <p class="eyebrow">Open source</p>
-        <h2 id="source-title">Run it natively.</h2>
-        <p>The native build opens an SDL3 window and draws the log while the planner runs. Choose the map, planner and points in <code>config/main.yaml</code>. A Docker setup is included as well.</p>
+          <p>
+            The native build opens an SDL3 window and draws the log while the
+            planner runs. Put these values in <code>config/</code>, then build
+            and run. A Docker setup is in <code>docker/</code>.
+          </p>
+          <figure class="code">
+            <figcaption><span>shell</span><span>native build</span></figcaption>
 <pre><code>git clone --recurse-submodules https://github.com/bilalkah/path-planning.git
 cd path-planning
 ./build.sh       <span class="cm"># CMake configure and build</span>
 ./build/main     <span class="cm"># reads config/main.yaml</span></code></pre>
-        <div class="hero-actions">
-          <a class="button button-light" href="https://github.com/bilalkah/path-planning">View on GitHub <span aria-hidden="true">↗</span></a>
-          <a class="text-link" href="https://github.com/bilalkah/path-planning#readme">Read the README <span aria-hidden="true">↗</span></a>
+          </figure>
+          <div class="link-row">
+            <a class="btn btn-lg btn-orange" href="https://github.com/bilalkah/path-planning"><svg class="icon" aria-hidden="true"><use href="#i-github"/></svg>View on GitHub</a>
+            <a class="btn btn-lg" href="https://github.com/bilalkah/path-planning#readme">README <svg class="icon" aria-hidden="true"><use href="#i-out"/></svg></a>
+          </div>
+          <p class="credits">
+            Maps: <a href="https://movingai.com/benchmarks/grids.html">Moving AI Lab 2D pathfinding benchmarks</a>
+            (N. Sturtevant, “Benchmarks for Grid-Based Pathfinding”, 2012). In the <code>.map</code> format,
+            <code>.</code> and <code>G</code> are passable; <code>planning::Map</code> treats every other cell,
+            including trees, water and swamp, as occupied.
+          </p>
         </div>
+        <figure class="code frame">
+          <figcaption><span>config/ for the current demo</span><button class="text-btn" type="button" id="copy-yaml">Copy</button></figcaption>
+          <pre id="yaml"></pre>
+        </figure>
       </div>
     </section>
   </main>
 
-  <footer class="site-footer">
-    <p>Path Planning <span aria-hidden="true">/</span> a project by Bilal Kahraman</p>
-    <div>
-      <a href="https://bilalkah.github.io/">Project index</a>
-      <a href="https://github.com/bilalkah/path-planning">Source</a>
+  <footer class="footer">
+    <div class="wrap footer-inner">
+      <span>path-planning · a project by Bilal Kahraman</span>
+      <div>
+        <a href="https://bilalkah.github.io/">Project index</a>
+        <a href="https://github.com/bilalkah/path-planning">Source</a>
+      </div>
     </div>
   </footer>
 </body>

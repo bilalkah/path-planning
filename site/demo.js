@@ -48,7 +48,6 @@
   const SPEED = {
     grid: [25, 100, 400, 1500, 6000],
     tree: [3, 10, 30, 90, 300],
-    names: ["slowest", "slow", "normal", "fast", "fastest"],
   };
 
   const FREE = 0; // planning::NodeState::kFree
@@ -58,21 +57,23 @@
   }
 
   const COLOR = {
-    free: rgba(255, 253, 247),
-    occupied: rgba(21, 24, 21),
-    visited: rgba(201, 215, 246),
-    frontier: rgba(44, 91, 214),
-    orderEarly: [227, 235, 252],
-    orderLate: [29, 63, 153],
-    tree: "rgba(44, 91, 214, 0.92)",
-    treeNew: "#1d3f99",
-    pending: "rgba(44, 91, 214, 0.6)",
-    path: "#d6452b",
-    casing: "rgba(255, 253, 247, 0.95)",
-    start: "#1fa463",
-    goal: "#f2b33d",
-    goalRing: "rgba(176, 125, 18, 0.95)",
-    ink: "#151815",
+    free: rgba(29, 82, 143),
+    occupied: rgba(6, 21, 41),
+    visited: rgba(74, 163, 232),
+    frontier: rgba(200, 241, 255),
+    orderEarly: [236, 250, 255],
+    orderLate: [43, 108, 196],
+    gridLine: "rgba(160, 205, 255, 0.10)",
+    tree: "rgba(155, 231, 255, 0.9)",
+    treeNew: "#ffffff",
+    pending: "rgba(155, 231, 255, 0.65)",
+    path: "#ff7a3d",
+    casing: "rgba(4, 16, 36, 0.92)",
+    start: "#59f0a6",
+    goal: "#ffcc4d",
+    goalRing: "rgba(255, 204, 77, 0.9)",
+    markerEdge: "#041024",
+    halo: "rgba(238, 245, 255, 0.95)",
   };
 
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -84,48 +85,62 @@
   const canvas = $("map-canvas");
   const ctx = canvas.getContext("2d");
   const els = {
+    app: document.querySelector(".app"),
+    canvasBox: $("canvas-box"),
     overlay: $("overlay"),
     overlayText: $("overlay-text"),
-    status: $("status"),
-    statusText: $("status-text"),
-    mapTitle: $("map-title"),
-    mapSize: $("map-size"),
+    hudMap: $("hud-map"),
+    hudSize: $("hud-size"),
     cursor: $("cursor"),
+    hint: $("hint"),
+    plannerSeg: $("planner-seg"),
+    mapButton: $("map-button"),
+    mapMenu: $("map-menu"),
+    mapGrid: $("map-grid"),
+    mapThumb: $("map-thumb"),
+    mapName: $("map-name"),
+    settingsButton: $("settings-button"),
+    settingsMenu: $("settings-menu"),
+    settingsSummary: $("settings-summary"),
     startX: $("start-x"),
     startY: $("start-y"),
     goalX: $("goal-x"),
     goalY: $("goal-y"),
     pointsNote: $("points-note"),
-    mapChoices: $("map-choices"),
-    run: $("run"),
-    pause: $("pause"),
-    skip: $("skip"),
-    compare: $("compare"),
-    speed: $("speed"),
-    speedOut: $("speed-out"),
-    weight: $("heuristic_weight"),
-    weightOut: $("weight-out"),
-    paramWeight: $("param-weight"),
-    paramRadius: $("param-radius"),
+    paramsTitle: $("params-title"),
     paramsGrid: $("params-grid"),
     paramsTree: $("params-tree"),
-    paramsLegend: $("params-legend"),
+    paramWeight: $("param-weight"),
+    paramRadius: $("param-radius"),
+    weight: $("heuristic_weight"),
+    weightOut: $("weight-out"),
     resetParams: $("reset-params"),
-    yaml: $("yaml"),
-    copyYaml: $("copy-yaml"),
+    startLabel: $("start-label"),
+    goalLabel: $("goal-label"),
+    run: $("run"),
+    runLabel: $("run-label"),
+    pause: $("pause"),
+    skip: $("skip"),
+    progressBar: $("progress-bar"),
+    progressText: $("progress-text"),
+    speed: $("speed"),
+    status: $("status"),
+    statusText: $("status-text"),
     resultPlanner: $("result-planner"),
-    statResult: $("stat-result"),
+    resultLine: $("result-line"),
     statLoggedLabel: $("stat-logged-label"),
     statLogged: $("stat-logged"),
     statTime: $("stat-time"),
-    statWaypoints: $("stat-waypoints"),
     statLength: $("stat-length"),
-    statReplay: $("stat-replay"),
+    statWaypoints: $("stat-waypoints"),
     stdout: $("stdout"),
     costChart: $("cost-chart"),
     costSvg: $("cost-svg"),
     costRange: $("cost-range"),
+    compare: $("compare"),
     compareBody: $("compare-body"),
+    yaml: $("yaml"),
+    copyYaml: $("copy-yaml"),
   };
 
   // ---------------------------------------------------------------------------
@@ -138,6 +153,7 @@
     map: null, // { height, width, cells, base }
     start: { ...MAPS[0].start },
     goal: { ...MAPS[0].goal },
+    armed: "start", // which point the next click on the map places
     params: structuredClone(DEFAULT_PARAMS),
     busy: false,
     token: 0, // bumped whenever the map or points change
@@ -308,21 +324,39 @@
     view.overlayCtx.putImageData(view.overlayImg, 0, 0);
   }
 
+  // On wide screens the app fills the viewport below the intro, so the
+  // toolbar, the map and the replay controls are all in view at once.
+  function fitApp() {
+    if (window.matchMedia("(max-width: 920px)").matches) {
+      els.app.style.height = "";
+      return;
+    }
+    const top = els.app.getBoundingClientRect().top + window.scrollY;
+    const available = window.innerHeight - top - 16;
+    els.app.style.height = `${Math.round(Math.min(940, Math.max(520, available)))}px`;
+  }
+
+  // Fit the map inside the canvas box, keeping its aspect ratio.
   function sizeCanvas() {
     const map = state.map;
     if (!map) return;
-    canvas.style.aspectRatio = `${map.width} / ${map.height}`;
-    canvas.style.setProperty("--ar", String(map.width / map.height));
-    const cssWidth = canvas.clientWidth || 600;
+    const boxW = els.canvasBox.clientWidth;
+    const boxH = els.canvasBox.clientHeight;
+    if (!boxW || !boxH) return;
+    const ratio = map.width / map.height;
+    const cssW = Math.max(120, Math.floor(Math.min(boxW, boxH * ratio)));
+    const cssH = Math.floor(cssW / ratio);
+    canvas.style.width = `${cssW}px`;
+    canvas.style.height = `${cssH}px`;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const k = Math.max(1, Math.min(8, Math.ceil((cssWidth * dpr) / map.width)));
+    const k = Math.max(1, Math.min(8, Math.ceil((cssW * dpr) / map.width)));
     if (canvas.width !== map.width * k || canvas.height !== map.height * k) {
       canvas.width = map.width * k;
       canvas.height = map.height * k;
       view.k = k;
       rebuildTreeLayer();
     }
-    view.s = canvas.width / cssWidth;
+    view.s = canvas.width / cssW;
     draw();
   }
 
@@ -345,12 +379,32 @@
       drawTreeExtras(r);
     }
 
+    drawGridLines(map);
+
     const family = r ? r.kind : PLANNERS[state.planner].family;
     if (family === "tree") drawGoalRadius(r ? r.result.params.goal_radius : state.params.tree.goal_radius);
     if (r && r.pathShown > 1) drawPath(r.result.path, r.pathShown);
 
-    drawMarker(state.start, COLOR.start);
-    drawMarker(state.goal, COLOR.goal);
+    drawMarker(state.start, COLOR.start, state.armed === "start");
+    drawMarker(state.goal, COLOR.goal, state.armed === "goal");
+  }
+
+  // Faint reference lines every 64 cells, like a drawing grid.
+  function drawGridLines(map) {
+    ctx.save();
+    ctx.strokeStyle = COLOR.gridLine;
+    ctx.lineWidth = Math.max(1, view.s * 0.8);
+    ctx.beginPath();
+    for (let y = 64; y < map.width; y += 64) {
+      ctx.moveTo(y * view.k, 0);
+      ctx.lineTo(y * view.k, canvas.height);
+    }
+    for (let x = 64; x < map.height; x += 64) {
+      ctx.moveTo(0, x * view.k);
+      ctx.lineTo(canvas.width, x * view.k);
+    }
+    ctx.stroke();
+    ctx.restore();
   }
 
   function drawPath(path, points) {
@@ -363,9 +417,9 @@
       if (i === 0) ctx.moveTo(cx, cy);
       else ctx.lineTo(cx, cy);
     }
-    const width = Math.max(2.2 * view.s, 0.7 * view.k);
+    const width = Math.max(2.4 * view.s, 0.7 * view.k);
     ctx.strokeStyle = COLOR.casing;
-    ctx.lineWidth = width + 2.5 * view.s;
+    ctx.lineWidth = width + 3 * view.s;
     ctx.stroke();
     ctx.strokeStyle = COLOR.path;
     ctx.lineWidth = width;
@@ -385,20 +439,29 @@
     ctx.restore();
   }
 
-  function drawMarker(point, color) {
+  function drawMarker(point, color, armed) {
     const [cx, cy] = cellCenter(point.x, point.y);
     const r = 6.5 * view.s;
     ctx.save();
+    if (armed) {
+      ctx.beginPath();
+      ctx.arc(cx, cy, r + 6 * view.s, 0, Math.PI * 2);
+      ctx.setLineDash([2.5 * view.s, 2.5 * view.s]);
+      ctx.lineWidth = 1.4 * view.s;
+      ctx.strokeStyle = color;
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
     ctx.beginPath();
-    ctx.arc(cx, cy, r + 2 * view.s, 0, Math.PI * 2);
-    ctx.fillStyle = COLOR.casing;
+    ctx.arc(cx, cy, r + 1.8 * view.s, 0, Math.PI * 2);
+    ctx.fillStyle = COLOR.halo;
     ctx.fill();
     ctx.beginPath();
     ctx.arc(cx, cy, r, 0, Math.PI * 2);
     ctx.fillStyle = color;
     ctx.fill();
     ctx.lineWidth = 2 * view.s;
-    ctx.strokeStyle = COLOR.ink;
+    ctx.strokeStyle = COLOR.markerEdge;
     ctx.stroke();
     ctx.restore();
   }
@@ -426,8 +489,10 @@
     else prepareTree(r);
     els.pause.disabled = false;
     els.skip.disabled = false;
-    els.pause.textContent = "Pause";
+    setPauseIcon(false);
+    els.progressBar.classList.remove("done");
     setStatus("replaying", "replaying the log");
+    updateProgress(r);
     if (reduceMotion) {
       skipReplay();
     } else {
@@ -441,9 +506,12 @@
     state.replay = null;
     els.pause.disabled = true;
     els.skip.disabled = true;
-    els.pause.textContent = "Pause";
+    setPauseIcon(false);
     clearOverlay();
     clearTreeLayer();
+    els.progressBar.style.width = "0";
+    els.progressBar.classList.remove("done");
+    els.progressText.textContent = "replay idle";
   }
 
   function speedLevel() {
@@ -465,7 +533,7 @@
     } else {
       r.raf = requestAnimationFrame(tick);
     }
-    updateReplayStat(r);
+    updateProgress(r);
     draw();
   }
 
@@ -481,7 +549,7 @@
     advance(r, Infinity);
     r.pathShown = r.pathTotal;
     finishReplay(r);
-    updateReplayStat(r);
+    updateProgress(r);
     draw();
   }
 
@@ -490,21 +558,35 @@
     r.raf = 0;
     els.pause.disabled = true;
     els.skip.disabled = true;
+    els.progressBar.classList.add("done");
     if (r.result.found) setStatus("found", "path found");
     else setStatus("nopath", "no path");
+  }
+
+  function setPauseIcon(paused) {
+    els.pause.innerHTML = `<svg class="icon${paused ? " icon-fill" : ""}" aria-hidden="true"><use href="#${paused ? "i-play" : "i-pause"}"/></svg>`;
+    els.pause.setAttribute("aria-label", paused ? "Resume replay" : "Pause replay");
   }
 
   function togglePause() {
     const r = state.replay;
     if (!r || r.done) return;
     r.paused = !r.paused;
-    els.pause.textContent = r.paused ? "Resume" : "Pause";
+    setPauseIcon(r.paused);
     if (r.paused) {
       setStatus("paused", "paused");
     } else {
       setStatus("replaying", "replaying the log");
       r.raf = requestAnimationFrame(tick);
     }
+  }
+
+  function updateProgress(r) {
+    const total = r.total + r.pathTotal;
+    const done = r.i + r.pathShown;
+    els.progressBar.style.width = `${total ? (100 * done) / total : 100}%`;
+    const noun = r.kind === "grid" ? "expanded" : "tree nodes";
+    els.progressText.textContent = `${fmtInt(r.i)} / ${fmtInt(r.total)} ${noun}`;
   }
 
   // Grid planners log each cell when they expand it.
@@ -517,7 +599,7 @@
       px[log[3 * j] * W + log[3 * j + 1]] = COLOR.frontier;
     }
     r.i = end;
-    // Cells expanded in the last few frames stay dark: the search front.
+    // Cells expanded in the last few frames stay bright: the search front.
     const fadeTo = r.i >= r.total ? r.total : Math.max(0, r.i - Math.min(rate, 4000) * 6);
     for (let j = r.faded; j < fadeTo; j++) {
       px[log[3 * j] * W + log[3 * j + 1]] = COLOR.visited;
@@ -533,8 +615,7 @@
     const log = r.result.log;
     const edges = [];
     for (let j = 0; j < r.total; j++) {
-      const p = log[3 * j + 2];
-      if (p >= 0) edges.push(j);
+      if (log[3 * j + 2] >= 0) edges.push(j);
     }
     const revealAt = (j) => Math.max(j, log[3 * j + 2]);
     edges.sort((a, b) => revealAt(a) - revealAt(b));
@@ -605,7 +686,6 @@
       }
     }
     ctx.fill();
-    // The newest nodes
     if (!r.done) {
       ctx.fillStyle = COLOR.treeNew;
       ctx.beginPath();
@@ -629,46 +709,40 @@
 
   function setBusy(busy) {
     state.busy = busy;
-    els.run.disabled = busy || !state.ready || !state.map;
-    els.compare.disabled = busy || !state.ready || !state.map;
-    els.run.textContent = busy ? "Planning…" : "Run planner";
+    const off = busy || !state.ready || !state.map;
+    els.run.disabled = off;
+    els.compare.disabled = off;
+    els.runLabel.textContent = busy ? "Running…" : `Run ${PLANNERS[state.planner].label}`;
   }
 
   function resetResult() {
-    els.resultPlanner.textContent = "not run yet";
-    els.statResult.textContent = "—";
+    els.resultPlanner.textContent = "no run yet";
+    els.resultLine.hidden = true;
     els.statLoggedLabel.textContent = "Logged nodes";
-    for (const el of [els.statLogged, els.statTime, els.statWaypoints, els.statLength, els.statReplay]) {
-      el.textContent = "—";
-    }
-    els.stdout.innerHTML = '<span class="quiet">Run a planner to see what the C++ code prints.</span>';
+    for (const el of [els.statLogged, els.statTime, els.statLength, els.statWaypoints]) el.textContent = "—";
+    els.stdout.innerHTML = '<span class="quiet">Run a planner to see what the C++ prints.</span>';
     els.costChart.hidden = true;
   }
 
   function showResult(result) {
     const p = PLANNERS[result.planner];
     const total = result.log.length / 3;
-    const waypoints = result.path.length / 2;
-    els.resultPlanner.textContent = `${p.label} · ${result.mapFile}`;
-    els.statResult.innerHTML = result.found ? "Path found" : '<span class="result-none">No path</span>';
+    els.resultPlanner.textContent = `${p.label} · ${result.mapFile.replace(".map", "")}`;
+    els.resultLine.hidden = false;
+    els.resultLine.textContent = result.found
+      ? `Path found: ${pathLength(result.path).toFixed(1)} cells long.`
+      : "No path between these points.";
+    els.resultLine.classList.toggle("none", !result.found);
     els.statLoggedLabel.textContent = p.family === "grid" ? "Expanded cells" : "Tree nodes";
     els.statLogged.textContent = fmtInt(total);
-    els.statTime.innerHTML = `${fmtMs(result.timeMs)} <small>ms</small>`;
-    els.statWaypoints.textContent = result.found ? fmtInt(waypoints) : "—";
-    els.statLength.innerHTML = result.found ? `${pathLength(result.path).toFixed(1)} <small>cells</small>` : "—";
-    els.statReplay.textContent = `0 / ${fmtInt(total)}`;
+    els.statTime.innerHTML = `${fmtMs(result.timeMs)}<small> ms</small>`;
+    els.statLength.innerHTML = result.found ? `${pathLength(result.path).toFixed(1)}<small> cells</small>` : "—";
+    els.statWaypoints.textContent = result.found ? fmtInt(result.path.length / 2) : "—";
 
     const lines = result.stdout || [];
-    if (lines.length) {
-      els.stdout.textContent = lines.join("\n");
-    } else {
-      els.stdout.innerHTML = '<span class="quiet">(nothing printed)</span>';
-    }
+    if (lines.length) els.stdout.textContent = lines.join("\n");
+    else els.stdout.innerHTML = '<span class="quiet">(nothing printed)</span>';
     drawCostChart(result);
-  }
-
-  function updateReplayStat(r) {
-    els.statReplay.textContent = `${fmtInt(r.i)} / ${fmtInt(r.total)}`;
   }
 
   // RRTStar::FindPath prints "Goal cost: <f>\tTime: <ms> ms" whenever
@@ -684,8 +758,8 @@
       return;
     }
     const W = 300;
-    const H = 92;
-    const pad = 8;
+    const H = 64;
+    const pad = 6;
     const tMax = Math.max(points[points.length - 1][0], result.timeMs, 1);
     const costs = points.map((p) => p[1]);
     const cMin = Math.min(...costs);
@@ -699,9 +773,9 @@
     d += ` H${sx(tMax).toFixed(1)}`;
     const area = `${d} V${H} H${sx(points[0][0]).toFixed(1)} Z`;
     els.costSvg.innerHTML =
-      `<path d="${area}" fill="rgba(214, 69, 43, 0.1)"/>` +
-      `<path d="${d}" fill="none" stroke="#d6452b" stroke-width="2" vector-effect="non-scaling-stroke"/>`;
-    els.costRange.textContent = `${cMax.toFixed(1)} → ${cMin.toFixed(1)} · ${points.length} improvements in ${Math.round(tMax)} ms`;
+      `<path d="${area}" fill="rgba(255, 122, 61, 0.14)"/>` +
+      `<path d="${d}" fill="none" stroke="#ff7a3d" stroke-width="2" vector-effect="non-scaling-stroke"/>`;
+    els.costRange.textContent = `${cMax.toFixed(0)} → ${cMin.toFixed(0)} in ${Math.round(tMax)} ms`;
     els.costChart.hidden = false;
   }
 
@@ -710,6 +784,7 @@
 
   async function runPlanner() {
     if (state.busy || !state.ready || !state.map) return;
+    closeMenus();
     const planner = state.planner;
     const token = state.token;
     stopReplay();
@@ -730,24 +805,26 @@
 
   async function compareAll() {
     if (state.busy || !state.ready || !state.map) return;
+    closeMenus();
     const token = state.token;
     stopReplay();
     draw();
     setBusy(true);
     state.compare = {};
     els.compareBody.innerHTML = ORDER.map(
-      (planner) => `<tr data-planner="${planner}"><td><strong>${PLANNERS[planner].label}</strong></td><td colspan="6" class="quiet-cell">waiting…</td></tr>`
+      (planner) =>
+        `<tr data-planner="${planner}"><td>${PLANNERS[planner].label}</td><td colspan="3" class="wait">running…</td></tr>`
     ).join("");
     try {
       for (const planner of ORDER) {
-        setStatus("planning", `comparing: ${PLANNERS[planner].label}`);
+        setStatus("planning", `comparing · ${PLANNERS[planner].label}`);
         const result = await plan(planner);
         if (token !== state.token) return;
         state.compare[planner] = result;
         renderCompareRow(planner);
       }
       markBest();
-      setStatus("ready", "compared · pick a row to replay");
+      setStatus("ready", "compared · click a row");
     } catch (err) {
       setStatus("error", err.message);
     } finally {
@@ -759,29 +836,30 @@
     const r = state.compare[planner];
     const row = els.compareBody.querySelector(`tr[data-planner="${planner}"]`);
     if (!row || !r) return;
-    const found = r.found;
     row.innerHTML =
-      `<td><strong>${PLANNERS[planner].label}</strong></td>` +
-      `<td>${found ? "Path found" : '<span class="result-none">No path</span>'}</td>` +
-      `<td class="num-cell" data-col="length">${found ? pathLength(r.path).toFixed(1) : "—"}</td>` +
-      `<td class="num-cell">${found ? fmtInt(r.path.length / 2) : "—"}</td>` +
-      `<td class="num-cell" data-col="logged">${fmtInt(r.log.length / 3)}</td>` +
-      `<td class="num-cell" data-col="time">${fmtMs(r.timeMs)} ms</td>` +
-      `<td><button class="text-button" type="button" data-replay="${planner}">Replay</button></td>`;
+      `<td><button class="row-btn" type="button" data-replay="${planner}" title="Replay this run">${PLANNERS[planner].label}</button></td>` +
+      (r.found
+        ? `<td data-col="length">${pathLength(r.path).toFixed(0)}</td>`
+        : `<td data-col="length" class="none">none</td>`) +
+      `<td data-col="logged">${fmtInt(r.log.length / 3)}</td>` +
+      `<td data-col="time">${fmtMs(r.timeMs)}</td>`;
   }
 
   function markBest() {
     const entries = ORDER.map((p) => [p, state.compare[p]]).filter(([, r]) => r);
-    const best = (col, value, label, filter = () => true) => {
+    const best = (col, value, filter = () => true) => {
       const candidates = entries.filter(([, r]) => filter(r));
       if (!candidates.length) return;
       const [planner] = candidates.reduce((a, b) => (value(b[1]) < value(a[1]) ? b : a));
       const cell = els.compareBody.querySelector(`tr[data-planner="${planner}"] td[data-col="${col}"]`);
-      if (cell) cell.insertAdjacentHTML("afterbegin", `<span class="tag tag-best">${label}</span> `);
+      if (cell) {
+        cell.classList.add("best");
+        cell.title = { length: "shortest path", logged: "fewest logged nodes", time: "fastest" }[col];
+      }
     };
-    best("length", (r) => pathLength(r.path), "shortest", (r) => r.found);
-    best("logged", (r) => r.log.length, "fewest");
-    best("time", (r) => r.timeMs, "fastest");
+    best("length", (r) => pathLength(r.path), (r) => r.found);
+    best("logged", (r) => r.log.length);
+    best("time", (r) => r.timeMs);
   }
 
   function replayFromCompare(planner) {
@@ -790,12 +868,12 @@
     selectPlanner(planner);
     showResult(result);
     startReplay(result);
-    document.querySelector(".stage").scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
   }
 
   function clearCompare() {
     state.compare = {};
-    els.compareBody.innerHTML = '<tr class="empty"><td colspan="7">No comparison for these points yet.</td></tr>';
+    els.compareBody.innerHTML =
+      '<tr class="empty"><td colspan="4">Runs every planner on these points. Click a row to replay it.</td></tr>';
   }
 
   // ---------------------------------------------------------------------------
@@ -818,11 +896,22 @@
     draw();
   }
 
+  function arm(which) {
+    state.armed = which;
+    document.querySelectorAll("[data-point]").forEach((chip) => {
+      chip.setAttribute("aria-pressed", String(chip.dataset.point === which));
+    });
+    els.hint.textContent = `Click the map to place the ${which}. Drag a marker to move it.`;
+    draw();
+  }
+
   function syncPoints() {
     els.startX.value = state.start.x;
     els.startY.value = state.start.y;
     els.goalX.value = state.goal.x;
     els.goalY.value = state.goal.y;
+    els.startLabel.textContent = `${state.start.x}, ${state.start.y}`;
+    els.goalLabel.textContent = `${state.goal.x}, ${state.goal.y}`;
     const map = state.map;
     if (map) {
       for (const el of [els.startX, els.goalX]) el.max = map.height - 1;
@@ -861,16 +950,33 @@
 
   function selectPlanner(planner) {
     state.planner = planner;
-    const radio = document.querySelector(`input[name="planner"][value="${planner}"]`);
-    if (radio) radio.checked = true;
+    els.plannerSeg.querySelectorAll("[data-planner]").forEach((b) => {
+      b.setAttribute("aria-checked", String(b.dataset.planner === planner));
+    });
     const family = PLANNERS[planner].family;
     els.paramsGrid.hidden = family !== "grid";
     els.paramsTree.hidden = family !== "tree";
     els.paramWeight.hidden = planner !== "astar";
     els.paramRadius.hidden = planner !== "rrt_star";
-    els.paramsLegend.textContent = family === "grid" ? "config/grid_base.yaml" : "config/tree_base.yaml";
+    els.paramsTitle.textContent = family === "grid" ? "config/grid_base.yaml" : "config/tree_base.yaml";
+    setBusy(state.busy);
+    updateSummary();
     updateYaml();
     if (!state.replay) draw();
+  }
+
+  function updateSummary() {
+    const g = state.params.grid;
+    const t = state.params.tree;
+    const iter = t.max_iteration >= 1000 ? `${t.max_iteration / 1000}k` : String(t.max_iteration);
+    const text = {
+      astar: `w ${g.heuristic_weight} · ${g.search_space}-dir`,
+      bfs: `${g.search_space}-dir`,
+      dfs: `${g.search_space}-dir`,
+      rrt: `${iter} iter · step ${t.max_branch_length}`,
+      rrt_star: `${iter} iter · r ${t.neighbor_radius}`,
+    }[state.planner];
+    els.settingsSummary.textContent = text;
   }
 
   async function selectMap(file) {
@@ -880,18 +986,22 @@
     state.goal = { ...def.goal };
     els.pointsNote.textContent = "";
     invalidate();
-    els.mapTitle.textContent = file;
-    const radio = document.querySelector(`input[name="map"][value="${file}"]`);
-    if (radio) radio.checked = true;
+    els.mapName.textContent = file.replace(".map", "");
+    els.hudMap.textContent = file;
+    els.mapGrid.querySelectorAll("[data-map]").forEach((b) => {
+      b.setAttribute("aria-checked", String(b.dataset.map === file));
+    });
     setStatus("loading", "loading the map");
     try {
       const map = await loadMap(file);
       if (state.mapFile !== file) return;
       state.map = map;
       setupLayers(map);
-      els.mapSize.textContent = `${map.height} rows × ${map.width} columns`;
+      els.hudSize.textContent = `${map.height} × ${map.width}`;
+      drawThumbInto(els.mapThumb, map);
       syncPoints();
       sizeCanvas();
+      arm("start");
       setBusy(state.busy);
       if (!state.busy) setStatus("ready", "ready");
     } catch (err) {
@@ -935,30 +1045,57 @@
 
   function readParams() {
     state.params.grid.heuristic_weight = Number(els.weight.value);
-    const space = document.querySelector('input[name="search_space"]:checked');
-    state.params.grid.search_space = space ? Number(space.value) : 8;
     for (const key of TREE_KEYS) {
       const el = $(key);
-      const min = Number(el.min);
-      const max = Number(el.max);
       let value = Math.round(Number(el.value));
       if (!Number.isFinite(value)) value = DEFAULT_PARAMS.tree[key];
-      value = Math.min(max, Math.max(min, value));
+      value = Math.min(Number(el.max), Math.max(Number(el.min), value));
       el.value = value;
       state.params.tree[key] = value;
     }
     els.weightOut.textContent = state.params.grid.heuristic_weight.toFixed(2);
+    updateSummary();
     updateYaml();
     if (!state.replay) draw();
   }
 
+  function setSearchSpace(space) {
+    state.params.grid.search_space = space;
+    document.querySelectorAll("[data-space]").forEach((b) => {
+      b.setAttribute("aria-checked", String(Number(b.dataset.space) === space));
+    });
+    updateSummary();
+    updateYaml();
+  }
+
   function writeParams(params) {
     els.weight.value = params.grid.heuristic_weight;
-    for (const radio of document.querySelectorAll('input[name="search_space"]')) {
-      radio.checked = Number(radio.value) === params.grid.search_space;
-    }
     for (const key of TREE_KEYS) $(key).value = params.tree[key];
+    setSearchSpace(params.grid.search_space);
     readParams();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Menus
+
+  const menus = [
+    [els.mapButton, els.mapMenu],
+    [els.settingsButton, els.settingsMenu],
+  ];
+
+  function closeMenus(except) {
+    for (const [button, menu] of menus) {
+      if (menu === except) continue;
+      menu.hidden = true;
+      button.setAttribute("aria-expanded", "false");
+    }
+  }
+
+  function toggleMenu(button, menu) {
+    const open = menu.hidden;
+    closeMenus(menu);
+    menu.hidden = !open;
+    button.setAttribute("aria-expanded", String(open));
   }
 
   // ---------------------------------------------------------------------------
@@ -971,7 +1108,7 @@
     const map = state.map;
     const y = Math.floor(((event.clientX - rect.left) / rect.width) * map.width);
     const x = Math.floor(((event.clientY - rect.top) / rect.height) * map.height);
-    return { x, y, rect };
+    return { x, y };
   }
 
   function markerUnder(event) {
@@ -987,18 +1124,9 @@
     return null;
   }
 
-  function placeTarget() {
-    const checked = document.querySelector('input[name="place"]:checked');
-    return checked ? checked.value : "start";
-  }
-
-  function setPlaceTarget(which) {
-    const radio = document.querySelector(`input[name="place"][value="${which}"]`);
-    if (radio) radio.checked = true;
-  }
-
   canvas.addEventListener("pointerdown", (event) => {
     if (!state.map || event.button !== 0) return;
+    closeMenus();
     const marker = markerUnder(event);
     if (marker) {
       pointer.drag = marker;
@@ -1015,8 +1143,8 @@
     const cell = cellFromEvent(event);
     const inside = cell.x >= 0 && cell.y >= 0 && cell.x < state.map.height && cell.y < state.map.width;
     els.cursor.textContent = inside
-      ? `x ${cell.x} · y ${cell.y} · ${isFree(state.map, cell.x, cell.y) ? "free" : "occupied"}`
-      : "x — · y —";
+      ? `x ${cell.x} · y ${cell.y}${isFree(state.map, cell.x, cell.y) ? "" : " · wall"}`
+      : "";
     if (pointer.drag) {
       const free = nearestFree(state.map, cell.x, cell.y, 12);
       if (free) setPoint(pointer.drag, free);
@@ -1039,39 +1167,38 @@
     const cell = cellFromEvent(event);
     const free = nearestFree(state.map, cell.x, cell.y);
     if (!free) return;
-    const which = placeTarget();
+    const which = state.armed;
     els.pointsNote.textContent = "";
     setPoint(which, free);
-    setPlaceTarget(which === "start" ? "goal" : "start");
+    arm(which === "start" ? "goal" : "start");
   }
 
   canvas.addEventListener("pointerup", endPointer);
   canvas.addEventListener("pointercancel", endPointer);
   canvas.addEventListener("pointerleave", () => {
-    els.cursor.textContent = "x — · y —";
+    els.cursor.textContent = "";
   });
 
   // ---------------------------------------------------------------------------
   // Map picker and figures
 
-  function buildMapChoices() {
-    els.mapChoices.innerHTML = MAPS.map(
+  function buildMapGrid() {
+    els.mapGrid.innerHTML = MAPS.map(
       (m) =>
-        `<label class="choice map-choice"><input type="radio" name="map" value="${m.file}"${m.file === state.mapFile ? " checked" : ""}>` +
-        `<span><canvas width="96" height="96" aria-hidden="true"></canvas><strong>${m.file.replace(".map", "")}</strong>` +
-        `<small>${m.dir} · <span data-size>…</span></small></span></label>`
+        `<button class="map-option" type="button" role="radio" data-map="${m.file}" aria-checked="${m.file === state.mapFile}">` +
+        `<canvas width="112" height="112" aria-hidden="true"></canvas>` +
+        `<strong>${m.file.replace(".map", "")}</strong><small>${m.dir} · <span data-size>…</span></small></button>`
     ).join("");
-    MAPS.forEach((m, i) => {
-      const label = els.mapChoices.children[i];
-      m.thumb = label.querySelector("canvas");
-      m.sizeEl = label.querySelector("[data-size]");
+    MAPS.forEach((m) => {
+      const button = els.mapGrid.querySelector(`[data-map="${m.file}"]`);
+      m.thumb = button.querySelector("canvas");
+      m.sizeEl = button.querySelector("[data-size]");
     });
   }
 
-  function drawThumb(def, map) {
-    const c = def.thumb;
+  function drawThumbInto(c, map) {
     const tctx = c.getContext("2d");
-    tctx.fillStyle = COLOR.ink;
+    tctx.fillStyle = "#061529";
     tctx.fillRect(0, 0, c.width, c.height);
     const scale = Math.min(c.width / map.width, c.height / map.height);
     const w = map.width * scale;
@@ -1079,13 +1206,14 @@
     tctx.imageSmoothingEnabled = true;
     tctx.imageSmoothingQuality = "high";
     tctx.drawImage(map.base, (c.width - w) / 2, (c.height - h) / 2, w, h);
-    def.sizeEl.textContent = `${map.height}×${map.width}`;
   }
 
   async function loadThumbnails() {
     for (const def of MAPS) {
       try {
-        drawThumb(def, await loadMap(def.file));
+        const map = await loadMap(def.file);
+        drawThumbInto(def.thumb, map);
+        def.sizeEl.textContent = `${map.height}×${map.width}`;
       } catch {
         def.sizeEl.textContent = "unavailable";
       }
@@ -1093,7 +1221,7 @@
   }
 
   // Expansion order of the grid planners, from the C++ logs, for the
-  // algorithm cards.
+  // planner cards.
   async function renderOrderFigures() {
     const canvases = document.querySelectorAll("canvas[data-order]");
     if (!canvases.length) return;
@@ -1137,7 +1265,6 @@
       const fctx = c.getContext("2d");
       fctx.imageSmoothingEnabled = false;
       fctx.drawImage(layer, 0, 0, c.width, c.height);
-      // Path and endpoints
       fctx.lineJoin = "round";
       fctx.lineCap = "round";
       fctx.beginPath();
@@ -1148,10 +1275,10 @@
         else fctx.lineTo(cx, cy);
       }
       fctx.strokeStyle = COLOR.casing;
-      fctx.lineWidth = 5;
+      fctx.lineWidth = 5.5;
       fctx.stroke();
       fctx.strokeStyle = COLOR.path;
-      fctx.lineWidth = 2.5;
+      fctx.lineWidth = 2.6;
       fctx.stroke();
       for (const [p, color] of [[def.start, COLOR.start], [def.goal, COLOR.goal]]) {
         fctx.beginPath();
@@ -1159,13 +1286,13 @@
         fctx.fillStyle = color;
         fctx.fill();
         fctx.lineWidth = 2;
-        fctx.strokeStyle = COLOR.ink;
+        fctx.strokeStyle = COLOR.markerEdge;
         fctx.stroke();
       }
       const caption = document.querySelector(`figcaption[data-caption="${planner}"]`);
       if (caption) {
         caption.textContent =
-          `lak505d, from the C++ log: ${fmtInt(n)} cells expanded, light first, dark last. ` +
+          `lak505d, from the C++ log: ${fmtInt(n)} cells expanded, bright first, deep blue last. ` +
           `Path: ${fmtInt(result.path.length / 2 - 1)} moves.`;
       }
     }
@@ -1180,18 +1307,34 @@
     runPlanner();
   }
 
+  function isTyping(target) {
+    return target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable);
+  }
+
   function wire() {
-    document.querySelectorAll('input[name="planner"]').forEach((radio) => {
-      radio.addEventListener("change", () => selectPlanner(radio.value));
+    els.plannerSeg.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-planner]");
+      if (button) selectPlanner(button.dataset.planner);
     });
-    els.mapChoices.addEventListener("change", (event) => {
-      if (event.target.name === "map") selectMap(event.target.value);
+    els.mapButton.addEventListener("click", () => toggleMenu(els.mapButton, els.mapMenu));
+    els.settingsButton.addEventListener("click", () => toggleMenu(els.settingsButton, els.settingsMenu));
+    els.mapGrid.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-map]");
+      if (!button) return;
+      closeMenus();
+      if (button.dataset.map !== state.mapFile) selectMap(button.dataset.map);
+    });
+    document.addEventListener("click", (event) => {
+      if (!event.target.closest(".dropdown")) closeMenus();
     });
     for (const which of ["start", "goal"]) {
       for (const axis of ["x", "y"]) {
         $(`${which}-${axis}`).addEventListener("change", () => pointFromInputs(which));
       }
     }
+    document.querySelectorAll("[data-point]").forEach((chip) => {
+      chip.addEventListener("click", () => arm(chip.dataset.point));
+    });
     $("swap").addEventListener("click", () => {
       const { start, goal } = state;
       state.start = goal;
@@ -1200,22 +1343,12 @@
       syncPoints();
       draw();
     });
-    $("reset-points").addEventListener("click", () => {
-      const def = mapDef(state.mapFile);
-      els.pointsNote.textContent = "";
-      state.start = { ...def.start };
-      state.goal = { ...def.goal };
-      invalidate();
-      syncPoints();
-      draw();
-    });
     els.weight.addEventListener("input", readParams);
-    document.querySelectorAll('input[name="search_space"]').forEach((r) => r.addEventListener("change", readParams));
+    document.querySelectorAll("[data-space]").forEach((b) => {
+      b.addEventListener("click", () => setSearchSpace(Number(b.dataset.space)));
+    });
     for (const key of TREE_KEYS) $(key).addEventListener("change", readParams);
     els.resetParams.addEventListener("click", () => writeParams(structuredClone(DEFAULT_PARAMS)));
-    els.speed.addEventListener("input", () => {
-      els.speedOut.textContent = SPEED.names[speedLevel()];
-    });
     els.run.addEventListener("click", runPlanner);
     els.pause.addEventListener("click", togglePause);
     els.skip.addEventListener("click", skipReplay);
@@ -1236,15 +1369,34 @@
     document.querySelectorAll("[data-try]").forEach((button) => {
       button.addEventListener("click", () => tryPlanner(button.dataset.try));
     });
-    new ResizeObserver(sizeCanvas).observe(canvas);
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        closeMenus();
+        return;
+      }
+      if (event.metaKey || event.ctrlKey || event.altKey || isTyping(event.target)) return;
+      if (event.key === "r" || event.key === "R") {
+        event.preventDefault();
+        runPlanner();
+      } else if (event.key === " " && state.replay && !state.replay.done) {
+        event.preventDefault();
+        togglePause();
+      } else if (/^[1-5]$/.test(event.key)) {
+        selectPlanner(ORDER[Number(event.key) - 1]);
+      }
+    });
+    new ResizeObserver(sizeCanvas).observe(els.canvasBox);
+    window.addEventListener("resize", fitApp);
   }
 
   async function init() {
-    buildMapChoices();
+    fitApp();
+    buildMapGrid();
     wire();
     writeParams(state.params);
     selectPlanner(state.planner);
     syncPoints();
+    arm("start");
     resetResult();
 
     if (typeof Worker === "undefined" || typeof WebAssembly === "undefined") {
