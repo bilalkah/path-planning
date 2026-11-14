@@ -271,15 +271,15 @@ p {
 
 .intro {
   display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
-  gap: 12px 48px;
-  align-items: end;
-  padding-block: 26px 22px;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px 40px;
+  align-items: center;
+  padding-block: 20px 18px;
 }
 
 .intro h1 {
   margin: 0;
-  font-size: clamp(1.6rem, 2.6vw, 2.35rem);
+  font-size: clamp(1.45rem, 2.05vw, 1.95rem);
   font-weight: 600;
   letter-spacing: -0.025em;
   line-height: 1.12;
@@ -308,7 +308,7 @@ p {
 .app {
   display: flex;
   flex-direction: column;
-  height: clamp(560px, calc(100svh - 168px), 940px);
+  height: clamp(580px, calc(100svh - 140px), 940px);
   border: 1px solid var(--line-strong);
   background: var(--bp-900);
   box-shadow: 0 30px 80px rgba(2, 8, 20, 0.45);
@@ -927,7 +927,8 @@ input[type="range"] {
 }
 
 .side-block {
-  padding: 14px 16px;
+  flex: none;
+  padding: 12px 14px;
   border-bottom: 1px solid var(--line);
 }
 
@@ -990,15 +991,16 @@ input[type="range"] {
 
 .stats {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px 14px;
-  margin: 12px 0 0;
+  grid-template-columns: repeat(4, minmax(0, auto));
+  justify-content: space-between;
+  gap: 8px;
+  margin: 10px 0 0;
 }
 
 .stats dt {
   color: var(--muted);
   font-family: var(--mono);
-  font-size: 0.6rem;
+  font-size: 0.56rem;
   letter-spacing: 0.07em;
   text-transform: uppercase;
 }
@@ -1006,7 +1008,8 @@ input[type="range"] {
 .stats dd {
   margin: 1px 0 0;
   font-family: var(--mono);
-  font-size: 1.05rem;
+  font-size: 0.92rem;
+  white-space: nowrap;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   line-height: 1.3;
@@ -1028,9 +1031,17 @@ input[type="range"] {
   color: var(--red);
 }
 
+.side-output {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 92px;
+}
+
 .stdout {
-  max-height: 120px;
-  margin: 8px 0 0;
+  flex: 1 1 auto;
+  min-height: 34px;
+  margin: 7px 0 0;
   padding: 9px 11px;
   overflow: auto;
   border: 1px solid var(--line);
@@ -1047,7 +1058,8 @@ input[type="range"] {
 }
 
 .cost-chart {
-  margin: 12px 0 0;
+  flex: none;
+  margin: 8px 0 0;
 }
 
 .cost-chart figcaption {
@@ -1063,7 +1075,7 @@ input[type="range"] {
 .cost-chart svg {
   display: block;
   width: 100%;
-  height: 64px;
+  height: 40px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
   background: var(--bp-950);
@@ -1101,7 +1113,7 @@ input[type="range"] {
 
 .compare-table {
   width: 100%;
-  margin-top: 10px;
+  margin-top: 6px;
   border-collapse: collapse;
   font-family: var(--mono);
   font-size: 0.72rem;
@@ -1109,7 +1121,7 @@ input[type="range"] {
 }
 
 .compare-table th {
-  padding: 5px 4px;
+  padding: 4px;
   border-bottom: 1px solid var(--line);
   color: var(--muted);
   font-size: 0.58rem;
@@ -1125,7 +1137,7 @@ input[type="range"] {
 }
 
 .compare-table td {
-  padding: 6px 4px;
+  padding: 4px;
   border-bottom: 1px solid rgba(160, 205, 255, 0.08);
   text-align: right;
   white-space: nowrap;
@@ -1166,10 +1178,11 @@ input[type="range"] {
 
 .legend {
   display: flex;
+  flex: none;
   flex-wrap: wrap;
-  gap: 6px 12px;
+  gap: 4px 12px;
   margin: 0;
-  padding: 0;
+  padding: 9px 14px 10px;
   color: var(--muted);
   font-family: var(--mono);
   font-size: 0.64rem;
@@ -1825,6 +1838,12 @@ input[type="range"] {
   }
 }
 
+@media (max-width: 1100px) {
+  .intro {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 @media (max-width: 920px) {
   .intro,
   .family,
@@ -1862,6 +1881,10 @@ input[type="range"] {
     overflow: visible;
     border-top: 1px solid var(--line);
     border-left: 0;
+  }
+
+  .stdout {
+    max-height: 160px;
   }
 
   .run {
@@ -1973,7 +1996,7 @@ input[type="range"] {
 
 .compare-table td.wait {
   color: var(--muted);
-  text-align: left;
+  text-align: right;
 }
 
 @media (max-width: 640px), (hover: none) {

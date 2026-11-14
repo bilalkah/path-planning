@@ -66,7 +66,6 @@
     gridLine: "rgba(160, 205, 255, 0.10)",
     tree: "rgba(155, 231, 255, 0.9)",
     treeNew: "#ffffff",
-    pending: "rgba(155, 231, 255, 0.65)",
     path: "#ff7a3d",
     casing: "rgba(4, 16, 36, 0.92)",
     start: "#59f0a6",
@@ -127,7 +126,6 @@
     status: $("status"),
     statusText: $("status-text"),
     resultPlanner: $("result-planner"),
-    resultLine: $("result-line"),
     statLoggedLabel: $("stat-logged-label"),
     statLogged: $("stat-logged"),
     statTime: $("stat-time"),
@@ -608,19 +606,17 @@
     view.overlayCtx.putImageData(view.overlayImg, 0, 0);
   }
 
-  // Tree planners log each node when it joins the tree. An edge is drawn
-  // once both of its ends are in view. RRT* rewires, and its log holds the
-  // final parents, so some parents appear after their children.
+  // Tree planners log each node when it joins the tree, and each node's
+  // edge to its parent is drawn as the node appears. RRT* rewires as it
+  // goes and its log holds the final parents, so its replay draws the
+  // final tree in the order the nodes were added.
   function prepareTree(r) {
     const log = r.result.log;
     const edges = [];
     for (let j = 0; j < r.total; j++) {
       if (log[3 * j + 2] >= 0) edges.push(j);
     }
-    const revealAt = (j) => Math.max(j, log[3 * j + 2]);
-    edges.sort((a, b) => revealAt(a) - revealAt(b));
     r.edges = Int32Array.from(edges);
-    r.edgeAt = Int32Array.from(edges, revealAt);
     r.drawn = 0;
     rebuildTreeLayer();
   }
@@ -666,26 +662,15 @@
   function advanceTree(r, rate) {
     r.i = Math.min(r.total, r.i + rate);
     const before = r.drawn;
-    while (r.drawn < r.edges.length && r.edgeAt[r.drawn] < r.i) r.drawn++;
+    while (r.drawn < r.edges.length && r.edges[r.drawn] < r.i) r.drawn++;
     drawEdges(r, before, r.drawn);
   }
 
+  // The newest nodes, so the growth is easy to follow.
   function drawTreeExtras(r) {
     const log = r.result.log;
     const dot = Math.max(1.4 * view.s, 0.45 * view.k);
-    // Nodes whose final parent has not appeared yet (rewired by RRT*).
     ctx.save();
-    ctx.fillStyle = COLOR.pending;
-    ctx.beginPath();
-    for (let j = 1; j < r.i; j++) {
-      const p = log[3 * j + 2];
-      if (p >= r.i || p === -2) {
-        const [cx, cy] = cellCenter(log[3 * j], log[3 * j + 1]);
-        ctx.moveTo(cx + dot, cy);
-        ctx.arc(cx, cy, dot, 0, Math.PI * 2);
-      }
-    }
-    ctx.fill();
     if (!r.done) {
       ctx.fillStyle = COLOR.treeNew;
       ctx.beginPath();
@@ -717,8 +702,7 @@
 
   function resetResult() {
     els.resultPlanner.textContent = "no run yet";
-    els.resultLine.hidden = true;
-    els.statLoggedLabel.textContent = "Logged nodes";
+    els.statLoggedLabel.textContent = "Nodes";
     for (const el of [els.statLogged, els.statTime, els.statLength, els.statWaypoints]) el.textContent = "—";
     els.stdout.innerHTML = '<span class="quiet">Run a planner to see what the C++ prints.</span>';
     els.costChart.hidden = true;
@@ -728,20 +712,16 @@
     const p = PLANNERS[result.planner];
     const total = result.log.length / 3;
     els.resultPlanner.textContent = `${p.label} · ${result.mapFile.replace(".map", "")}`;
-    els.resultLine.hidden = false;
-    els.resultLine.textContent = result.found
-      ? `Path found: ${pathLength(result.path).toFixed(1)} cells long.`
-      : "No path between these points.";
-    els.resultLine.classList.toggle("none", !result.found);
-    els.statLoggedLabel.textContent = p.family === "grid" ? "Expanded cells" : "Tree nodes";
+    els.statLoggedLabel.textContent = p.family === "grid" ? "Expanded" : "Tree nodes";
     els.statLogged.textContent = fmtInt(total);
     els.statTime.innerHTML = `${fmtMs(result.timeMs)}<small> ms</small>`;
-    els.statLength.innerHTML = result.found ? `${pathLength(result.path).toFixed(1)}<small> cells</small>` : "—";
+    els.statLength.textContent = result.found ? pathLength(result.path).toFixed(1) : "none";
     els.statWaypoints.textContent = result.found ? fmtInt(result.path.length / 2) : "—";
 
     const lines = result.stdout || [];
     if (lines.length) els.stdout.textContent = lines.join("\n");
     else els.stdout.innerHTML = '<span class="quiet">(nothing printed)</span>';
+    els.stdout.scrollTop = 0;
     drawCostChart(result);
   }
 
@@ -760,11 +740,14 @@
     const W = 300;
     const H = 64;
     const pad = 6;
-    const tMax = Math.max(points[points.length - 1][0], result.timeMs, 1);
+    // Span the improvements rather than the whole run: RRT* finds most of
+    // them early, and a full-run axis squeezes them into a spike.
+    const t0 = points[0][0];
+    const tMax = Math.max(points[points.length - 1][0], t0 + 1);
     const costs = points.map((p) => p[1]);
     const cMin = Math.min(...costs);
     const cMax = Math.max(...costs);
-    const sx = (t) => pad + (t / tMax) * (W - 2 * pad);
+    const sx = (t) => pad + ((t - t0) / (tMax - t0)) * (W - 2 * pad);
     const sy = (c) => (cMax === cMin ? H / 2 : pad + ((cMax - c) / (cMax - cMin)) * (H - 2 * pad));
     let d = `M${sx(points[0][0]).toFixed(1)} ${sy(points[0][1]).toFixed(1)}`;
     for (let i = 1; i < points.length; i++) {
@@ -775,7 +758,7 @@
     els.costSvg.innerHTML =
       `<path d="${area}" fill="rgba(255, 122, 61, 0.14)"/>` +
       `<path d="${d}" fill="none" stroke="#ff7a3d" stroke-width="2" vector-effect="non-scaling-stroke"/>`;
-    els.costRange.textContent = `${cMax.toFixed(0)} → ${cMin.toFixed(0)} in ${Math.round(tMax)} ms`;
+    els.costRange.textContent = `${cMax.toFixed(0)} → ${cMin.toFixed(0)} · ${t0}–${Math.round(tMax)} ms`;
     els.costChart.hidden = false;
   }
 
@@ -813,7 +796,7 @@
     state.compare = {};
     els.compareBody.innerHTML = ORDER.map(
       (planner) =>
-        `<tr data-planner="${planner}"><td>${PLANNERS[planner].label}</td><td colspan="3" class="wait">running…</td></tr>`
+        `<tr data-planner="${planner}"><td>${PLANNERS[planner].label}</td><td class="wait">…</td><td class="wait">…</td><td class="wait">…</td></tr>`
     ).join("");
     try {
       for (const planner of ORDER) {
@@ -872,8 +855,10 @@
 
   function clearCompare() {
     state.compare = {};
-    els.compareBody.innerHTML =
-      '<tr class="empty"><td colspan="4">Runs every planner on these points. Click a row to replay it.</td></tr>';
+    els.compareBody.innerHTML = ORDER.map(
+      (planner) =>
+        `<tr data-planner="${planner}"><td>${PLANNERS[planner].label}</td><td>—</td><td>—</td><td>—</td></tr>`
+    ).join("");
   }
 
   // ---------------------------------------------------------------------------
@@ -1398,6 +1383,7 @@
     syncPoints();
     arm("start");
     resetResult();
+    clearCompare();
 
     if (typeof Worker === "undefined" || typeof WebAssembly === "undefined") {
       els.overlayText.textContent = "This browser cannot run WebAssembly in a worker, so the demo is unavailable.";

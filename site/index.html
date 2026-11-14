@@ -57,7 +57,7 @@
 
   <main>
     <section class="wrap intro" aria-labelledby="title">
-      <h1 id="title">Five path planners in C++, <em>running in your browser.</em></h1>
+      <h1 id="title">Five C++ path planners, <em>running in your browser.</em></h1>
       <p>
         A*, BFS, DFS, RRT and RRT* from
         <a href="https://github.com/bilalkah/path-planning">bilalkah/path-planning</a>,
@@ -175,48 +175,45 @@
                 <span class="status" id="status" data-state="loading" role="status" aria-live="polite"><i aria-hidden="true"></i><span id="status-text">loading</span></span>
                 <strong id="result-planner">no run yet</strong>
               </div>
-              <p class="result-line" id="result-line" hidden></p>
               <dl class="stats">
-                <div><dt id="stat-logged-label">Logged nodes</dt><dd id="stat-logged">—</dd></div>
+                <div><dt id="stat-logged-label">Nodes</dt><dd id="stat-logged">—</dd></div>
                 <div><dt>FindPath</dt><dd id="stat-time">—</dd></div>
-                <div><dt>Path length</dt><dd id="stat-length">—</dd></div>
+                <div><dt>Length</dt><dd id="stat-length">—</dd></div>
                 <div><dt>Waypoints</dt><dd id="stat-waypoints">—</dd></div>
               </dl>
             </div>
             <div class="side-block">
-              <span class="label">std::cout during FindPath</span>
-              <pre class="stdout" id="stdout"><span class="quiet">Run a planner to see what the C++ prints.</span></pre>
-              <figure class="cost-chart" id="cost-chart" hidden>
-                <figcaption><span>RRT* goal cost over time</span><span id="cost-range"></span></figcaption>
-                <svg id="cost-svg" viewBox="0 0 300 64" preserveAspectRatio="none" role="img" aria-label="RRT* goal cost falling over time"></svg>
-              </figure>
-            </div>
-            <div class="side-block">
               <div class="compare-head">
-                <span class="label">All five, same points</span>
+                <span class="label">All five · same points</span>
                 <button class="btn" type="button" id="compare" disabled>Compare</button>
               </div>
               <table class="compare-table">
                 <thead><tr><th scope="col">Planner</th><th scope="col">Length</th><th scope="col">Nodes</th><th scope="col">ms</th></tr></thead>
-                <tbody id="compare-body"><tr class="empty"><td colspan="4">Runs every planner on these points. Click a row to replay it.</td></tr></tbody>
+                <tbody id="compare-body"></tbody>
               </table>
             </div>
-            <div class="side-block side-foot">
-              <ul class="legend" aria-label="Legend">
-                <li><span class="swatch sw-free"></span>free</li>
-                <li><span class="swatch sw-wall"></span>occupied</li>
-                <li><span class="swatch sw-visited"></span>visited</li>
-                <li><span class="swatch sw-front"></span>latest</li>
-                <li><span class="swatch sw-path"></span>path</li>
-              </ul>
-              <p class="keys"><kbd>R</kbd> run · <kbd>Space</kbd> pause · <kbd>1</kbd>–<kbd>5</kbd> planner</p>
+            <div class="side-block side-output">
+              <span class="label">std::cout during FindPath</span>
+              <pre class="stdout" id="stdout"><span class="quiet">Run a planner to see what the C++ prints.</span></pre>
+              <figure class="cost-chart" id="cost-chart" hidden>
+                <figcaption><span>RRT* goal cost over time</span><span id="cost-range"></span></figcaption>
+                <svg id="cost-svg" viewBox="0 0 300 40" preserveAspectRatio="none" role="img" aria-label="RRT* goal cost falling over time"></svg>
+              </figure>
             </div>
+            <ul class="legend" aria-label="Legend">
+              <li><span class="swatch sw-free"></span>free</li>
+              <li><span class="swatch sw-wall"></span>wall</li>
+              <li><span class="swatch sw-visited"></span>visited</li>
+              <li><span class="swatch sw-front"></span>latest</li>
+              <li><span class="swatch sw-path"></span>path</li>
+            </ul>
           </aside>
         </div>
       </div>
       <p class="demo-caption">
         Each run calls <code>FindPath</code> in the compiled C++ inside a Web Worker, then replays <code>GetLog()</code>, the log the native SDL3 visualizer draws.
-        RRT* rewires as it goes and its log holds the final tree, so a node that was later rewired shows as a dot until its new parent appears.
+        RRT* rewires as it goes and its log holds the final tree, so its replay draws each node with its final parent.
+        Keys: <kbd>R</kbd> run · <kbd>Space</kbd> pause · <kbd>1</kbd>–<kbd>5</kbd> planner.
       </p>
     </section>
 
