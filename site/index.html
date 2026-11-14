@@ -196,7 +196,7 @@
               <span class="label">std::cout during FindPath</span>
               <pre class="stdout" id="stdout"><span class="quiet">Run a planner to see what the C++ prints.</span></pre>
               <figure class="cost-chart" id="cost-chart" hidden>
-                <figcaption><span>RRT* goal cost over time</span><span id="cost-range"></span></figcaption>
+                <figcaption><span>cost vs tree size</span><span id="cost-range"></span></figcaption>
                 <svg id="cost-svg" viewBox="0 0 300 40" preserveAspectRatio="none" role="img" aria-label="RRT* goal cost falling over time"></svg>
               </figure>
             </div>
@@ -212,7 +212,7 @@
       </div>
       <p class="demo-caption">
         Each run calls <code>FindPath</code> in the compiled C++ inside a Web Worker, then replays <code>GetLog()</code>, the log the native SDL3 visualizer draws.
-        RRT* rewires as it goes and its log holds the final tree, so its replay draws each node with its final parent.
+        For RRT*, the bindings also record the best path each time it changes, so the replay shows the first path when it is found and every improvement after it. Its log holds only the final tree, so tree edges are drawn to each node's final parent.
         Keys: <kbd>R</kbd> run · <kbd>Space</kbd> pause · <kbd>1</kbd>–<kbd>5</kbd> planner.
       </p>
     </section>
@@ -482,7 +482,7 @@
               Euclidean length.
             </p>
             <dl>
-              <div><dt>Path</dt><dd>Keeps getting shorter after the first one is found. It prints each improvement to std::cout; the demo charts them.</dd></div>
+              <div><dt>Path</dt><dd>Keeps getting shorter after the first one is found. The demo shows the first path the moment it appears and each improvement after it.</dd></div>
               <div><dt>Cost</dt><dd>Uses every one of the <code>max_iteration</code> samples.</dd></div>
             </dl>
             <div class="card-links">
@@ -586,6 +586,7 @@
             <li><span>The <code>EMSCRIPTEN</code> branch of <code>CMakeLists.txt</code> builds the five planner libraries and the bindings. No SDL, no yaml-cpp, no tests.</span></li>
             <li><span><code>loadMap</code> writes the <code>.map</code> file into Emscripten's in-memory filesystem, so <code>planning::Map</code> parses it as the native build does.</span></li>
             <li><span><code>plan</code> builds the planner with the constructors <code>main.cpp</code> uses, calls <code>FindPath</code>, and returns the path with <code>GetLog()</code>. Lines written to <code>std::cout</code> come along with it.</span></li>
+            <li><span>For RRT*, the bindings also record the best path each time it changes. They read the planner's <code>Path found.</code> lines and look at it between iterations, when <code>std::random_device</code> asks for its next sample through <code>getentropy</code>. The planner itself is unchanged.</span></li>
             <li><span>A Web Worker hosts the module, so a long search never freezes the page. The page draws the log on a canvas.</span></li>
           </ol>
         </div>

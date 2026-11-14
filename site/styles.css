@@ -1066,6 +1066,7 @@ input[type="range"] {
   display: flex;
   justify-content: space-between;
   gap: 10px;
+  white-space: nowrap;
   margin-bottom: 5px;
   color: var(--muted);
   font-family: var(--mono);

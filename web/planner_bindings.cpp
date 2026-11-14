@@ -24,13 +24,20 @@
 
 #include <emscripten/bind.h>
 #include <emscripten/val.h>
+#include <wasi/api.h>
 
+#include <cerrno>
 #include <chrono>
+#include <cstddef>
 #include <cstdint>
 #include <fstream>
+#include <functional>
+#include <iostream>
 #include <memory>
+#include <streambuf>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace
@@ -41,6 +48,188 @@ using PlannerType = std::shared_ptr<planning::IPlanningWithLogging>;
 
 // Maps read so far, keyed by their path in the in-memory filesystem.
 std::unordered_map<std::string, std::shared_ptr<planning::Map>> maps;
+
+// Collects what the planners write to std::cout, line by line, and hands
+// each line to a callback as it is written.
+class LineCapture : public std::streambuf
+{
+public:
+  explicit LineCapture(std::function<void(const std::string &)> on_line)
+      : on_line_(std::move(on_line))
+  {
+  }
+
+  const std::vector<std::string> &Lines() const { return lines_; }
+
+  void Flush()
+  {
+    if (!current_.empty())
+      {
+        EndLine();
+      }
+  }
+
+protected:
+  int_type overflow(int_type ch) override
+  {
+    if (traits_type::eq_int_type(ch, traits_type::eof()))
+      {
+        return traits_type::not_eof(ch);
+      }
+    if (traits_type::to_char_type(ch) == '\n')
+      {
+        EndLine();
+      }
+    else
+      {
+        current_.push_back(traits_type::to_char_type(ch));
+      }
+    return ch;
+  }
+
+  std::streamsize xsputn(const char *text, std::streamsize count) override
+  {
+    for (std::streamsize i = 0; i < count; i++)
+      {
+        overflow(traits_type::to_int_type(text[i]));
+      }
+    return count;
+  }
+
+private:
+  void EndLine()
+  {
+    lines_.push_back(current_);
+    on_line_(current_);
+    current_.clear();
+  }
+
+  std::function<void(const std::string &)> on_line_;
+  std::vector<std::string> lines_{};
+  std::string current_{};
+};
+
+// Points std::cout at another buffer for the lifetime of the object.
+class RedirectCout
+{
+public:
+  explicit RedirectCout(std::streambuf *buffer)
+      : previous_(std::cout.rdbuf(buffer))
+  {
+  }
+  ~RedirectCout() { std::cout.rdbuf(previous_); }
+
+private:
+  std::streambuf *previous_;
+};
+
+// Records the best path of an RRT* run each time it changes, with the number
+// of logged nodes at that moment.
+//
+// RRT* keeps improving its path after it finds the first one, but its log
+// holds only the final tree. The recorder looks at the planner between
+// iterations instead: every iteration starts by drawing a random sample, and
+// std::random_device reads it through getentropy (defined below) while the
+// planner holds no lock. CheckIfGoalReached prints "Path found." or "Path
+// changed." when a new goal node becomes the best one, and that node is then
+// the last one in the log. Rewiring can also shorten the path without a new
+// goal node, so the recorder compares the whole parent chain each time.
+class PathRecorder
+{
+public:
+  void Start(planning::IPlanningWithLogging *planner)
+  {
+    planner_ = planner;
+    best_.reset();
+    new_best_ = false;
+    last_signature_ = 0;
+    snapshots_.clear();
+  }
+
+  void Finish()
+  {
+    Sample();
+    planner_ = nullptr;
+    best_.reset();
+  }
+
+  void OnLine(const std::string &line)
+  {
+    if (line.rfind("Path found.", 0) == 0 ||
+        line.rfind("Path changed.", 0) == 0)
+      {
+        new_best_ = true;
+      }
+  }
+
+  void Sample()
+  {
+    if (planner_ == nullptr)
+      {
+        return;
+      }
+    if (new_best_)
+      {
+        new_best_ = false;
+        best_ = planner_->GetLog().first.back();
+      }
+    if (best_ == nullptr)
+      {
+        return;
+      }
+
+    bool complete{false};
+    const auto signature = Signature(best_, complete);
+    if (!complete || signature == last_signature_)
+      {
+        return;
+      }
+    last_signature_ = signature;
+
+    const planning::Path path = planning::ReconstructPath(best_);
+    snapshots_.push_back(static_cast<int32_t>(planner_->GetLog().first.size()));
+    snapshots_.push_back(static_cast<int32_t>(path.size()));
+    for (const auto &node : path)
+      {
+        snapshots_.push_back(node.x_);
+        snapshots_.push_back(node.y_);
+      }
+  }
+
+  // Flattened records: logged nodes, point count, then (x, y) per point.
+  const std::vector<int32_t> &Snapshots() const { return snapshots_; }
+
+private:
+  // A hash of the parent chain from the goal back to the root. `complete` is
+  // false if the walk did not reach the root within the step limit.
+  static uint64_t Signature(const std::shared_ptr<planning::NodeParent> &node,
+                            bool &complete)
+  {
+    constexpr std::size_t kMaxSteps{1u << 20};
+    uint64_t hash{14695981039346656037ull};
+    std::size_t steps{0};
+    const planning::NodeParent *current = node.get();
+    while (current != nullptr && steps < kMaxSteps)
+      {
+        hash = (hash ^ static_cast<uint32_t>(current->node.x_)) *
+               1099511628211ull;
+        hash = (hash ^ static_cast<uint32_t>(current->node.y_)) *
+               1099511628211ull;
+        current = current->parent.get();
+        steps++;
+      }
+    complete = current == nullptr;
+    return hash;
+  }
+
+  planning::IPlanningWithLogging *planner_{nullptr};
+  std::shared_ptr<planning::NodeParent> best_{};
+  bool new_best_{false};
+  uint64_t last_signature_{0};
+  std::vector<int32_t> snapshots_{};
+};
+
+PathRecorder recorder;
 
 // Copy into a new JavaScript typed array, so the result stays valid after
 // the module's memory grows.
@@ -162,11 +351,12 @@ val LoadMap(const std::string &path, const std::string &contents)
 /**
  * @brief Run one planner, as main.cpp does for each run.
  *
- * @return {found, timeMs, path, log}. path holds the (x, y) pairs FindPath
- * returned. log holds (x, y, parent) triples for each NodeParent in
- * GetLog().first, in the order the planner logged them. parent is the index
- * of the parent's triple, -1 for a root, and -2 for a parent the log does
- * not hold.
+ * @return {found, timeMs, path, log, progress, stdout}. path holds the (x, y)
+ * pairs FindPath returned. log holds (x, y, parent) triples for each
+ * NodeParent in GetLog().first, in the order the planner logged them. parent
+ * is the index of the parent's triple, -1 for a root, and -2 for a parent the
+ * log does not hold. progress holds the best path each time it changed during
+ * an RRT* run (see PathRecorder). stdout holds the lines the planner printed.
  */
 val Plan(const std::string &map_path, const std::string &planner_name,
          int start_x, int start_y, int goal_x, int goal_y, const val &params)
@@ -185,15 +375,22 @@ val Plan(const std::string &map_path, const std::string &planner_name,
       return Error("Start and goal must be free cells inside the map.");
     }
 
+  LineCapture capture(
+      [](const std::string &line) { recorder.OnLine(line); });
+  RedirectCout redirect(&capture);
+
   PlannerType planner = MakePlanner(planner_name, params);
   if (planner == nullptr)
     {
       return Error("Unknown planner: " + planner_name);
     }
 
+  recorder.Start(planner.get());
   const auto start_time{std::chrono::steady_clock::now()};
   const planning::Path path = planner->FindPath(start_node, goal_node, map);
   const auto end_time{std::chrono::steady_clock::now()};
+  recorder.Finish();
+  capture.Flush();
 
   planning::Log log = planner->GetLog();
 
@@ -236,10 +433,40 @@ val Plan(const std::string &map_path, const std::string &planner_name,
                  .count());
   result.set("path", ToTypedArray("Int32Array", path_nodes));
   result.set("log", ToTypedArray("Int32Array", log_nodes));
+  result.set("progress", ToTypedArray("Int32Array", recorder.Snapshots()));
+
+  val lines = val::array();
+  for (const auto &line : capture.Lines())
+    {
+      lines.call<void>("push", line);
+    }
+  result.set("stdout", lines);
   return result;
 }
 
 } // namespace
+
+// std::random_device reads its numbers through getentropy. This definition
+// replaces musl's, takes the bytes from the same source (__wasi_random_get),
+// and first lets the path recorder look at the planner: RRT and RRT* draw a
+// sample at the start of every iteration, while they hold no lock.
+extern "C" int getentropy(void *buffer, size_t length)
+{
+  recorder.Sample();
+  if (length > 256)
+    {
+      errno = EIO;
+      return -1;
+    }
+  const auto status =
+      __wasi_random_get(static_cast<uint8_t *>(buffer), length);
+  if (status != __WASI_ERRNO_SUCCESS)
+    {
+      errno = status;
+      return -1;
+    }
+  return 0;
+}
 
 EMSCRIPTEN_BINDINGS(path_planning)
 {

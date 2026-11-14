@@ -8,6 +8,10 @@
  * Messages out:
  *   { id, ready: true } once the module has loaded
  *   { id, result } or { id, error }
+ *
+ * A plan result holds the path, the planner's log, and for RRT* the best
+ * path each time it changed during the run (see PathRecorder in
+ * web/planner_bindings.cpp).
  */
 /* global createPathPlanning */
 "use strict";
@@ -48,7 +52,9 @@ function plan(module, msg) {
     msg.params
   );
   if (result.error) throw new Error(result.error);
-  result.stdout = stdout;
+  // The bindings capture std::cout during FindPath. Anything printed outside
+  // that window still arrives through print().
+  result.stdout = stdout.concat(result.stdout || []);
   stdout = [];
   return result;
 }
@@ -62,7 +68,7 @@ self.onmessage = async (event) => {
       self.postMessage({ id: msg.id, result: map }, [map.cells.buffer]);
     } else if (msg.type === "plan") {
       const result = plan(module, msg);
-      self.postMessage({ id: msg.id, result }, [result.path.buffer, result.log.buffer]);
+      self.postMessage({ id: msg.id, result }, [result.path.buffer, result.log.buffer, result.progress.buffer]);
     }
   } catch (err) {
     self.postMessage({ id: msg.id, error: String((err && err.message) || err) });

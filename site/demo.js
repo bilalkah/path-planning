@@ -381,7 +381,12 @@
 
     const family = r ? r.kind : PLANNERS[state.planner].family;
     if (family === "tree") drawGoalRadius(r ? r.result.params.goal_radius : state.params.tree.goal_radius);
-    if (r && r.pathShown > 1) drawPath(r.result.path, r.pathShown);
+    if (r && r.snap >= 0) {
+      const snap = r.snaps[r.snap];
+      drawPath(snap.path, snap.path.length / 2, r.flash / 16);
+    } else if (r && r.pathShown > 1) {
+      drawPath(r.result.path, r.pathShown);
+    }
 
     drawMarker(state.start, COLOR.start, state.armed === "start");
     drawMarker(state.goal, COLOR.goal, state.armed === "goal");
@@ -405,7 +410,8 @@
     ctx.restore();
   }
 
-  function drawPath(path, points) {
+  // `glow` (0..1) highlights a path that has just changed.
+  function drawPath(path, points, glow = 0) {
     ctx.save();
     ctx.lineJoin = "round";
     ctx.lineCap = "round";
@@ -416,6 +422,11 @@
       else ctx.lineTo(cx, cy);
     }
     const width = Math.max(2.4 * view.s, 0.7 * view.k);
+    if (glow > 0) {
+      ctx.strokeStyle = `rgba(255, 236, 214, ${(0.75 * glow).toFixed(3)})`;
+      ctx.lineWidth = width + 9 * view.s * glow;
+      ctx.stroke();
+    }
     ctx.strokeStyle = COLOR.casing;
     ctx.lineWidth = width + 3 * view.s;
     ctx.stroke();
@@ -465,19 +476,67 @@
   }
 
   // ---------------------------------------------------------------------------
+  // RRT* path snapshots
+  //
+  // result.progress holds the best path each time it changed during an RRT*
+  // run, recorded by the bindings: [logged nodes, point count, x, y, ...]...
+  // The replay shows the snapshot whose node count it has reached.
+
+  function snapshotsOf(result) {
+    if (result.snaps) return result.snaps;
+    const p = result.progress || [];
+    const snaps = [];
+    for (let i = 0; i + 1 < p.length; ) {
+      const count = p[i + 1];
+      const path = p.subarray(i + 2, i + 2 + 2 * count);
+      const length = pathLength(path);
+      // RRT*'s cost: one per edge plus the Euclidean length (Cost.f = g + h)
+      snaps.push({ n: p[i], path, length, cost: Math.max(0, count - 1) + length });
+      i += 2 + 2 * count;
+    }
+    result.snaps = snaps;
+    return snaps;
+  }
+
+  function setPathStats(snap) {
+    els.statLength.textContent = snap ? snap.length.toFixed(1) : "—";
+    els.statWaypoints.textContent = snap ? fmtInt(snap.path.length / 2) : "—";
+  }
+
+  function advanceSnapshot(r) {
+    let next = r.snap;
+    while (next + 1 < r.snaps.length && r.snaps[next + 1].n <= r.i) next++;
+    if (next === r.snap) return;
+    const first = r.snap < 0;
+    r.snap = next;
+    r.flash = 16;
+    const snap = r.snaps[next];
+    setPathStats(snap);
+    if (!r.done) {
+      setStatus("replaying", first ? "first path found" : `path improved · ${snap.length.toFixed(1)}`);
+    }
+  }
+
+  // ---------------------------------------------------------------------------
   // Replay of a planner log
 
   function startReplay(result) {
     stopReplay();
     const kind = PLANNERS[result.planner].family;
+    const snaps = snapshotsOf(result);
     const r = {
       kind,
       result,
       total: result.log.length / 3,
       i: 0,
       faded: 0,
-      pathTotal: result.path.length / 2,
+      // With snapshots the path is shown as it was at each point of the run,
+      // so there is no path to draw in at the end.
+      pathTotal: snaps.length ? 0 : result.path.length / 2,
       pathShown: 0,
+      snaps,
+      snap: -1,
+      flash: 0,
       done: false,
       paused: false,
       raf: 0,
@@ -485,6 +544,7 @@
     state.replay = r;
     if (kind === "grid") clearOverlay();
     else prepareTree(r);
+    if (snaps.length) setPathStats(null);
     els.pause.disabled = false;
     els.skip.disabled = false;
     setPauseIcon(false);
@@ -520,6 +580,7 @@
     const r = state.replay;
     if (!r || r.paused || r.done) return;
     const level = speedLevel();
+    if (r.flash > 0) r.flash--;
     if (r.i < r.total) {
       advance(r, SPEED[r.kind][level]);
     } else if (r.pathShown < r.pathTotal) {
@@ -554,6 +615,8 @@
   function finishReplay(r) {
     r.done = true;
     r.raf = 0;
+    r.flash = 0;
+    if (r.snaps.length) setPathStats(r.snaps[r.snaps.length - 1]);
     els.pause.disabled = true;
     els.skip.disabled = true;
     els.progressBar.classList.add("done");
@@ -584,7 +647,12 @@
     const done = r.i + r.pathShown;
     els.progressBar.style.width = `${total ? (100 * done) / total : 100}%`;
     const noun = r.kind === "grid" ? "expanded" : "tree nodes";
-    els.progressText.textContent = `${fmtInt(r.i)} / ${fmtInt(r.total)} ${noun}`;
+    let text = `${fmtInt(r.i)} / ${fmtInt(r.total)} ${noun}`;
+    if (r.snaps.length) {
+      text += r.snap < 0 ? " · no path yet" : ` · path ${r.snaps[r.snap].length.toFixed(1)}`;
+      moveChartCursor(r.i / r.total);
+    }
+    els.progressText.textContent = text;
   }
 
   // Grid planners log each cell when they expand it.
@@ -664,6 +732,7 @@
     const before = r.drawn;
     while (r.drawn < r.edges.length && r.edges[r.drawn] < r.i) r.drawn++;
     drawEdges(r, before, r.drawn);
+    if (r.snaps.length) advanceSnapshot(r);
   }
 
   // The newest nodes, so the growth is easy to follow.
@@ -725,41 +794,49 @@
     drawCostChart(result);
   }
 
-  // RRTStar::FindPath prints "Goal cost: <f>\tTime: <ms> ms" whenever
-  // rewiring improves the path.
+  // RRT* path cost against the size of the tree, from the snapshots. The
+  // part the replay has reached is drawn bright; a cursor follows it.
   function drawCostChart(result) {
-    const points = [];
-    for (const line of result.stdout || []) {
-      const m = /Goal cost: ([\d.]+)\s+Time: (\d+) ms/.exec(line);
-      if (m) points.push([Number(m[2]), Number(m[1])]);
-    }
-    if (points.length < 2) {
+    const snaps = snapshotsOf(result);
+    if (!snaps.length) {
       els.costChart.hidden = true;
       return;
     }
     const W = 300;
-    const H = 64;
-    const pad = 6;
-    // Span the improvements rather than the whole run: RRT* finds most of
-    // them early, and a full-run axis squeezes them into a spike.
-    const t0 = points[0][0];
-    const tMax = Math.max(points[points.length - 1][0], t0 + 1);
-    const costs = points.map((p) => p[1]);
+    const H = 40;
+    const pad = 5;
+    const total = Math.max(1, result.log.length / 3);
+    const costs = snaps.map((snap) => snap.cost);
     const cMin = Math.min(...costs);
     const cMax = Math.max(...costs);
-    const sx = (t) => pad + ((t - t0) / (tMax - t0)) * (W - 2 * pad);
-    const sy = (c) => (cMax === cMin ? H / 2 : pad + ((cMax - c) / (cMax - cMin)) * (H - 2 * pad));
-    let d = `M${sx(points[0][0]).toFixed(1)} ${sy(points[0][1]).toFixed(1)}`;
-    for (let i = 1; i < points.length; i++) {
-      d += ` H${sx(points[i][0]).toFixed(1)} V${sy(points[i][1]).toFixed(1)}`;
-    }
-    d += ` H${sx(tMax).toFixed(1)}`;
-    const area = `${d} V${H} H${sx(points[0][0]).toFixed(1)} Z`;
+    const sx = (n) => ((n / total) * W).toFixed(1);
+    const sy = (c) => (cMax === cMin ? H / 2 : pad + ((cMax - c) / (cMax - cMin)) * (H - 2 * pad)).toFixed(1);
+    let d = `M${sx(snaps[0].n)} ${sy(snaps[0].cost)}`;
+    for (let i = 1; i < snaps.length; i++) d += ` H${sx(snaps[i].n)} V${sy(snaps[i].cost)}`;
+    d += ` H${W}`;
+    const area = `${d} V${H} H${sx(snaps[0].n)} Z`;
     els.costSvg.innerHTML =
-      `<path d="${area}" fill="rgba(255, 122, 61, 0.14)"/>` +
-      `<path d="${d}" fill="none" stroke="#ff7a3d" stroke-width="2" vector-effect="non-scaling-stroke"/>`;
-    els.costRange.textContent = `${cMax.toFixed(0)} → ${cMin.toFixed(0)} · ${t0}–${Math.round(tMax)} ms`;
+      `<defs><clipPath id="cost-clip"><rect id="cost-clip-rect" x="0" y="0" width="${W}" height="${H}"/></clipPath></defs>` +
+      `<path d="${area}" fill="rgba(255, 122, 61, 0.05)"/>` +
+      `<path d="${d}" fill="none" stroke="rgba(255, 122, 61, 0.35)" stroke-width="1.5" vector-effect="non-scaling-stroke"/>` +
+      `<g clip-path="url(#cost-clip)"><path d="${area}" fill="rgba(255, 122, 61, 0.16)"/>` +
+      `<path d="${d}" fill="none" stroke="#ff7a3d" stroke-width="2" vector-effect="non-scaling-stroke"/></g>` +
+      `<line id="cost-cursor" x1="${W}" x2="${W}" y1="0" y2="${H}" stroke="#6edcff" stroke-width="1" vector-effect="non-scaling-stroke"/>`;
+    const first = snaps[0];
+    const last = snaps[snaps.length - 1];
+    els.costRange.textContent =
+      `first at ${fmtInt(first.n)} · ${first.cost.toFixed(0)} → ${last.cost.toFixed(0)}`;
     els.costChart.hidden = false;
+  }
+
+  function moveChartCursor(fraction) {
+    const rect = document.getElementById("cost-clip-rect");
+    const cursor = document.getElementById("cost-cursor");
+    if (!rect || !cursor) return;
+    const x = (Math.min(1, Math.max(0, fraction)) * 300).toFixed(1);
+    rect.setAttribute("width", x);
+    cursor.setAttribute("x1", x);
+    cursor.setAttribute("x2", x);
   }
 
   // ---------------------------------------------------------------------------
