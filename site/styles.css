@@ -1479,11 +1479,11 @@ input[type="range"] {
   counter-reset: how;
 }
 
+/* Text flows normally inside a step (it may hold <code>); the number sits
+   in the left padding. */
 .how li {
-  display: grid;
-  grid-template-columns: 20px 1fr;
-  gap: 6px;
-  padding: 5px 0;
+  position: relative;
+  padding: 5px 0 5px 26px;
   border-top: 1px dashed var(--line);
   color: var(--ink-soft);
   font-size: 0.84rem;
@@ -1493,6 +1493,9 @@ input[type="range"] {
 
 .how li::before {
   content: counter(how);
+  position: absolute;
+  top: 5px;
+  left: 0;
   color: var(--orange);
   font-family: var(--mono);
   font-size: 0.72rem;
