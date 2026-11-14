@@ -85,7 +85,7 @@
             </button>
             <div class="menu" id="map-menu" hidden>
               <div class="map-grid" id="map-grid" role="radiogroup" aria-label="Map"></div>
-              <p class="menu-note">Moving AI benchmark maps. The planners read them with <code>planning::Map</code>.</p>
+              <p class="menu-note">Six Moving AI benchmark maps and two generated mazes. The planners read them all with <code>planning::Map</code>.</p>
             </div>
           </div>
 
@@ -658,7 +658,9 @@ cd path-planning
             Maps: <a href="https://movingai.com/benchmarks/grids.html">Moving AI Lab 2D pathfinding benchmarks</a>
             (N. Sturtevant, “Benchmarks for Grid-Based Pathfinding”, 2012). In the <code>.map</code> format,
             <code>.</code> and <code>G</code> are passable; <code>planning::Map</code> treats every other cell,
-            including trees, water and swamp, as occupied.
+            including trees, water and swamp, as occupied. The two mazes come from
+            <code>tools/maze/make_maze.py</code>: <code>maze</code> has corridors one cell wide,
+            <code>maze_wide</code> leaves room for the tree planners.
           </p>
         </div>
         <figure class="code frame">

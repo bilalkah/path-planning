@@ -825,6 +825,13 @@ input[type="range"] {
   text-align: right;
 }
 
+.hud-hint.hud-note {
+  max-width: 250px;
+  border-color: var(--amber);
+  color: var(--amber);
+  text-align: left;
+}
+
 .loading {
   position: absolute;
   inset: 0;
@@ -1943,8 +1950,13 @@ input[type="range"] {
     justify-content: center;
   }
 
-  .hud-hint {
+  .hud-hint:not(.hud-note) {
     display: none;
+  }
+
+  .hud-hint.hud-note {
+    left: 20px;
+    max-width: none;
   }
 
   .speed {
