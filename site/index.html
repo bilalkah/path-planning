@@ -48,7 +48,7 @@
       <nav class="topnav" aria-label="Main navigation">
         <a href="#demo">Demo</a>
         <a href="#planners">Planners</a>
-        <a href="#inside">Inside the C++</a>
+        <a href="#ideas">Ideas</a>
         <a href="#native">Run natively</a>
         <a class="gh" href="https://github.com/bilalkah/path-planning"><svg class="icon" aria-hidden="true"><use href="#i-github"/></svg>Source</a>
       </nav>
@@ -225,6 +225,14 @@
         <p>Grid planners search cell by cell. Tree planners sample free space and join points with straight segments.</p>
       </div>
 
+      <p class="lead">
+        A path planner answers one question: how do I get from the start to the
+        goal without crossing a wall? The five planners here answer it in
+        different ways, and each trades three things against the others: how
+        good the path is, how much of the map it has to look at, and what it
+        can promise.
+      </p>
+
       <div class="family">
         <div>
           <span class="family-tag">planning/grid_base</span>
@@ -279,17 +287,27 @@
             <span class="card-meta">grid · std::queue</span>
             <h3>Breadth-first search</h3>
             <p>
-              Takes the oldest node in the queue, so the search spreads out in
-              rings: every cell one move from the start, then every cell two
-              moves away, until the goal reaches the front.
+              Explores the map in order of distance from the start. Cells wait
+              in a first-in, first-out queue, so the ones found first are
+              expanded first and the search spreads in rings: every cell one
+              move away, then two moves away, until the goal reaches the front
+              of the queue.
             </p>
+            <span class="how-label">How it works</span>
+            <ol class="how">
+              <li>Put the start in the queue.</li>
+              <li>Take the oldest cell. If it is the goal, stop.</li>
+              <li>Queue each free neighbour not seen yet, noting where it came from.</li>
+              <li>Follow those notes back from the goal to read off the path.</li>
+            </ol>
             <dl>
-              <div><dt>Path</dt><dd>Fewest moves. With every move costing 1, the first time the goal comes out of the queue no shorter path exists.</dd></div>
+              <div><dt>Path</dt><dd>Fewest moves. Every move costs 1, so the first time the goal comes out of the queue no shorter path exists.</dd></div>
               <div><dt>Cost</dt><dd>Expands every cell closer to the start than the goal, in every direction.</dd></div>
+              <div><dt>Best for</dt><dd>Small or unweighted grids where the shortest route in moves matters.</dd></div>
             </dl>
             <div class="card-links">
               <a class="source-link" href="https://github.com/bilalkah/path-planning/blob/main/planning/grid_base/bfs/bfs.cpp">bfs.cpp ↗</a>
-              <button class="btn" type="button" data-try="bfs"><svg class="icon icon-fill" aria-hidden="true"><use href="#i-play"/></svg>Run BFS</button>
+              <button class="btn" type="button" data-try="bfs" data-map="maze.map"><svg class="icon icon-fill" aria-hidden="true"><use href="#i-play"/></svg>Run BFS on the maze</button>
             </div>
           </div>
         </article>
@@ -303,18 +321,27 @@
             <span class="card-meta">grid · std::stack</span>
             <h3>Depth-first search</h3>
             <p>
-              Takes the newest node on the stack, so it commits to one
-              direction until it is blocked, then backs up to the most recent
-              unexplored branch. The path is the chain of parents that led
-              there.
+              Follows one branch as far as it goes. Cells wait on a last-in,
+              first-out stack, so the newest cell is expanded next: the search
+              keeps walking forward and only backs up to the most recent fork
+              when it runs into a dead end. The path is the chain of steps that
+              happened to lead there.
             </p>
+            <span class="how-label">How it works</span>
+            <ol class="how">
+              <li>Push the start on the stack.</li>
+              <li>Pop the newest cell. If it is the goal, stop.</li>
+              <li>Push its free neighbours; the last one pushed is explored next.</li>
+              <li>At a dead end, the stack hands back the most recent branch not yet explored.</li>
+            </ol>
             <dl>
-              <div><dt>Path</dt><dd>Finds one if it exists, but a winding one. On large maps it can be tens of thousands of moves long.</dd></div>
+              <div><dt>Path</dt><dd>Any path that reaches the goal, usually far from the shortest. On the maze it is about 4.5 times longer than BFS's.</dd></div>
               <div><dt>Cost</dt><dd>Unpredictable: it can stumble on the goal early or sweep most of the map first.</dd></div>
+              <div><dt>Best for</dt><dd>Checking that the goal can be reached, or visiting every corner. Not for good routes.</dd></div>
             </dl>
             <div class="card-links">
               <a class="source-link" href="https://github.com/bilalkah/path-planning/blob/main/planning/grid_base/dfs/dfs.cpp">dfs.cpp ↗</a>
-              <button class="btn" type="button" data-try="dfs"><svg class="icon icon-fill" aria-hidden="true"><use href="#i-play"/></svg>Run DFS</button>
+              <button class="btn" type="button" data-try="dfs" data-map="maze.map"><svg class="icon icon-fill" aria-hidden="true"><use href="#i-play"/></svg>Run DFS on the maze</button>
             </div>
           </div>
         </article>
@@ -328,23 +355,33 @@
             <span class="card-meta">grid · std::priority_queue</span>
             <h3>A*</h3>
             <p>
-              Takes the node with the lowest f. g counts the moves from the
-              start; h is the straight-line distance to the goal. The weight
-              blends them:
+              Adds a sense of direction. Every cell gets a score f that combines
+              g, the moves taken from the start, and h, the straight-line
+              distance still to go. The cell with the lowest f is expanded
+              next, so the search heads for the goal and only spreads sideways
+              when walls force it to.
             </p>
             <p class="formula">f = (1 − w) · g + w · h</p>
             <p>
-              <code>heuristic_weight</code> is 0.7 in
-              <code>config/grid_base.yaml</code>, so the search leans toward
-              the goal. 0 orders by g alone, like BFS; 1 is greedy best-first.
+              The weight w (<code>heuristic_weight</code>) sets how much the
+              estimate counts. At 0.5 cells rank as in classic A* (g + h); at 0
+              h is ignored and the search behaves like BFS; at 1 g is ignored
+              and it becomes greedy best-first search. The repository uses 0.7.
             </p>
+            <span class="how-label">How it works</span>
+            <ol class="how">
+              <li>Score the start and put it in a priority queue.</li>
+              <li>Take the cell with the lowest f. If it is the goal, stop.</li>
+              <li>Score each free neighbour (one more move, its own h) and queue it.</li>
+            </ol>
             <dl>
-              <div><dt>Path</dt><dd>Short, not guaranteed shortest: h can overestimate when a diagonal move costs 1, and w = 0.7 weights it further.</dd></div>
-              <div><dt>Cost</dt><dd>Usually a fraction of the cells BFS expands.</dd></div>
+              <div><dt>Path</dt><dd>Short, not guaranteed shortest. That guarantee needs an h that never overestimates; here a diagonal move costs 1, so the straight line can overestimate, and w = 0.7 trusts it more.</dd></div>
+              <div><dt>Cost</dt><dd>A fraction of the cells BFS expands when the straight line is a fair guide. In a maze, dead ends that point at the goal lead it astray.</dd></div>
+              <div><dt>Best for</dt><dd>Large maps with a good estimate of the distance left. The usual choice in games and robot navigation.</dd></div>
             </dl>
             <div class="card-links">
               <a class="source-link" href="https://github.com/bilalkah/path-planning/blob/main/planning/grid_base/astar/astar.cpp">astar.cpp ↗</a>
-              <button class="btn" type="button" data-try="astar"><svg class="icon icon-fill" aria-hidden="true"><use href="#i-play"/></svg>Run A*</button>
+              <button class="btn" type="button" data-try="astar" data-map="maze.map"><svg class="icon icon-fill" aria-hidden="true"><use href="#i-play"/></svg>Run A* on the maze</button>
             </div>
           </div>
         </article>
@@ -426,18 +463,27 @@
             <span class="card-meta">tree · rapidly-exploring random tree</span>
             <h3>RRT</h3>
             <p>
-              Grows from the tree node nearest to each random sample. Samples
-              land mostly in large unexplored regions, so the tree reaches into
-              open space quickly. It stops as soon as a new node lands within
-              <code>goal_radius</code> of the goal.
+              Does not search cells at all. It grows a tree of straight branches
+              from the start: pick a random free point, find the closest node
+              already in the tree, and grow a short branch toward the point.
+              Random points fall mostly in the large unexplored regions, so the
+              tree is pulled outward quickly.
             </p>
+            <span class="how-label">How it works</span>
+            <ol class="how">
+              <li>Sample a random free cell.</li>
+              <li>Find the tree node nearest to it.</li>
+              <li>Step toward the sample by at most <code>max_branch_length</code>. Drop the step if it is shorter than <code>min_branch_length</code> or if its straight line crosses a wall.</li>
+              <li>Stop as soon as a new node lands within <code>goal_radius</code> of the goal.</li>
+            </ol>
             <dl>
-              <div><dt>Path</dt><dd>The first one found. Every edge points at a random sample, so it zigzags.</dd></div>
-              <div><dt>Cost</dt><dd>Stops early. Each iteration scans the whole tree for the nearest node.</dd></div>
+              <div><dt>Path</dt><dd>The first one found. Every branch points at a random sample, so it zigzags, and RRT never shortens it.</dd></div>
+              <div><dt>Cost</dt><dd>Depends on the space and on luck. Open maps are quick; narrow corridors starve it, and on the one-cell maze it finds nothing.</dd></div>
+              <div><dt>Best for</dt><dd>Large open spaces, and problems with many dimensions, such as robot arms, where a grid would be far too big.</dd></div>
             </dl>
             <div class="card-links">
               <a class="source-link" href="https://github.com/bilalkah/path-planning/blob/main/planning/tree_base/rrt/rrt.cpp">rrt.cpp ↗</a>
-              <button class="btn" type="button" data-try="rrt"><svg class="icon icon-fill" aria-hidden="true"><use href="#i-play"/></svg>Run RRT</button>
+              <button class="btn" type="button" data-try="rrt" data-map="maze_wide.map"><svg class="icon icon-fill" aria-hidden="true"><use href="#i-play"/></svg>Run RRT on maze_wide</button>
             </div>
           </div>
         </article>
@@ -473,21 +519,28 @@
             <span class="card-meta">tree · RRT with rewiring</span>
             <h3>RRT*</h3>
             <p>
-              Finds the tree nodes within <code>neighbor_radius</code> of the
-              sample and tries them in order of cost; the new node attaches to
-              the cheapest one it can reach. Then it rewires: a neighbour that
-              is cheaper to reach through the new node moves under it, and
-              <code>IterativelyCostUpdate</code> pushes the change down that
-              subtree. Cost is <code>f = g + h</code>: edges from the root plus
-              Euclidean length.
+              Grows like RRT but pays attention to cost. A new node attaches to
+              whichever nearby node gives it the cheapest route from the start,
+              not simply the nearest one. Then it rewires: neighbours that would
+              be cheaper to reach through the new node switch their parent to
+              it. The tree keeps straightening itself, so the path keeps
+              improving after the first one is found.
             </p>
+            <span class="how-label">How it works</span>
+            <ol class="how">
+              <li>Sample and step as RRT does.</li>
+              <li>Among the tree nodes within <code>neighbor_radius</code>, attach to the cheapest one a straight line can reach.</li>
+              <li>Rewire the neighbours that become cheaper through the new node.</li>
+              <li>Keep going for all <code>max_iteration</code> samples, holding on to the best path so far.</li>
+            </ol>
             <dl>
-              <div><dt>Path</dt><dd>Keeps getting shorter after the first one is found. The demo shows the first path the moment it appears and each improvement after it.</dd></div>
-              <div><dt>Cost</dt><dd>Uses every one of the <code>max_iteration</code> samples.</dd></div>
+              <div><dt>Path</dt><dd>Starts out like RRT's, then shortens as the tree is rewired. Cost here is the number of branches plus their length.</dd></div>
+              <div><dt>Cost</dt><dd>Uses every sample and searches a neighbourhood for each one: more work than RRT for a better path.</dd></div>
+              <div><dt>Best for</dt><dd>When path quality matters and there is time to spend. It can be stopped at any point with the best path so far.</dd></div>
             </dl>
             <div class="card-links">
               <a class="source-link" href="https://github.com/bilalkah/path-planning/blob/main/planning/tree_base/rrt_star/rrt_star.cpp">rrt_star.cpp ↗</a>
-              <button class="btn" type="button" data-try="rrt_star"><svg class="icon icon-fill" aria-hidden="true"><use href="#i-play"/></svg>Run RRT*</button>
+              <button class="btn" type="button" data-try="rrt_star" data-map="maze_wide.map"><svg class="icon icon-fill" aria-hidden="true"><use href="#i-play"/></svg>Run RRT* on maze_wide</button>
             </div>
           </div>
         </article>
@@ -500,133 +553,197 @@
             <thead>
               <tr>
                 <th scope="col">Planner</th>
-                <th scope="col">Searches</th>
+                <th scope="col">Explores</th>
                 <th scope="col">Next node</th>
-                <th scope="col">Stops when</th>
-                <th scope="col">Path</th>
+                <th scope="col">Always finds a path if one exists?</th>
+                <th scope="col">Path quality</th>
               </tr>
             </thead>
             <tbody>
-              <tr><td>A*</td><td>Grid cells, 4 or 8 neighbours</td><td>Lowest f = (1 − w)·g + w·h</td><td>The goal is the next node out</td><td>Short, not guaranteed shortest</td></tr>
-              <tr><td>BFS</td><td>Grid cells, 4 or 8 neighbours</td><td>Oldest in the queue</td><td>The goal is the next node out</td><td>Fewest moves</td></tr>
-              <tr><td>DFS</td><td>Grid cells, 4 or 8 neighbours</td><td>Newest on the stack</td><td>The goal is the next node out</td><td>Valid, usually very long</td></tr>
-              <tr><td>RRT</td><td>Random free samples</td><td>Nearest tree node, one step toward the sample</td><td>A node lands within <code>goal_radius</code></td><td>The first one found; jagged</td></tr>
-              <tr><td>RRT*</td><td>Random free samples</td><td>Cheapest neighbour in <code>neighbor_radius</code>, then rewire</td><td>All <code>max_iteration</code> samples are used</td><td>Improves the whole time it runs</td></tr>
+              <tr><td>BFS</td><td>Grid cells, 4 or 8 neighbours</td><td>Oldest in the queue</td><td>Yes</td><td>Fewest moves</td></tr>
+              <tr><td>DFS</td><td>Grid cells, 4 or 8 neighbours</td><td>Newest on the stack</td><td>Yes, on a finite map</td><td>Any path, often very long</td></tr>
+              <tr><td>A*</td><td>Grid cells, 4 or 8 neighbours</td><td>Lowest f = (1 − w)·g + w·h</td><td>Yes</td><td>Short; shortest only with an estimate that never overestimates</td></tr>
+              <tr><td>RRT</td><td>Random free samples</td><td>Nearest tree node, one step toward the sample</td><td>Only in probability: more samples, better odds</td><td>The first path found, jagged</td></tr>
+              <tr><td>RRT*</td><td>Random free samples</td><td>Cheapest node in reach, then rewire</td><td>Only in probability, like RRT</td><td>Improves the whole time it runs</td></tr>
             </tbody>
           </table>
         </div>
       </div>
     </section>
 
-    <!-- Inside the C++ ------------------------------------------------------- -->
-    <section class="wrap section" id="inside" aria-labelledby="inside-title">
+    <!-- Ideas ------------------------------------------------------------------ -->
+    <section class="wrap section" id="ideas" aria-labelledby="ideas-title">
       <div class="sheet-head">
         <span class="sheet-no">02</span>
-        <h2 id="inside-title">Planners don't draw. They log.</h2>
-        <p>Planning and drawing share one data structure and nothing else.</p>
+        <h2 id="ideas-title">The ideas behind them</h2>
+        <p>Six ideas that explain why the same map gives five planners such different results.</p>
       </div>
 
-      <div class="schematic" role="img" aria-label="Configuration files feed main.cpp, which builds a planner and calls FindPath. The planner writes a log that the SDL3 visualizer and this web page both read.">
-        <div class="node">
-          <small>config/*.yaml</small>
-          <strong>Configuration</strong>
-          <p><code>main.yaml</code> picks the map, planner, start and goal. <code>grid_base.yaml</code> and <code>tree_base.yaml</code> hold the parameters.</p>
-        </div>
-        <div class="node">
-          <small>main.cpp</small>
-          <strong>Planner factory</strong>
-          <p><code>GetPlanner()</code> builds one planner behind <code>IPlanningWithLogging</code> and calls <code>FindPath(start, goal, map)</code>.</p>
-        </div>
-        <div class="node node-log">
-          <small>utility/i_planning.h</small>
-          <strong>The log</strong>
-          <p>Every node in the order the planner logged it, plus the final node. A mutex guards it.</p>
-        </div>
-        <div class="node">
-          <small>readers</small>
-          <strong>Two consumers</strong>
-          <div class="reader"><b>tools/visualizer</b><span>SDL3 thread polls GetLog() every frame</span></div>
-          <div class="reader"><b>web/planner_bindings.cpp</b><span>this page replays it after FindPath</span></div>
-        </div>
+      <div class="ideas">
+        <article class="idea">
+          <svg viewBox="0 0 220 96" role="img" aria-label="A cell with its 4 side neighbours, and a cell with all 8 neighbours including diagonals">
+            <g stroke="rgba(160,205,255,0.35)" fill="none">
+              <path d="M34 14h60v60h-60zM34 34h60M34 54h60M54 14v60M74 14v60"/>
+              <path d="M126 14h60v60h-60zM126 34h60M126 54h60M146 14v60M166 14v60"/>
+            </g>
+            <g fill="rgba(110,220,255,0.55)">
+              <rect x="55" y="15" width="18" height="18"/><rect x="35" y="35" width="18" height="18"/><rect x="75" y="35" width="18" height="18"/><rect x="55" y="55" width="18" height="18"/>
+              <rect x="127" y="15" width="18" height="18"/><rect x="147" y="15" width="18" height="18"/><rect x="167" y="15" width="18" height="18"/>
+              <rect x="127" y="35" width="18" height="18"/><rect x="167" y="35" width="18" height="18"/>
+              <rect x="127" y="55" width="18" height="18"/><rect x="147" y="55" width="18" height="18"/><rect x="167" y="55" width="18" height="18"/>
+            </g>
+            <rect x="55" y="35" width="18" height="18" fill="#ff7a3d"/>
+            <rect x="147" y="35" width="18" height="18" fill="#ff7a3d"/>
+            <text x="64" y="90" text-anchor="middle">4 neighbours</text>
+            <text x="156" y="90" text-anchor="middle">8 neighbours</text>
+          </svg>
+          <div class="idea-body">
+            <h3>A grid is a graph</h3>
+            <p>
+              Each free cell is a node, joined to its 4 or 8 neighbours
+              (<code>search_space</code>). With 4, paths move like city blocks;
+              with 8 they can cut corners diagonally. Every move costs 1 here,
+              diagonals included, so a diagonal step is as cheap as a straight
+              one.
+            </p>
+          </div>
+        </article>
+
+        <article class="idea">
+          <svg viewBox="0 0 220 96" role="img" aria-label="Two paths from start to goal: a short optimal one and a long winding one that is still valid">
+            <path d="M22 74 L18 26 L62 12 L96 34 L132 10 L170 30 L198 22" fill="none" stroke="#6edcff" stroke-width="2" stroke-dasharray="4 3" stroke-linejoin="round"/>
+            <path d="M22 74 L80 60 L140 40 L198 22" fill="none" stroke="#ff7a3d" stroke-width="3" stroke-linecap="round"/>
+            <circle cx="22" cy="74" r="5" fill="#59f0a6" stroke="#041024" stroke-width="1.5"/>
+            <circle cx="198" cy="22" r="5" fill="#ffcc4d" stroke="#041024" stroke-width="1.5"/>
+            <text x="8" y="92" fill="#6edcff">complete: some path</text>
+            <text x="212" y="92" text-anchor="end" fill="#ff9563">optimal: the best one</text>
+          </svg>
+          <div class="idea-body">
+            <h3>Complete and optimal</h3>
+            <p>
+              Two promises a planner can make. Complete: if a path exists, it
+              finds one. Optimal: the path it finds is the best one. BFS keeps
+              both, counting moves. DFS is complete on a finite map but not
+              optimal. A* is optimal only when its estimate never overestimates.
+            </p>
+          </div>
+        </article>
+
+        <article class="idea">
+          <svg viewBox="0 0 220 96" role="img" aria-label="A* estimate h is a straight line to the goal through a wall; the real route has to go around it">
+            <defs>
+              <pattern id="hatch-h" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#061529"/><path d="M0 0 V6" stroke="rgba(160,205,255,0.35)" stroke-width="1.2"/></pattern>
+            </defs>
+            <rect x="112" y="14" width="14" height="60" fill="url(#hatch-h)" stroke="rgba(160,205,255,0.5)"/>
+            <path d="M20 76 L50 72 L78 62" fill="none" stroke="#6edcff" stroke-width="2.5" stroke-linecap="round"/>
+            <path d="M78 62 L196 24" stroke="#eef5ff" stroke-width="1.4" stroke-dasharray="4 3"/>
+            <path d="M78 62 L118 84 L162 76 L196 24" fill="none" stroke="#ff7a3d" stroke-width="1.6" stroke-dasharray="2 3"/>
+            <circle cx="20" cy="76" r="5" fill="#59f0a6" stroke="#041024" stroke-width="1.5"/>
+            <circle cx="78" cy="62" r="4" fill="#6edcff"/>
+            <circle cx="196" cy="24" r="5" fill="#ffcc4d" stroke="#041024" stroke-width="1.5"/>
+            <text x="46" y="88" fill="#6edcff">g</text>
+            <text x="146" y="30" fill="#eef5ff">h</text>
+            <text x="168" y="92" fill="#ff9563">real route</text>
+          </svg>
+          <div class="idea-body">
+            <h3>Heuristics guide the search</h3>
+            <p>
+              A heuristic estimates the distance still to go; A* uses the
+              straight line. Trusting it more (a larger weight) expands fewer
+              cells but can give a longer path. Walls are where the straight
+              line is most wrong, which is why a maze slows A* down.
+            </p>
+          </div>
+        </article>
+
+        <article class="idea">
+          <svg viewBox="0 0 220 96" role="img" aria-label="A grid search visits every cell; a sampling planner only places a few points and joins them">
+            <g fill="rgba(110,220,255,0.6)">
+              <circle cx="18" cy="20" r="2"/><circle cx="30" cy="20" r="2"/><circle cx="42" cy="20" r="2"/><circle cx="54" cy="20" r="2"/><circle cx="66" cy="20" r="2"/><circle cx="78" cy="20" r="2"/>
+              <circle cx="18" cy="32" r="2"/><circle cx="30" cy="32" r="2"/><circle cx="42" cy="32" r="2"/><circle cx="54" cy="32" r="2"/><circle cx="66" cy="32" r="2"/><circle cx="78" cy="32" r="2"/>
+              <circle cx="18" cy="44" r="2"/><circle cx="30" cy="44" r="2"/><circle cx="42" cy="44" r="2"/><circle cx="54" cy="44" r="2"/><circle cx="66" cy="44" r="2"/><circle cx="78" cy="44" r="2"/>
+              <circle cx="18" cy="56" r="2"/><circle cx="30" cy="56" r="2"/><circle cx="42" cy="56" r="2"/><circle cx="54" cy="56" r="2"/><circle cx="66" cy="56" r="2"/><circle cx="78" cy="56" r="2"/>
+              <circle cx="18" cy="68" r="2"/><circle cx="30" cy="68" r="2"/><circle cx="42" cy="68" r="2"/><circle cx="54" cy="68" r="2"/><circle cx="66" cy="68" r="2"/><circle cx="78" cy="68" r="2"/>
+            </g>
+            <path d="M124 66 L142 50 L162 58 L178 36 L200 42 M142 50 L136 26 M162 58 L182 72 M124 66 L134 80" fill="none" stroke="#6edcff" stroke-width="2" stroke-linecap="round"/>
+            <g fill="#6edcff">
+              <circle cx="142" cy="50" r="3"/><circle cx="162" cy="58" r="3"/><circle cx="178" cy="36" r="3"/><circle cx="200" cy="42" r="3"/><circle cx="136" cy="26" r="3"/><circle cx="182" cy="72" r="3"/><circle cx="134" cy="80" r="3"/>
+            </g>
+            <circle cx="124" cy="66" r="5" fill="#59f0a6" stroke="#041024" stroke-width="1.5"/>
+            <text x="48" y="90" text-anchor="middle">every cell</text>
+            <text x="162" y="94" text-anchor="middle">only the samples</text>
+          </svg>
+          <div class="idea-body">
+            <h3>Search the grid, or sample the space</h3>
+            <p>
+              Grid search grows with the number of cells: double the resolution
+              and there are four times as many. Sampling planners only place
+              points where they look, so their work depends on how hard the
+              space is, not on its resolution. That is why robot arms with six
+              or seven joints are planned with RRT-style methods.
+            </p>
+          </div>
+        </article>
+
+        <article class="idea">
+          <svg viewBox="0 0 220 96" role="img" aria-label="Two rooms joined by a narrow gap; the tree fills one room, and a step toward a sample in the other room hits the wall">
+            <defs>
+              <pattern id="hatch-n" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#061529"/><path d="M0 0 V6" stroke="rgba(160,205,255,0.35)" stroke-width="1.2"/></pattern>
+            </defs>
+            <rect x="12" y="10" width="196" height="70" fill="none" stroke="rgba(160,205,255,0.35)"/>
+            <rect x="100" y="10" width="20" height="33" fill="url(#hatch-n)" stroke="rgba(160,205,255,0.5)"/>
+            <rect x="100" y="49" width="20" height="31" fill="url(#hatch-n)" stroke="rgba(160,205,255,0.5)"/>
+            <path d="M30 62 L52 50 L74 58 L88 36 M52 50 L46 26 L70 20 M74 58 L90 70" fill="none" stroke="#6edcff" stroke-width="2" stroke-linecap="round"/>
+            <g fill="#6edcff"><circle cx="52" cy="50" r="3"/><circle cx="74" cy="58" r="3"/><circle cx="88" cy="36" r="3"/><circle cx="46" cy="26" r="3"/><circle cx="70" cy="20" r="3"/><circle cx="90" cy="70" r="3"/></g>
+            <path d="M88 36 L106 30" stroke="#ff8f8f" stroke-width="1.6" stroke-dasharray="3 3"/>
+            <path d="M101 25 L109 33 M109 25 L101 33" stroke="#ff8f8f" stroke-width="2"/>
+            <circle cx="160" cy="24" r="5" fill="none" stroke="#eef5ff" stroke-width="1.4"/>
+            <circle cx="30" cy="62" r="5" fill="#59f0a6" stroke="#041024" stroke-width="1.5"/>
+            <circle cx="186" cy="60" r="5" fill="#ffcc4d" stroke="#041024" stroke-width="1.5"/>
+            <text x="110" y="92" text-anchor="middle">a narrow gap</text>
+          </svg>
+          <div class="idea-body">
+            <h3>Narrow passages</h3>
+            <p>
+              A sampling planner only gets through a gap when a random sample
+              lands where a straight step can pass, and the narrower the gap,
+              the rarer that is. In one-cell corridors almost no step fits, so
+              RRT and RRT* stall; give the same kind of maze wider corridors and
+              they get through.
+            </p>
+            <div class="idea-links">
+              <button class="btn" type="button" data-try="rrt" data-map="maze.map"><svg class="icon icon-fill" aria-hidden="true"><use href="#i-play"/></svg>RRT on maze</button>
+              <button class="btn" type="button" data-try="rrt" data-map="maze_wide.map"><svg class="icon icon-fill" aria-hidden="true"><use href="#i-play"/></svg>RRT on maze_wide</button>
+            </div>
+          </div>
+        </article>
+
+        <article class="idea">
+          <svg viewBox="0 0 220 96" role="img" aria-label="Path cost over time: nothing at first, then a first path, then the cost falls in steps">
+            <path d="M24 10 V80 H206" fill="none" stroke="rgba(160,205,255,0.45)"/>
+            <path d="M24 70 H62" stroke="rgba(160,205,255,0.4)" stroke-dasharray="3 3"/>
+            <path d="M62 24 H84 V36 H104 V44 H132 V52 H162 V57 H204" fill="none" stroke="#ff7a3d" stroke-width="2.5"/>
+            <circle cx="62" cy="24" r="4" fill="#ff7a3d"/>
+            <text x="68" y="18" fill="#ff9563">first path</text>
+            <text x="30" y="64">no path yet</text>
+            <text x="28" y="8">cost</text>
+            <text x="206" y="92" text-anchor="end">samples →</text>
+          </svg>
+          <div class="idea-body">
+            <h3>Luck, and paths that get better</h3>
+            <p>
+              RRT and RRT* are complete only in probability: with more samples
+              the chance of finding a path that exists approaches certainty, but
+              any single run can fail. RRT* is also an anytime planner: it has a
+              usable path early, improves it while it runs, and is designed to
+              approach the shortest path as samples grow.
+            </p>
+            <div class="idea-links">
+              <button class="btn" type="button" data-try="rrt_star" data-map="maze_wide.map"><svg class="icon icon-fill" aria-hidden="true"><use href="#i-play"/></svg>Watch RRT* improve</button>
+            </div>
+          </div>
+        </article>
       </div>
-
-      <div class="decisions">
-        <article>
-          <span>01 / interface</span>
-          <h3>One interface, five planners</h3>
-          <p><code>IPlanning</code> declares <code>FindPath</code>. <code>ILogging</code> adds <code>GetLog</code> and <code>ClearLog</code>. <code>main.cpp</code> picks a planner by <code>planner_name</code> and never needs to know which one it holds.</p>
-        </article>
-        <article>
-          <span>02 / log</span>
-          <h3>The log is the visualization</h3>
-          <p>Planners append to <code>log_</code> under a mutex while they search. The visualizer runs on its own thread and redraws whatever the log holds, so the search is visible while it runs and the planner knows nothing about drawing.</p>
-        </article>
-        <article>
-          <span>03 / paths</span>
-          <h3>Paths are parent chains</h3>
-          <p>Each <code>NodeParent</code> holds its cell, a <code>shared_ptr</code> to its parent and a <code>Cost {g, h, f}</code>. <code>ReconstructPath</code> walks from the final node back to the root. RRT* rewires by moving these pointers.</p>
-        </article>
-        <article>
-          <span>04 / geometry</span>
-          <h3>Collisions are ray casts</h3>
-          <p><code>Get2DRayBetweenNodes</code> walks the unit vector between two nodes and lists the cells it crosses. One occupied cell rejects the edge. A unit test pins the ray from (2, 7) to (5, 9) at five cells.</p>
-        </article>
-      </div>
-
-      <div class="wasm">
-        <div>
-          <span class="family-tag">web/</span>
-          <h3>From the C++ to this page.</h3>
-          <p>
-            The demo does not reimplement the planners. It compiles them.
-            Emscripten builds the <code>planning/</code> libraries unchanged,
-            and a small binding file gives the page two functions.
-          </p>
-          <ol class="steps">
-            <li><span>The <code>EMSCRIPTEN</code> branch of <code>CMakeLists.txt</code> builds the five planner libraries and the bindings. No SDL, no yaml-cpp, no tests.</span></li>
-            <li><span><code>loadMap</code> writes the <code>.map</code> file into Emscripten's in-memory filesystem, so <code>planning::Map</code> parses it as the native build does.</span></li>
-            <li><span><code>plan</code> builds the planner with the constructors <code>main.cpp</code> uses, calls <code>FindPath</code>, and returns the path with <code>GetLog()</code>. Lines written to <code>std::cout</code> come along with it.</span></li>
-            <li><span>For RRT*, the bindings also record the best path each time it changes. They read the planner's <code>Path found.</code> lines and look at it between iterations, when <code>std::random_device</code> asks for its next sample through <code>getentropy</code>. The planner itself is unchanged.</span></li>
-            <li><span>A Web Worker hosts the module, so a long search never freezes the page. The page draws the log on a canvas.</span></li>
-          </ol>
-        </div>
-        <figure class="code frame">
-          <figcaption><span>web/planner_bindings.cpp, trimmed</span><span>Embind</span></figcaption>
-<pre><code>val Plan(<span class="kw">const</span> std::string &amp;map_path,
-         <span class="kw">const</span> std::string &amp;planner_name,
-         <span class="kw">int</span> start_x, <span class="kw">int</span> start_y,
-         <span class="kw">int</span> goal_x, <span class="kw">int</span> goal_y, <span class="kw">const</span> val &amp;params)
-{
-  <span class="cm">// Same constructors as main.cpp</span>
-  PlannerType planner = MakePlanner(planner_name, params);
-
-  <span class="kw">const</span> planning::Path path =
-      planner-&gt;<span class="hl">FindPath</span>(start_node, goal_node, map);
-  planning::Log log = planner-&gt;<span class="hl">GetLog</span>();
-
-  <span class="cm">// Flatten log.first to (x, y, parent index)</span>
-  <span class="cm">// and return it with the path.</span>
-}
-
-EMSCRIPTEN_BINDINGS(path_planning)
-{
-  emscripten::function(<span class="hl">"loadMap"</span>, &amp;LoadMap);
-  emscripten::function(<span class="hl">"plan"</span>, &amp;Plan);
-}</code></pre>
-        </figure>
-      </div>
-
-      <ul class="stack" aria-label="Technologies used by the project">
-        <li>C++17</li>
-        <li>CMake</li>
-        <li>yaml-cpp</li>
-        <li>SDL3</li>
-        <li>GoogleTest</li>
-        <li>Docker</li>
-        <li>GitHub Actions</li>
-        <li>Emscripten</li>
-        <li>WebAssembly</li>
-      </ul>
     </section>
 
     <!-- Run natively ---------------------------------------------------------- -->

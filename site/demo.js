@@ -1385,9 +1385,11 @@
   // ---------------------------------------------------------------------------
   // Wiring
 
-  function tryPlanner(planner) {
+  // "Run X on <map>" buttons in the explanations.
+  async function tryPlanner(planner, mapFile) {
     selectPlanner(planner);
     document.getElementById("demo").scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+    if (mapFile && mapFile !== state.mapFile && mapDef(mapFile)) await selectMap(mapFile);
     runPlanner();
   }
 
@@ -1451,7 +1453,7 @@
       setTimeout(() => (els.copyYaml.textContent = "Copy"), 1600);
     });
     document.querySelectorAll("[data-try]").forEach((button) => {
-      button.addEventListener("click", () => tryPlanner(button.dataset.try));
+      button.addEventListener("click", () => tryPlanner(button.dataset.try, button.dataset.map));
     });
     document.addEventListener("keydown", (event) => {
       if (event.key === "Escape") {
