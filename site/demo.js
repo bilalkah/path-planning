@@ -1,0 +1,1273 @@
+/*
+ * Page logic for the path-planning demo.
+ *
+ * The planners are the C++ code in planning/, compiled to WebAssembly and
+ * run in planner-worker.js. This file draws the maps, takes input, and
+ * replays the log each planner returns.
+ *
+ * Coordinates follow the C++ Node: x is the row and y is the column.
+ */
+(function () {
+  "use strict";
+
+  // Default points: config/main.yaml for AR0205SR. For the other maps, two
+  // far-apart free cells in the map's largest connected region.
+  const MAPS = [
+    { file: "AR0205SR.map", dir: "bg2", start: { x: 215, y: 25 }, goal: { x: 330, y: 475 } },
+    { file: "AR0072SR.map", dir: "bg2", start: { x: 60, y: 196 }, goal: { x: 102, y: 407 } },
+    { file: "brc100d.map", dir: "dao", start: { x: 183, y: 224 }, goal: { x: 201, y: 53 } },
+    { file: "lak505d.map", dir: "dao", start: { x: 149, y: 170 }, goal: { x: 187, y: 124 } },
+    { file: "dragonfire.map", dir: "wow", start: { x: 66, y: 84 }, goal: { x: 449, y: 413 } },
+    { file: "plainsofsnow.map", dir: "wow", start: { x: 81, y: 417 }, goal: { x: 438, y: 70 } },
+  ];
+  const FIGURE_MAP = "lak505d.map";
+
+  const PLANNERS = {
+    astar: { label: "A*", family: "grid" },
+    bfs: { label: "BFS", family: "grid" },
+    dfs: { label: "DFS", family: "grid" },
+    rrt: { label: "RRT", family: "tree" },
+    rrt_star: { label: "RRT*", family: "tree" },
+  };
+  const ORDER = ["astar", "bfs", "dfs", "rrt", "rrt_star"];
+
+  // config/grid_base.yaml and config/tree_base.yaml
+  const DEFAULT_PARAMS = {
+    grid: { heuristic_weight: 0.7, search_space: 8 },
+    tree: {
+      max_iteration: 10000,
+      max_branch_length: 10,
+      min_branch_length: 5,
+      neighbor_radius: 15,
+      goal_radius: 5,
+    },
+  };
+  const TREE_KEYS = Object.keys(DEFAULT_PARAMS.tree);
+
+  // Logged nodes revealed per animation frame, from slowest to fastest.
+  const SPEED = {
+    grid: [25, 100, 400, 1500, 6000],
+    tree: [3, 10, 30, 90, 300],
+    names: ["slowest", "slow", "normal", "fast", "fastest"],
+  };
+
+  const FREE = 0; // planning::NodeState::kFree
+
+  function rgba(r, g, b) {
+    return ((255 << 24) | (b << 16) | (g << 8) | r) >>> 0; // ImageData, little-endian
+  }
+
+  const COLOR = {
+    free: rgba(255, 253, 247),
+    occupied: rgba(21, 24, 21),
+    visited: rgba(201, 215, 246),
+    frontier: rgba(44, 91, 214),
+    orderEarly: [227, 235, 252],
+    orderLate: [29, 63, 153],
+    tree: "rgba(44, 91, 214, 0.92)",
+    treeNew: "#1d3f99",
+    pending: "rgba(44, 91, 214, 0.6)",
+    path: "#d6452b",
+    casing: "rgba(255, 253, 247, 0.95)",
+    start: "#1fa463",
+    goal: "#f2b33d",
+    goalRing: "rgba(176, 125, 18, 0.95)",
+    ink: "#151815",
+  };
+
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // ---------------------------------------------------------------------------
+  // Elements
+
+  const $ = (id) => document.getElementById(id);
+  const canvas = $("map-canvas");
+  const ctx = canvas.getContext("2d");
+  const els = {
+    overlay: $("overlay"),
+    overlayText: $("overlay-text"),
+    status: $("status"),
+    statusText: $("status-text"),
+    mapTitle: $("map-title"),
+    mapSize: $("map-size"),
+    cursor: $("cursor"),
+    startX: $("start-x"),
+    startY: $("start-y"),
+    goalX: $("goal-x"),
+    goalY: $("goal-y"),
+    pointsNote: $("points-note"),
+    mapChoices: $("map-choices"),
+    run: $("run"),
+    pause: $("pause"),
+    skip: $("skip"),
+    compare: $("compare"),
+    speed: $("speed"),
+    speedOut: $("speed-out"),
+    weight: $("heuristic_weight"),
+    weightOut: $("weight-out"),
+    paramWeight: $("param-weight"),
+    paramRadius: $("param-radius"),
+    paramsGrid: $("params-grid"),
+    paramsTree: $("params-tree"),
+    paramsLegend: $("params-legend"),
+    resetParams: $("reset-params"),
+    yaml: $("yaml"),
+    copyYaml: $("copy-yaml"),
+    resultPlanner: $("result-planner"),
+    statResult: $("stat-result"),
+    statLoggedLabel: $("stat-logged-label"),
+    statLogged: $("stat-logged"),
+    statTime: $("stat-time"),
+    statWaypoints: $("stat-waypoints"),
+    statLength: $("stat-length"),
+    statReplay: $("stat-replay"),
+    stdout: $("stdout"),
+    costChart: $("cost-chart"),
+    costSvg: $("cost-svg"),
+    costRange: $("cost-range"),
+    compareBody: $("compare-body"),
+  };
+
+  // ---------------------------------------------------------------------------
+  // State
+
+  const state = {
+    ready: false,
+    planner: "astar",
+    mapFile: MAPS[0].file,
+    map: null, // { height, width, cells, base }
+    start: { ...MAPS[0].start },
+    goal: { ...MAPS[0].goal },
+    params: structuredClone(DEFAULT_PARAMS),
+    busy: false,
+    token: 0, // bumped whenever the map or points change
+    replay: null,
+    compare: {},
+  };
+
+  const view = {
+    k: 1, // canvas pixels per cell
+    s: 1, // canvas pixels per CSS pixel
+    overlay: null, // W x H visited cells for grid replays
+    overlayCtx: null,
+    overlayImg: null,
+    overlayPx: null,
+    treeLayer: document.createElement("canvas"),
+  };
+
+  // ---------------------------------------------------------------------------
+  // Worker client
+
+  function createClient() {
+    const worker = new Worker("planner-worker.js");
+    const pending = new Map();
+    let next = 1;
+    let settleReady;
+    const ready = new Promise((resolve, reject) => {
+      settleReady = { resolve, reject };
+    });
+    worker.onmessage = (event) => {
+      const msg = event.data;
+      if (msg.id === 0) {
+        if (msg.ready) settleReady.resolve();
+        else settleReady.reject(new Error(msg.error));
+        return;
+      }
+      const call = pending.get(msg.id);
+      if (!call) return;
+      pending.delete(msg.id);
+      if (msg.error) call.reject(new Error(msg.error));
+      else call.resolve(msg.result);
+    };
+    worker.onerror = (event) => {
+      settleReady.reject(new Error(event.message || "The planner worker failed to start."));
+    };
+    return {
+      ready,
+      call(msg) {
+        return ready.then(
+          () =>
+            new Promise((resolve, reject) => {
+              const id = next++;
+              pending.set(id, { resolve, reject });
+              worker.postMessage({ ...msg, id });
+            })
+        );
+      },
+    };
+  }
+
+  let client = null;
+  const mapCache = new Map();
+
+  function loadMap(file) {
+    if (!mapCache.has(file)) {
+      const loading = client.call({ type: "loadMap", file }).then((map) => {
+        map.base = baseCanvas(map);
+        return map;
+      });
+      loading.catch(() => mapCache.delete(file));
+      mapCache.set(file, loading);
+    }
+    return mapCache.get(file);
+  }
+
+  function baseCanvas(map) {
+    const c = document.createElement("canvas");
+    c.width = map.width;
+    c.height = map.height;
+    const cctx = c.getContext("2d");
+    const img = cctx.createImageData(map.width, map.height);
+    const px = new Uint32Array(img.data.buffer);
+    for (let i = 0; i < map.cells.length; i++) {
+      px[i] = map.cells[i] === FREE ? COLOR.free : COLOR.occupied;
+    }
+    cctx.putImageData(img, 0, 0);
+    return c;
+  }
+
+  function plan(planner) {
+    const params = paramsFor(planner);
+    const request = {
+      type: "plan",
+      file: state.mapFile,
+      planner,
+      start: { ...state.start },
+      goal: { ...state.goal },
+      params,
+    };
+    return client.call(request).then((result) =>
+      Object.assign(result, { planner, mapFile: request.file, params })
+    );
+  }
+
+  function paramsFor(planner) {
+    return { ...state.params[PLANNERS[planner].family] };
+  }
+
+  // ---------------------------------------------------------------------------
+  // Map helpers
+
+  function mapDef(file) {
+    return MAPS.find((m) => m.file === file);
+  }
+
+  function isFree(map, x, y) {
+    return x >= 0 && y >= 0 && x < map.height && y < map.width && map.cells[x * map.width + y] === FREE;
+  }
+
+  // Nearest free cell, searching square rings outward.
+  function nearestFree(map, x, y, maxRing = 30) {
+    x = Math.min(map.height - 1, Math.max(0, x));
+    y = Math.min(map.width - 1, Math.max(0, y));
+    if (isFree(map, x, y)) return { x, y };
+    for (let r = 1; r <= maxRing; r++) {
+      let best = null;
+      let bestD = Infinity;
+      for (let dx = -r; dx <= r; dx++) {
+        for (let dy = -r; dy <= r; dy++) {
+          if (Math.max(Math.abs(dx), Math.abs(dy)) !== r) continue;
+          const d = dx * dx + dy * dy;
+          if (d < bestD && isFree(map, x + dx, y + dy)) {
+            bestD = d;
+            best = { x: x + dx, y: y + dy };
+          }
+        }
+      }
+      if (best) return best;
+    }
+    return null;
+  }
+
+  function pathLength(path) {
+    let length = 0;
+    for (let i = 2; i < path.length; i += 2) {
+      length += Math.hypot(path[i] - path[i - 2], path[i + 1] - path[i - 1]);
+    }
+    return length;
+  }
+
+  const fmtInt = (n) => n.toLocaleString("en-US");
+  const fmtMs = (ms) => (ms < 10 ? ms.toFixed(2) : ms < 100 ? ms.toFixed(1) : Math.round(ms).toString());
+
+  // ---------------------------------------------------------------------------
+  // Drawing
+
+  function setupLayers(map) {
+    view.overlay = document.createElement("canvas");
+    view.overlay.width = map.width;
+    view.overlay.height = map.height;
+    view.overlayCtx = view.overlay.getContext("2d");
+    view.overlayImg = view.overlayCtx.createImageData(map.width, map.height);
+    view.overlayPx = new Uint32Array(view.overlayImg.data.buffer);
+  }
+
+  function clearOverlay() {
+    if (!view.overlayPx) return;
+    view.overlayPx.fill(0);
+    view.overlayCtx.putImageData(view.overlayImg, 0, 0);
+  }
+
+  function sizeCanvas() {
+    const map = state.map;
+    if (!map) return;
+    canvas.style.aspectRatio = `${map.width} / ${map.height}`;
+    canvas.style.setProperty("--ar", String(map.width / map.height));
+    const cssWidth = canvas.clientWidth || 600;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const k = Math.max(1, Math.min(8, Math.ceil((cssWidth * dpr) / map.width)));
+    if (canvas.width !== map.width * k || canvas.height !== map.height * k) {
+      canvas.width = map.width * k;
+      canvas.height = map.height * k;
+      view.k = k;
+      rebuildTreeLayer();
+    }
+    view.s = canvas.width / cssWidth;
+    draw();
+  }
+
+  function cellCenter(x, y) {
+    return [(y + 0.5) * view.k, (x + 0.5) * view.k];
+  }
+
+  function draw() {
+    const map = state.map;
+    if (!map) return;
+    const r = state.replay;
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(map.base, 0, 0, canvas.width, canvas.height);
+
+    if (r && r.kind === "grid") {
+      ctx.drawImage(view.overlay, 0, 0, canvas.width, canvas.height);
+    } else if (r && r.kind === "tree") {
+      ctx.drawImage(view.treeLayer, 0, 0);
+      drawTreeExtras(r);
+    }
+
+    const family = r ? r.kind : PLANNERS[state.planner].family;
+    if (family === "tree") drawGoalRadius(r ? r.result.params.goal_radius : state.params.tree.goal_radius);
+    if (r && r.pathShown > 1) drawPath(r.result.path, r.pathShown);
+
+    drawMarker(state.start, COLOR.start);
+    drawMarker(state.goal, COLOR.goal);
+  }
+
+  function drawPath(path, points) {
+    ctx.save();
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    for (let i = 0; i < points; i++) {
+      const [cx, cy] = cellCenter(path[2 * i], path[2 * i + 1]);
+      if (i === 0) ctx.moveTo(cx, cy);
+      else ctx.lineTo(cx, cy);
+    }
+    const width = Math.max(2.2 * view.s, 0.7 * view.k);
+    ctx.strokeStyle = COLOR.casing;
+    ctx.lineWidth = width + 2.5 * view.s;
+    ctx.stroke();
+    ctx.strokeStyle = COLOR.path;
+    ctx.lineWidth = width;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawGoalRadius(radius) {
+    const [cx, cy] = cellCenter(state.goal.x, state.goal.y);
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, radius * view.k, 0, Math.PI * 2);
+    ctx.setLineDash([3 * view.s, 3 * view.s]);
+    ctx.lineWidth = 1.3 * view.s;
+    ctx.strokeStyle = COLOR.goalRing;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawMarker(point, color) {
+    const [cx, cy] = cellCenter(point.x, point.y);
+    const r = 6.5 * view.s;
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, r + 2 * view.s, 0, Math.PI * 2);
+    ctx.fillStyle = COLOR.casing;
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.lineWidth = 2 * view.s;
+    ctx.strokeStyle = COLOR.ink;
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Replay of a planner log
+
+  function startReplay(result) {
+    stopReplay();
+    const kind = PLANNERS[result.planner].family;
+    const r = {
+      kind,
+      result,
+      total: result.log.length / 3,
+      i: 0,
+      faded: 0,
+      pathTotal: result.path.length / 2,
+      pathShown: 0,
+      done: false,
+      paused: false,
+      raf: 0,
+    };
+    state.replay = r;
+    if (kind === "grid") clearOverlay();
+    else prepareTree(r);
+    els.pause.disabled = false;
+    els.skip.disabled = false;
+    els.pause.textContent = "Pause";
+    setStatus("replaying", "replaying the log");
+    if (reduceMotion) {
+      skipReplay();
+    } else {
+      r.raf = requestAnimationFrame(tick);
+    }
+  }
+
+  function stopReplay() {
+    const r = state.replay;
+    if (r && r.raf) cancelAnimationFrame(r.raf);
+    state.replay = null;
+    els.pause.disabled = true;
+    els.skip.disabled = true;
+    els.pause.textContent = "Pause";
+    clearOverlay();
+    clearTreeLayer();
+  }
+
+  function speedLevel() {
+    return Number(els.speed.value) - 1;
+  }
+
+  function tick() {
+    const r = state.replay;
+    if (!r || r.paused || r.done) return;
+    const level = speedLevel();
+    if (r.i < r.total) {
+      advance(r, SPEED[r.kind][level]);
+    } else if (r.pathShown < r.pathTotal) {
+      const step = level === 4 ? r.pathTotal : Math.max(1, Math.ceil(r.pathTotal / 36));
+      r.pathShown = Math.min(r.pathTotal, r.pathShown + step);
+    }
+    if (r.i >= r.total && r.pathShown >= r.pathTotal) {
+      finishReplay(r);
+    } else {
+      r.raf = requestAnimationFrame(tick);
+    }
+    updateReplayStat(r);
+    draw();
+  }
+
+  function advance(r, rate) {
+    if (r.kind === "grid") advanceGrid(r, rate);
+    else advanceTree(r, rate);
+  }
+
+  function skipReplay() {
+    const r = state.replay;
+    if (!r) return;
+    if (r.raf) cancelAnimationFrame(r.raf);
+    advance(r, Infinity);
+    r.pathShown = r.pathTotal;
+    finishReplay(r);
+    updateReplayStat(r);
+    draw();
+  }
+
+  function finishReplay(r) {
+    r.done = true;
+    r.raf = 0;
+    els.pause.disabled = true;
+    els.skip.disabled = true;
+    if (r.result.found) setStatus("found", "path found");
+    else setStatus("nopath", "no path");
+  }
+
+  function togglePause() {
+    const r = state.replay;
+    if (!r || r.done) return;
+    r.paused = !r.paused;
+    els.pause.textContent = r.paused ? "Resume" : "Pause";
+    if (r.paused) {
+      setStatus("paused", "paused");
+    } else {
+      setStatus("replaying", "replaying the log");
+      r.raf = requestAnimationFrame(tick);
+    }
+  }
+
+  // Grid planners log each cell when they expand it.
+  function advanceGrid(r, rate) {
+    const log = r.result.log;
+    const px = view.overlayPx;
+    const W = state.map.width;
+    const end = Math.min(r.total, r.i + rate);
+    for (let j = r.i; j < end; j++) {
+      px[log[3 * j] * W + log[3 * j + 1]] = COLOR.frontier;
+    }
+    r.i = end;
+    // Cells expanded in the last few frames stay dark: the search front.
+    const fadeTo = r.i >= r.total ? r.total : Math.max(0, r.i - Math.min(rate, 4000) * 6);
+    for (let j = r.faded; j < fadeTo; j++) {
+      px[log[3 * j] * W + log[3 * j + 1]] = COLOR.visited;
+    }
+    r.faded = Math.max(r.faded, fadeTo);
+    view.overlayCtx.putImageData(view.overlayImg, 0, 0);
+  }
+
+  // Tree planners log each node when it joins the tree. An edge is drawn
+  // once both of its ends are in view. RRT* rewires, and its log holds the
+  // final parents, so some parents appear after their children.
+  function prepareTree(r) {
+    const log = r.result.log;
+    const edges = [];
+    for (let j = 0; j < r.total; j++) {
+      const p = log[3 * j + 2];
+      if (p >= 0) edges.push(j);
+    }
+    const revealAt = (j) => Math.max(j, log[3 * j + 2]);
+    edges.sort((a, b) => revealAt(a) - revealAt(b));
+    r.edges = Int32Array.from(edges);
+    r.edgeAt = Int32Array.from(edges, revealAt);
+    r.drawn = 0;
+    rebuildTreeLayer();
+  }
+
+  function clearTreeLayer() {
+    const t = view.treeLayer;
+    t.getContext("2d").clearRect(0, 0, t.width, t.height);
+  }
+
+  function rebuildTreeLayer() {
+    const t = view.treeLayer;
+    if (t.width !== canvas.width || t.height !== canvas.height) {
+      t.width = canvas.width;
+      t.height = canvas.height;
+    } else {
+      clearTreeLayer();
+    }
+    const r = state.replay;
+    if (r && r.kind === "tree") drawEdges(r, 0, r.drawn);
+  }
+
+  function drawEdges(r, from, to) {
+    if (to <= from) return;
+    const tctx = view.treeLayer.getContext("2d");
+    const log = r.result.log;
+    tctx.save();
+    tctx.strokeStyle = COLOR.tree;
+    tctx.lineWidth = Math.max(1, 0.95 * view.s);
+    tctx.lineCap = "round";
+    tctx.beginPath();
+    for (let e = from; e < to; e++) {
+      const j = r.edges[e];
+      const p = log[3 * j + 2];
+      const [ax, ay] = cellCenter(log[3 * p], log[3 * p + 1]);
+      const [bx, by] = cellCenter(log[3 * j], log[3 * j + 1]);
+      tctx.moveTo(ax, ay);
+      tctx.lineTo(bx, by);
+    }
+    tctx.stroke();
+    tctx.restore();
+  }
+
+  function advanceTree(r, rate) {
+    r.i = Math.min(r.total, r.i + rate);
+    const before = r.drawn;
+    while (r.drawn < r.edges.length && r.edgeAt[r.drawn] < r.i) r.drawn++;
+    drawEdges(r, before, r.drawn);
+  }
+
+  function drawTreeExtras(r) {
+    const log = r.result.log;
+    const dot = Math.max(1.4 * view.s, 0.45 * view.k);
+    // Nodes whose final parent has not appeared yet (rewired by RRT*).
+    ctx.save();
+    ctx.fillStyle = COLOR.pending;
+    ctx.beginPath();
+    for (let j = 1; j < r.i; j++) {
+      const p = log[3 * j + 2];
+      if (p >= r.i || p === -2) {
+        const [cx, cy] = cellCenter(log[3 * j], log[3 * j + 1]);
+        ctx.moveTo(cx + dot, cy);
+        ctx.arc(cx, cy, dot, 0, Math.PI * 2);
+      }
+    }
+    ctx.fill();
+    // The newest nodes
+    if (!r.done) {
+      ctx.fillStyle = COLOR.treeNew;
+      ctx.beginPath();
+      for (let j = Math.max(0, r.i - 3); j < r.i; j++) {
+        const [cx, cy] = cellCenter(log[3 * j], log[3 * j + 1]);
+        ctx.moveTo(cx + dot * 1.8, cy);
+        ctx.arc(cx, cy, dot * 1.8, 0, Math.PI * 2);
+      }
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Status and results
+
+  function setStatus(kind, text) {
+    els.status.dataset.state = kind;
+    els.statusText.textContent = text;
+  }
+
+  function setBusy(busy) {
+    state.busy = busy;
+    els.run.disabled = busy || !state.ready || !state.map;
+    els.compare.disabled = busy || !state.ready || !state.map;
+    els.run.textContent = busy ? "Planning…" : "Run planner";
+  }
+
+  function resetResult() {
+    els.resultPlanner.textContent = "not run yet";
+    els.statResult.textContent = "—";
+    els.statLoggedLabel.textContent = "Logged nodes";
+    for (const el of [els.statLogged, els.statTime, els.statWaypoints, els.statLength, els.statReplay]) {
+      el.textContent = "—";
+    }
+    els.stdout.innerHTML = '<span class="quiet">Run a planner to see what the C++ code prints.</span>';
+    els.costChart.hidden = true;
+  }
+
+  function showResult(result) {
+    const p = PLANNERS[result.planner];
+    const total = result.log.length / 3;
+    const waypoints = result.path.length / 2;
+    els.resultPlanner.textContent = `${p.label} · ${result.mapFile}`;
+    els.statResult.innerHTML = result.found ? "Path found" : '<span class="result-none">No path</span>';
+    els.statLoggedLabel.textContent = p.family === "grid" ? "Expanded cells" : "Tree nodes";
+    els.statLogged.textContent = fmtInt(total);
+    els.statTime.innerHTML = `${fmtMs(result.timeMs)} <small>ms</small>`;
+    els.statWaypoints.textContent = result.found ? fmtInt(waypoints) : "—";
+    els.statLength.innerHTML = result.found ? `${pathLength(result.path).toFixed(1)} <small>cells</small>` : "—";
+    els.statReplay.textContent = `0 / ${fmtInt(total)}`;
+
+    const lines = result.stdout || [];
+    if (lines.length) {
+      els.stdout.textContent = lines.join("\n");
+    } else {
+      els.stdout.innerHTML = '<span class="quiet">(nothing printed)</span>';
+    }
+    drawCostChart(result);
+  }
+
+  function updateReplayStat(r) {
+    els.statReplay.textContent = `${fmtInt(r.i)} / ${fmtInt(r.total)}`;
+  }
+
+  // RRTStar::FindPath prints "Goal cost: <f>\tTime: <ms> ms" whenever
+  // rewiring improves the path.
+  function drawCostChart(result) {
+    const points = [];
+    for (const line of result.stdout || []) {
+      const m = /Goal cost: ([\d.]+)\s+Time: (\d+) ms/.exec(line);
+      if (m) points.push([Number(m[2]), Number(m[1])]);
+    }
+    if (points.length < 2) {
+      els.costChart.hidden = true;
+      return;
+    }
+    const W = 300;
+    const H = 92;
+    const pad = 8;
+    const tMax = Math.max(points[points.length - 1][0], result.timeMs, 1);
+    const costs = points.map((p) => p[1]);
+    const cMin = Math.min(...costs);
+    const cMax = Math.max(...costs);
+    const sx = (t) => pad + (t / tMax) * (W - 2 * pad);
+    const sy = (c) => (cMax === cMin ? H / 2 : pad + ((cMax - c) / (cMax - cMin)) * (H - 2 * pad));
+    let d = `M${sx(points[0][0]).toFixed(1)} ${sy(points[0][1]).toFixed(1)}`;
+    for (let i = 1; i < points.length; i++) {
+      d += ` H${sx(points[i][0]).toFixed(1)} V${sy(points[i][1]).toFixed(1)}`;
+    }
+    d += ` H${sx(tMax).toFixed(1)}`;
+    const area = `${d} V${H} H${sx(points[0][0]).toFixed(1)} Z`;
+    els.costSvg.innerHTML =
+      `<path d="${area}" fill="rgba(214, 69, 43, 0.1)"/>` +
+      `<path d="${d}" fill="none" stroke="#d6452b" stroke-width="2" vector-effect="non-scaling-stroke"/>`;
+    els.costRange.textContent = `${cMax.toFixed(1)} → ${cMin.toFixed(1)} · ${points.length} improvements in ${Math.round(tMax)} ms`;
+    els.costChart.hidden = false;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Run and compare
+
+  async function runPlanner() {
+    if (state.busy || !state.ready || !state.map) return;
+    const planner = state.planner;
+    const token = state.token;
+    stopReplay();
+    draw();
+    setBusy(true);
+    setStatus("planning", `running ${PLANNERS[planner].label} in C++`);
+    try {
+      const result = await plan(planner);
+      if (token !== state.token) return;
+      showResult(result);
+      startReplay(result);
+    } catch (err) {
+      setStatus("error", err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function compareAll() {
+    if (state.busy || !state.ready || !state.map) return;
+    const token = state.token;
+    stopReplay();
+    draw();
+    setBusy(true);
+    state.compare = {};
+    els.compareBody.innerHTML = ORDER.map(
+      (planner) => `<tr data-planner="${planner}"><td><strong>${PLANNERS[planner].label}</strong></td><td colspan="6" class="quiet-cell">waiting…</td></tr>`
+    ).join("");
+    try {
+      for (const planner of ORDER) {
+        setStatus("planning", `comparing: ${PLANNERS[planner].label}`);
+        const result = await plan(planner);
+        if (token !== state.token) return;
+        state.compare[planner] = result;
+        renderCompareRow(planner);
+      }
+      markBest();
+      setStatus("ready", "compared · pick a row to replay");
+    } catch (err) {
+      setStatus("error", err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function renderCompareRow(planner) {
+    const r = state.compare[planner];
+    const row = els.compareBody.querySelector(`tr[data-planner="${planner}"]`);
+    if (!row || !r) return;
+    const found = r.found;
+    row.innerHTML =
+      `<td><strong>${PLANNERS[planner].label}</strong></td>` +
+      `<td>${found ? "Path found" : '<span class="result-none">No path</span>'}</td>` +
+      `<td class="num-cell" data-col="length">${found ? pathLength(r.path).toFixed(1) : "—"}</td>` +
+      `<td class="num-cell">${found ? fmtInt(r.path.length / 2) : "—"}</td>` +
+      `<td class="num-cell" data-col="logged">${fmtInt(r.log.length / 3)}</td>` +
+      `<td class="num-cell" data-col="time">${fmtMs(r.timeMs)} ms</td>` +
+      `<td><button class="text-button" type="button" data-replay="${planner}">Replay</button></td>`;
+  }
+
+  function markBest() {
+    const entries = ORDER.map((p) => [p, state.compare[p]]).filter(([, r]) => r);
+    const best = (col, value, label, filter = () => true) => {
+      const candidates = entries.filter(([, r]) => filter(r));
+      if (!candidates.length) return;
+      const [planner] = candidates.reduce((a, b) => (value(b[1]) < value(a[1]) ? b : a));
+      const cell = els.compareBody.querySelector(`tr[data-planner="${planner}"] td[data-col="${col}"]`);
+      if (cell) cell.insertAdjacentHTML("afterbegin", `<span class="tag tag-best">${label}</span> `);
+    };
+    best("length", (r) => pathLength(r.path), "shortest", (r) => r.found);
+    best("logged", (r) => r.log.length, "fewest");
+    best("time", (r) => r.timeMs, "fastest");
+  }
+
+  function replayFromCompare(planner) {
+    const result = state.compare[planner];
+    if (!result || state.busy) return;
+    selectPlanner(planner);
+    showResult(result);
+    startReplay(result);
+    document.querySelector(".stage").scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+  }
+
+  function clearCompare() {
+    state.compare = {};
+    els.compareBody.innerHTML = '<tr class="empty"><td colspan="7">No comparison for these points yet.</td></tr>';
+  }
+
+  // ---------------------------------------------------------------------------
+  // Points, planner, map and parameters
+
+  // Anything that changes the problem makes the shown result stale.
+  function invalidate() {
+    state.token++;
+    if (state.replay) stopReplay();
+    resetResult();
+    clearCompare();
+    if (state.ready && !state.busy) setStatus("ready", "ready");
+  }
+
+  function setPoint(which, point) {
+    if (state[which].x === point.x && state[which].y === point.y) return;
+    state[which] = { x: point.x, y: point.y };
+    invalidate();
+    syncPoints();
+    draw();
+  }
+
+  function syncPoints() {
+    els.startX.value = state.start.x;
+    els.startY.value = state.start.y;
+    els.goalX.value = state.goal.x;
+    els.goalY.value = state.goal.y;
+    const map = state.map;
+    if (map) {
+      for (const el of [els.startX, els.goalX]) el.max = map.height - 1;
+      for (const el of [els.startY, els.goalY]) el.max = map.width - 1;
+      canvas.setAttribute(
+        "aria-label",
+        `Map ${state.mapFile}, ${map.height} rows by ${map.width} columns. ` +
+          `Start at x ${state.start.x}, y ${state.start.y}. Goal at x ${state.goal.x}, y ${state.goal.y}.`
+      );
+    }
+    updateYaml();
+  }
+
+  function pointFromInputs(which) {
+    const map = state.map;
+    if (!map) return;
+    const xEl = which === "start" ? els.startX : els.goalX;
+    const yEl = which === "start" ? els.startY : els.goalY;
+    const x = Math.round(Number(xEl.value));
+    const y = Math.round(Number(yEl.value));
+    if (!Number.isFinite(x) || !Number.isFinite(y)) {
+      syncPoints();
+      return;
+    }
+    const free = nearestFree(map, x, y, 96);
+    if (!free) {
+      els.pointsNote.textContent = `No free cell near x ${x}, y ${y}.`;
+      syncPoints();
+      return;
+    }
+    els.pointsNote.textContent =
+      free.x !== x || free.y !== y ? `Moved the ${which} to the nearest free cell.` : "";
+    setPoint(which, free);
+    syncPoints();
+  }
+
+  function selectPlanner(planner) {
+    state.planner = planner;
+    const radio = document.querySelector(`input[name="planner"][value="${planner}"]`);
+    if (radio) radio.checked = true;
+    const family = PLANNERS[planner].family;
+    els.paramsGrid.hidden = family !== "grid";
+    els.paramsTree.hidden = family !== "tree";
+    els.paramWeight.hidden = planner !== "astar";
+    els.paramRadius.hidden = planner !== "rrt_star";
+    els.paramsLegend.textContent = family === "grid" ? "config/grid_base.yaml" : "config/tree_base.yaml";
+    updateYaml();
+    if (!state.replay) draw();
+  }
+
+  async function selectMap(file) {
+    const def = mapDef(file);
+    state.mapFile = file;
+    state.start = { ...def.start };
+    state.goal = { ...def.goal };
+    els.pointsNote.textContent = "";
+    invalidate();
+    els.mapTitle.textContent = file;
+    const radio = document.querySelector(`input[name="map"][value="${file}"]`);
+    if (radio) radio.checked = true;
+    setStatus("loading", "loading the map");
+    try {
+      const map = await loadMap(file);
+      if (state.mapFile !== file) return;
+      state.map = map;
+      setupLayers(map);
+      els.mapSize.textContent = `${map.height} rows × ${map.width} columns`;
+      syncPoints();
+      sizeCanvas();
+      setBusy(state.busy);
+      if (!state.busy) setStatus("ready", "ready");
+    } catch (err) {
+      setStatus("error", err.message);
+    }
+  }
+
+  function updateYaml() {
+    const def = mapDef(state.mapFile);
+    const family = PLANNERS[state.planner].family;
+    const params = state.params[family];
+    const lines = [
+      "# config/main.yaml",
+      `map: "/${def.dir}/${def.file}"`,
+      `planner_name: "${state.planner}"`,
+      "path:",
+      "  start:",
+      `    x: ${state.start.x}`,
+      `    y: ${state.start.y}`,
+      "  goal:",
+      `    x: ${state.goal.x}`,
+      `    y: ${state.goal.y}`,
+      "",
+      family === "grid" ? "# config/grid_base.yaml" : "# config/tree_base.yaml",
+      ...Object.entries(params).map(([key, value]) => `${key}: ${value}`),
+    ];
+    els.yaml.dataset.text = lines.join("\n");
+    els.yaml.innerHTML = lines.map(highlightYaml).join("\n");
+  }
+
+  function escapeHtml(s) {
+    return s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  }
+
+  function highlightYaml(line) {
+    if (line.startsWith("#")) return `<span class="yaml-comment">${escapeHtml(line)}</span>`;
+    const m = /^(\s*)([\w]+):(.*)$/.exec(line);
+    if (!m) return escapeHtml(line);
+    return `${m[1]}<span class="yaml-key">${m[2]}</span>:<span class="yaml-value">${escapeHtml(m[3])}</span>`;
+  }
+
+  function readParams() {
+    state.params.grid.heuristic_weight = Number(els.weight.value);
+    const space = document.querySelector('input[name="search_space"]:checked');
+    state.params.grid.search_space = space ? Number(space.value) : 8;
+    for (const key of TREE_KEYS) {
+      const el = $(key);
+      const min = Number(el.min);
+      const max = Number(el.max);
+      let value = Math.round(Number(el.value));
+      if (!Number.isFinite(value)) value = DEFAULT_PARAMS.tree[key];
+      value = Math.min(max, Math.max(min, value));
+      el.value = value;
+      state.params.tree[key] = value;
+    }
+    els.weightOut.textContent = state.params.grid.heuristic_weight.toFixed(2);
+    updateYaml();
+    if (!state.replay) draw();
+  }
+
+  function writeParams(params) {
+    els.weight.value = params.grid.heuristic_weight;
+    for (const radio of document.querySelectorAll('input[name="search_space"]')) {
+      radio.checked = Number(radio.value) === params.grid.search_space;
+    }
+    for (const key of TREE_KEYS) $(key).value = params.tree[key];
+    readParams();
+  }
+
+  // ---------------------------------------------------------------------------
+  // Canvas input
+
+  const pointer = { drag: null, down: null };
+
+  function cellFromEvent(event) {
+    const rect = canvas.getBoundingClientRect();
+    const map = state.map;
+    const y = Math.floor(((event.clientX - rect.left) / rect.width) * map.width);
+    const x = Math.floor(((event.clientY - rect.top) / rect.height) * map.height);
+    return { x, y, rect };
+  }
+
+  function markerUnder(event) {
+    const rect = canvas.getBoundingClientRect();
+    const map = state.map;
+    const hit = (p) => {
+      const cx = rect.left + ((p.y + 0.5) / map.width) * rect.width;
+      const cy = rect.top + ((p.x + 0.5) / map.height) * rect.height;
+      return Math.hypot(event.clientX - cx, event.clientY - cy) <= 12;
+    };
+    if (hit(state.goal)) return "goal";
+    if (hit(state.start)) return "start";
+    return null;
+  }
+
+  function placeTarget() {
+    const checked = document.querySelector('input[name="place"]:checked');
+    return checked ? checked.value : "start";
+  }
+
+  function setPlaceTarget(which) {
+    const radio = document.querySelector(`input[name="place"][value="${which}"]`);
+    if (radio) radio.checked = true;
+  }
+
+  canvas.addEventListener("pointerdown", (event) => {
+    if (!state.map || event.button !== 0) return;
+    const marker = markerUnder(event);
+    if (marker) {
+      pointer.drag = marker;
+      canvas.setPointerCapture(event.pointerId);
+      canvas.classList.add("dragging");
+      event.preventDefault();
+    } else {
+      pointer.down = { x: event.clientX, y: event.clientY };
+    }
+  });
+
+  canvas.addEventListener("pointermove", (event) => {
+    if (!state.map) return;
+    const cell = cellFromEvent(event);
+    const inside = cell.x >= 0 && cell.y >= 0 && cell.x < state.map.height && cell.y < state.map.width;
+    els.cursor.textContent = inside
+      ? `x ${cell.x} · y ${cell.y} · ${isFree(state.map, cell.x, cell.y) ? "free" : "occupied"}`
+      : "x — · y —";
+    if (pointer.drag) {
+      const free = nearestFree(state.map, cell.x, cell.y, 12);
+      if (free) setPoint(pointer.drag, free);
+    } else {
+      canvas.classList.toggle("over-marker", !!markerUnder(event));
+    }
+  });
+
+  function endPointer(event) {
+    if (pointer.drag) {
+      pointer.drag = null;
+      canvas.classList.remove("dragging");
+      if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
+      return;
+    }
+    const down = pointer.down;
+    pointer.down = null;
+    if (!down || event.type !== "pointerup") return;
+    if (Math.hypot(event.clientX - down.x, event.clientY - down.y) > 6) return;
+    const cell = cellFromEvent(event);
+    const free = nearestFree(state.map, cell.x, cell.y);
+    if (!free) return;
+    const which = placeTarget();
+    els.pointsNote.textContent = "";
+    setPoint(which, free);
+    setPlaceTarget(which === "start" ? "goal" : "start");
+  }
+
+  canvas.addEventListener("pointerup", endPointer);
+  canvas.addEventListener("pointercancel", endPointer);
+  canvas.addEventListener("pointerleave", () => {
+    els.cursor.textContent = "x — · y —";
+  });
+
+  // ---------------------------------------------------------------------------
+  // Map picker and figures
+
+  function buildMapChoices() {
+    els.mapChoices.innerHTML = MAPS.map(
+      (m) =>
+        `<label class="choice map-choice"><input type="radio" name="map" value="${m.file}"${m.file === state.mapFile ? " checked" : ""}>` +
+        `<span><canvas width="96" height="96" aria-hidden="true"></canvas><strong>${m.file.replace(".map", "")}</strong>` +
+        `<small>${m.dir} · <span data-size>…</span></small></span></label>`
+    ).join("");
+    MAPS.forEach((m, i) => {
+      const label = els.mapChoices.children[i];
+      m.thumb = label.querySelector("canvas");
+      m.sizeEl = label.querySelector("[data-size]");
+    });
+  }
+
+  function drawThumb(def, map) {
+    const c = def.thumb;
+    const tctx = c.getContext("2d");
+    tctx.fillStyle = COLOR.ink;
+    tctx.fillRect(0, 0, c.width, c.height);
+    const scale = Math.min(c.width / map.width, c.height / map.height);
+    const w = map.width * scale;
+    const h = map.height * scale;
+    tctx.imageSmoothingEnabled = true;
+    tctx.imageSmoothingQuality = "high";
+    tctx.drawImage(map.base, (c.width - w) / 2, (c.height - h) / 2, w, h);
+    def.sizeEl.textContent = `${map.height}×${map.width}`;
+  }
+
+  async function loadThumbnails() {
+    for (const def of MAPS) {
+      try {
+        drawThumb(def, await loadMap(def.file));
+      } catch {
+        def.sizeEl.textContent = "unavailable";
+      }
+    }
+  }
+
+  // Expansion order of the grid planners, from the C++ logs, for the
+  // algorithm cards.
+  async function renderOrderFigures() {
+    const canvases = document.querySelectorAll("canvas[data-order]");
+    if (!canvases.length) return;
+    const def = mapDef(FIGURE_MAP);
+    const map = await loadMap(def.file);
+    const [r0, g0, b0] = COLOR.orderEarly;
+    const [r1, g1, b1] = COLOR.orderLate;
+    for (const c of canvases) {
+      const planner = c.dataset.order;
+      const result = await client.call({
+        type: "plan",
+        file: def.file,
+        planner,
+        start: def.start,
+        goal: def.goal,
+        params: DEFAULT_PARAMS.grid,
+      });
+      const k = 3;
+      c.width = map.width * k;
+      c.height = map.height * k;
+      c.style.aspectRatio = `${map.width} / ${map.height}`;
+      const layer = document.createElement("canvas");
+      layer.width = map.width;
+      layer.height = map.height;
+      const lctx = layer.getContext("2d");
+      const img = lctx.createImageData(map.width, map.height);
+      const px = new Uint32Array(img.data.buffer);
+      for (let i = 0; i < map.cells.length; i++) {
+        px[i] = map.cells[i] === FREE ? COLOR.free : COLOR.occupied;
+      }
+      const n = result.log.length / 3;
+      for (let j = 0; j < n; j++) {
+        const t = n > 1 ? j / (n - 1) : 0;
+        px[result.log[3 * j] * map.width + result.log[3 * j + 1]] = rgba(
+          Math.round(r0 + (r1 - r0) * t),
+          Math.round(g0 + (g1 - g0) * t),
+          Math.round(b0 + (b1 - b0) * t)
+        );
+      }
+      lctx.putImageData(img, 0, 0);
+      const fctx = c.getContext("2d");
+      fctx.imageSmoothingEnabled = false;
+      fctx.drawImage(layer, 0, 0, c.width, c.height);
+      // Path and endpoints
+      fctx.lineJoin = "round";
+      fctx.lineCap = "round";
+      fctx.beginPath();
+      for (let i = 0; i < result.path.length; i += 2) {
+        const cx = (result.path[i + 1] + 0.5) * k;
+        const cy = (result.path[i] + 0.5) * k;
+        if (i === 0) fctx.moveTo(cx, cy);
+        else fctx.lineTo(cx, cy);
+      }
+      fctx.strokeStyle = COLOR.casing;
+      fctx.lineWidth = 5;
+      fctx.stroke();
+      fctx.strokeStyle = COLOR.path;
+      fctx.lineWidth = 2.5;
+      fctx.stroke();
+      for (const [p, color] of [[def.start, COLOR.start], [def.goal, COLOR.goal]]) {
+        fctx.beginPath();
+        fctx.arc((p.y + 0.5) * k, (p.x + 0.5) * k, 7, 0, Math.PI * 2);
+        fctx.fillStyle = color;
+        fctx.fill();
+        fctx.lineWidth = 2;
+        fctx.strokeStyle = COLOR.ink;
+        fctx.stroke();
+      }
+      const caption = document.querySelector(`figcaption[data-caption="${planner}"]`);
+      if (caption) {
+        caption.textContent =
+          `lak505d, from the C++ log: ${fmtInt(n)} cells expanded, light first, dark last. ` +
+          `Path: ${fmtInt(result.path.length / 2 - 1)} moves.`;
+      }
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Wiring
+
+  function tryPlanner(planner) {
+    selectPlanner(planner);
+    document.getElementById("demo").scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+    runPlanner();
+  }
+
+  function wire() {
+    document.querySelectorAll('input[name="planner"]').forEach((radio) => {
+      radio.addEventListener("change", () => selectPlanner(radio.value));
+    });
+    els.mapChoices.addEventListener("change", (event) => {
+      if (event.target.name === "map") selectMap(event.target.value);
+    });
+    for (const which of ["start", "goal"]) {
+      for (const axis of ["x", "y"]) {
+        $(`${which}-${axis}`).addEventListener("change", () => pointFromInputs(which));
+      }
+    }
+    $("swap").addEventListener("click", () => {
+      const { start, goal } = state;
+      state.start = goal;
+      state.goal = start;
+      invalidate();
+      syncPoints();
+      draw();
+    });
+    $("reset-points").addEventListener("click", () => {
+      const def = mapDef(state.mapFile);
+      els.pointsNote.textContent = "";
+      state.start = { ...def.start };
+      state.goal = { ...def.goal };
+      invalidate();
+      syncPoints();
+      draw();
+    });
+    els.weight.addEventListener("input", readParams);
+    document.querySelectorAll('input[name="search_space"]').forEach((r) => r.addEventListener("change", readParams));
+    for (const key of TREE_KEYS) $(key).addEventListener("change", readParams);
+    els.resetParams.addEventListener("click", () => writeParams(structuredClone(DEFAULT_PARAMS)));
+    els.speed.addEventListener("input", () => {
+      els.speedOut.textContent = SPEED.names[speedLevel()];
+    });
+    els.run.addEventListener("click", runPlanner);
+    els.pause.addEventListener("click", togglePause);
+    els.skip.addEventListener("click", skipReplay);
+    els.compare.addEventListener("click", compareAll);
+    els.compareBody.addEventListener("click", (event) => {
+      const button = event.target.closest("[data-replay]");
+      if (button) replayFromCompare(button.dataset.replay);
+    });
+    els.copyYaml.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(els.yaml.dataset.text);
+        els.copyYaml.textContent = "Copied";
+      } catch {
+        els.copyYaml.textContent = "Select and copy";
+      }
+      setTimeout(() => (els.copyYaml.textContent = "Copy"), 1600);
+    });
+    document.querySelectorAll("[data-try]").forEach((button) => {
+      button.addEventListener("click", () => tryPlanner(button.dataset.try));
+    });
+    new ResizeObserver(sizeCanvas).observe(canvas);
+  }
+
+  async function init() {
+    buildMapChoices();
+    wire();
+    writeParams(state.params);
+    selectPlanner(state.planner);
+    syncPoints();
+    resetResult();
+
+    if (typeof Worker === "undefined" || typeof WebAssembly === "undefined") {
+      els.overlayText.textContent = "This browser cannot run WebAssembly in a worker, so the demo is unavailable.";
+      setStatus("error", "unsupported browser");
+      return;
+    }
+
+    client = createClient();
+    try {
+      await client.ready;
+      state.ready = true;
+      await selectMap(state.mapFile);
+      els.overlay.hidden = true;
+      setBusy(false);
+    } catch (err) {
+      els.overlayText.textContent = `Could not load the C++ planners: ${err.message}`;
+      setStatus("error", "could not load");
+      return;
+    }
+    await loadThumbnails();
+    await renderOrderFigures().catch(() => {});
+  }
+
+  init();
+})();
